@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">সমিতিপ্রো (SamityPro)</string>
+    <string name="app_name">SamityPro</string>
     <string name="title_activity_main">SamityPro</string>
     <string name="package_name">com.samitypro.app</string>
     <string name="custom_url_scheme">com.samitypro.app</string>

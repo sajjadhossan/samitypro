@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.samitypro.app',
   appName: 'SamityPro',
-  webDir: 'out',
+  webDir: 'public',
   server: {
     androidScheme: 'https',
     cleartext: true,
