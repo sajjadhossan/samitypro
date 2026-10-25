@@ -18,10 +18,11 @@ export async function GET(request: NextRequest) {
       },
       errors: []
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
     return NextResponse.json({
       success: false,
-      message: err.message || 'Internal server error',
+      message,
       errorCode: 'INTERNAL_SERVER_ERROR',
       errors: []
     }, { status: 500 });
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
       depositDate: today,
       amount: Number(amount),
       slipNumber,
-      status: 'APPROVED',
+      status: 'APPROVED' as const,
       voucherNo,
       notes: notes || '',
       createdAt: today
@@ -67,10 +68,11 @@ export async function POST(request: NextRequest) {
       meta: {},
       errors: []
     }, { status: 201 });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to record bank deposit';
     return NextResponse.json({
       success: false,
-      message: err.message || 'Failed to record bank deposit',
+      message,
       errorCode: 'INTERNAL_SERVER_ERROR',
       errors: []
     }, { status: 500 });

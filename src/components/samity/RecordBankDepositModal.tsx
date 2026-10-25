@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Building2, CheckCircle2, Upload, FileText } from 'lucide-react';
+import { X, Building2, CheckCircle2 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
-import { translations } from '@/lib/i18n';
 import confetti from 'canvas-confetti';
 
 interface RecordBankDepositModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
 }
 
 const COMMON_BANKS = [
@@ -23,20 +22,19 @@ const COMMON_BANKS = [
 
 export function RecordBankDepositModal({ isOpen, onClose }: RecordBankDepositModalProps) {
   const { store, activeTenant, language } = useSamityStore();
-  const t = translations[language];
 
   const [bankName, setBankName] = useState(COMMON_BANKS[0]);
   const [accountNumber, setAccountNumber] = useState('20501180200341');
   const [branchName, setBranchName] = useState('বনশ্রী কর্পোরেট শাখা, ঢাকা');
   const [amount, setAmount] = useState<number>(50000);
-  const [slipNumber, setSlipNumber] = useState(`SLIP-${Date.now().toString().slice(-6)}`);
+  const [slipNumber, setSlipNumber] = useState('SLIP-984021');
   const [notes, setNotes] = useState('নিয়মিত চাঁদা ও সঞ্চয় কালেকশন ব্যাংক একাউন্টে জমা');
   const [isSuccess, setIsSuccess] = useState(false);
   const [lastVoucher, setLastVoucher] = useState('');
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (amount <= 0 || !slipNumber) return;
 
@@ -51,7 +49,7 @@ export function RecordBankDepositModal({ isOpen, onClose }: RecordBankDepositMod
     });
 
     try {
-      confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      void confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
     } catch {}
 
     setLastVoucher(dep.voucherNo);

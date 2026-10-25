@@ -140,6 +140,8 @@ export interface SavingsAccount {
   status: 'ACTIVE' | 'MATURED' | 'CLOSED';
 }
 
+export type PaymentMethod = 'CASH' | 'BANK' | 'BKASH' | 'NAGAD';
+
 export interface SavingsTransaction {
   id: string;
   tenantId: string;
@@ -148,7 +150,7 @@ export interface SavingsTransaction {
   type: 'DEPOSIT' | 'WITHDRAWAL' | 'INTEREST' | 'PENALTY';
   amount: number;
   balanceAfter: number;
-  paymentMethod: 'CASH' | 'BKASH' | 'NAGAD' | 'BANK';
+  paymentMethod: PaymentMethod;
   referenceNo?: string;
   collectorId: string;
   notes?: string;
@@ -205,7 +207,7 @@ export interface LoanRepayment {
   principalPaid: number;
   interestPaid: number;
   penaltyPaid: number;
-  paymentMethod: 'CASH' | 'BKASH' | 'NAGAD' | 'BANK';
+  paymentMethod: PaymentMethod;
   receiptNo: string;
   collectorId: string;
   date: string;
@@ -224,7 +226,7 @@ export interface Voucher {
   descriptionBn: string;
   descriptionEn: string;
   paidToOrReceivedFrom: string;
-  paymentMethod: 'CASH' | 'BANK' | 'BKASH' | 'NAGAD';
+  paymentMethod: PaymentMethod;
   date: string;
   createdBy: string;
   approvedBy?: string;
@@ -327,7 +329,7 @@ export interface MonthlySubscription {
   status: FeePaymentStatus;
   paymentDate?: string;
   receiptNo?: string;
-  paymentMethod?: 'CASH' | 'BANK' | 'BKASH' | 'NAGAD';
+  paymentMethod?: PaymentMethod;
   collectedBy?: string;
   notes?: string;
   createdAt: string;
@@ -370,7 +372,7 @@ export interface PaidReceipt {
   amountInWordsBn: string;
   amountInWordsEn: string;
   date: string;
-  paymentMethod: 'CASH' | 'BANK' | 'BKASH' | 'NAGAD';
+  paymentMethod: PaymentMethod;
   transactionRef?: string;
   notes?: string;
   collectedBy: string;
@@ -380,6 +382,9 @@ export interface PaidReceipt {
   createdAt: string;
 }
 
+export type NoticeCategory = 'GENERAL' | 'AGM' | 'MEETING' | 'FEE_REMINDER' | 'EMERGENCY';
+export type NoticePriority = 'HIGH' | 'NORMAL' | 'URGENT';
+
 export interface Notice {
   id: string;
   tenantId: string;
@@ -387,8 +392,8 @@ export interface Notice {
   titleEn: string;
   contentBn: string;
   contentEn: string;
-  category: 'GENERAL' | 'AGM' | 'MEETING' | 'FEE_REMINDER' | 'EMERGENCY';
-  priority: 'HIGH' | 'NORMAL' | 'URGENT';
+  category: NoticeCategory;
+  priority: NoticePriority;
   publishedDate: string;
   publishedBy: string;
   publisherNameBn: string;
@@ -396,12 +401,14 @@ export interface Notice {
   viewCount: number;
 }
 
+export type DocumentCategory = 'REGISTRATION' | 'BYLAWS' | 'AUDIT_REPORT' | 'DEED' | 'GOVT_APPROVAL' | 'OTHER';
+
 export interface SamityDocument {
   id: string;
   tenantId: string;
   titleBn: string;
   titleEn: string;
-  category: 'REGISTRATION' | 'BYLAWS' | 'AUDIT_REPORT' | 'DEED' | 'GOVT_APPROVAL' | 'OTHER';
+  category: DocumentCategory;
   fileNumber?: string;
   fileUrl: string;
   fileSize: string;

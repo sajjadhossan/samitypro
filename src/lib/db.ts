@@ -1,6 +1,6 @@
 import { 
   Tenant, User, Member, SavingsAccount, SavingsTransaction, 
-  Loan, LoanRepayment, Voucher, Meeting, Election, RealtimeEvent,
+  Loan, Voucher, Meeting, Election, RealtimeEvent,
   MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder
 } from '@/types';
 

@@ -1,19 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
-  Users, PiggyBank, HandCoins, ArrowUpRight, ArrowDownLeft, 
+  Users, PiggyBank, HandCoins, 
   Wallet, Building, AlertCircle, Plus, CheckCircle2, 
-  Calendar, FileText, PhoneCall, TrendingUp, Sparkles, Radio
+  TrendingUp, Sparkles, Radio
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations, formatCurrency, toBengaliNumber } from '@/lib/i18n';
 
 interface DashboardViewProps {
-  onOpenAddMember: () => void;
-  onOpenRecordDeposit: () => void;
-  onOpenCollectInstallment: () => void;
-  onNavigateTab: (tab: string) => void;
+  readonly onOpenAddMember: () => void;
+  readonly onOpenRecordDeposit: () => void;
+  readonly onOpenCollectInstallment: () => void;
+  readonly onNavigateTab: (tab: string) => void;
 }
 
 export function DashboardView({
@@ -22,13 +22,10 @@ export function DashboardView({
   onOpenCollectInstallment,
   onNavigateTab
 }: DashboardViewProps) {
-  const { activeTenant, language, members, loans, savingsTransactions, vouchers, events, bankDeposits, subscriptions } = useSamityStore();
+  const { activeTenant, language, members, loans, savingsTransactions, bankDeposits, events } = useSamityStore();
   const t = translations[language];
 
-  const [todayStr, setTodayStr] = useState('2026-10-25');
-  useEffect(() => {
-    setTodayStr(new Date().toISOString().split('T')[0]);
-  }, []);
+  const todayStr = savingsTransactions[0]?.date || '2026-10-25';
 
   // Aggregated calculations
   const totalMembers = members.length;
@@ -40,10 +37,6 @@ export function DashboardView({
   const todaysSavings = savingsTransactions
     .filter(tx => tx.date === todayStr)
     .reduce((sum, tx) => sum + tx.amount, 0);
-
-  const todaysVouchers = vouchers
-    .filter(v => v.date === todayStr && v.type === 'CREDIT')
-    .reduce((sum, v) => sum + v.amount, 0);
 
   const todaysTotalCollection = Math.max(todaysSavings, 14500);
 
@@ -106,9 +99,10 @@ export function DashboardView({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Total Members */}
-        <div 
+        <button 
+          type="button"
           onClick={() => onNavigateTab('members')}
-          className="glass-card glass-card-hover rounded-2xl p-4 cursor-pointer"
+          className="text-left w-full glass-card glass-card-hover rounded-2xl p-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
         >
           <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
             <span>{t.totalMembers}</span>
@@ -126,12 +120,13 @@ export function DashboardView({
             <TrendingUp className="w-3 h-3" />
             <span>+৫ জন নতুন এই মাসে</span>
           </div>
-        </div>
+        </button>
 
         {/* Total Savings & DPS */}
-        <div 
+        <button 
+          type="button"
           onClick={() => onNavigateTab('savings')}
-          className="glass-card glass-card-hover rounded-2xl p-4 cursor-pointer"
+          className="text-left w-full glass-card glass-card-hover rounded-2xl p-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
         >
           <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
             <span>{t.activeSavings}</span>
@@ -145,12 +140,13 @@ export function DashboardView({
           <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-2">
             <span>সাধারণ সঞ্চয় ও ডিপিএস সম্মিলিত</span>
           </div>
-        </div>
+        </button>
 
         {/* Total Loans Outstanding */}
-        <div 
+        <button 
+          type="button"
           onClick={() => onNavigateTab('loans')}
-          className="glass-card glass-card-hover rounded-2xl p-4 cursor-pointer"
+          className="text-left w-full glass-card glass-card-hover rounded-2xl p-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/50"
         >
           <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
             <span>{t.loanOutstanding}</span>
@@ -165,7 +161,7 @@ export function DashboardView({
             <AlertCircle className="w-3 h-3" />
             <span>১টি কিস্তি ওভারডিউ তাগিদাধীন</span>
           </div>
-        </div>
+        </button>
 
         {/* Today's Collections */}
         <div className="glass-card glass-card-hover rounded-2xl p-4">
@@ -211,9 +207,10 @@ export function DashboardView({
         </div>
 
         {/* Bank Balance */}
-        <div 
+        <button 
+          type="button"
           onClick={() => onNavigateTab('bank-deposits')}
-          className="glass-panel glass-card-hover rounded-2xl p-4 border border-slate-800 flex items-center justify-between cursor-pointer"
+          className="text-left w-full glass-panel glass-card-hover rounded-2xl p-4 border border-slate-800 flex items-center justify-between cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50"
         >
           <div className="flex items-center gap-3">
             <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400">
@@ -229,7 +226,7 @@ export function DashboardView({
           <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">
             ব্যাংক হিসাবসমূহ →
           </span>
-        </div>
+        </button>
 
         {/* Share Capital */}
         <div className="glass-panel rounded-2xl p-4 border border-slate-800 flex items-center justify-between">

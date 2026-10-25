@@ -1,14 +1,14 @@
 'use client';
 
 import React from 'react';
-import { X, Printer, CheckCircle, ShieldCheck, QrCode, Download } from 'lucide-react';
-import { PaidReceipt, LetterheadConfig } from '@/types';
+import { X, Printer, CheckCircle, ShieldCheck, QrCode } from 'lucide-react';
+import { PaidReceipt } from '@/types';
 import { useSamityStore } from '@/lib/store';
 
 interface PrintableReceiptModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  receipt: PaidReceipt | null;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly receipt: PaidReceipt | null;
 }
 
 export function PrintableReceiptModal({ isOpen, onClose, receipt }: PrintableReceiptModalProps) {
@@ -96,23 +96,23 @@ export function PrintableReceiptModal({ isOpen, onClose, receipt }: PrintableRec
             <table className="w-full border-collapse">
               <tbody>
                 <tr className="border-b border-slate-200 bg-slate-100/70">
-                  <td className="p-2.5 font-bold text-slate-700 w-1/3">সদস্যের নাম (Member Name)</td>
+                  <th scope="row" className="p-2.5 font-bold text-slate-700 w-1/3 text-left">সদস্যের নাম (Member Name)</th>
                   <td className="p-2.5 font-semibold text-slate-900">{receipt.memberNameBn} ({receipt.memberCode})</td>
                 </tr>
                 <tr className="border-b border-slate-200">
-                  <td className="p-2.5 font-bold text-slate-700">মোবাইল নম্বর (Contact Phone)</td>
+                  <th scope="row" className="p-2.5 font-bold text-slate-700 text-left">মোবাইল নম্বর (Contact Phone)</th>
                   <td className="p-2.5 font-mono text-slate-800">{receipt.phone}</td>
                 </tr>
                 <tr className="border-b border-slate-200 bg-slate-100/70">
-                  <td className="p-2.5 font-bold text-slate-700">আদায়ের বিবরণ (Particulars)</td>
+                  <th scope="row" className="p-2.5 font-bold text-slate-700 text-left">আদায়ের বিবরণ (Particulars)</th>
                   <td className="p-2.5 text-slate-800">{receipt.notes || 'মাসিক চাঁদা ও নিয়মিত সঞ্চয় জমা'}</td>
                 </tr>
                 <tr className="border-b border-slate-200">
-                  <td className="p-2.5 font-bold text-slate-700">আদায়কারী কর্মকর্তা (Collector)</td>
+                  <th scope="row" className="p-2.5 font-bold text-slate-700 text-left">আদায়কারী কর্মকর্তা (Collector)</th>
                   <td className="p-2.5 text-slate-800">{receipt.collectorNameBn}</td>
                 </tr>
                 <tr className="bg-emerald-50 text-emerald-950 font-bold">
-                  <td className="p-3 text-sm">পরিশোধিত মোট পরিমাণ (Total Amount)</td>
+                  <th scope="row" className="p-3 text-sm text-left">পরিশোধিত মোট পরিমাণ (Total Amount)</th>
                   <td className="p-3 text-base font-black text-emerald-800 font-mono">
                     ৳ {receipt.amount.toLocaleString()} BDT
                   </td>

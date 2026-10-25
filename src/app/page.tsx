@@ -26,12 +26,22 @@ import { DocumentsView } from '@/components/samity/DocumentsView';
 import { useSamityStore } from '@/lib/store';
 import { 
   LayoutDashboard, Users, PiggyBank, HandCoins, 
-  ReceiptText, FileBarChart, BookOpen, Smartphone 
+  FileBarChart, BookOpen 
 } from 'lucide-react';
 
 export default function Home() {
   const { currentUser } = useSamityStore();
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    return currentUser.role === 'SUPER_ADMIN' ? 'saas-overview' : currentUser.role === 'MEMBER' ? 'member-passbook' : 'dashboard';
+  });
+
+  const [prevRole, setPrevRole] = useState(currentUser.role);
+  if (currentUser.role !== prevRole) {
+    setPrevRole(currentUser.role);
+    setActiveTab(
+      currentUser.role === 'SUPER_ADMIN' ? 'saas-overview' : currentUser.role === 'MEMBER' ? 'member-passbook' : 'dashboard'
+    );
+  }
 
   // Modals state
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
@@ -41,17 +51,6 @@ export default function Home() {
   const [collectLoanId, setCollectLoanId] = useState<string | undefined>(undefined);
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
 
-  // Sync active tab when role changes
-  React.useEffect(() => {
-    if (currentUser.role === 'SUPER_ADMIN') {
-      setActiveTab('saas-overview');
-    } else if (currentUser.role === 'MEMBER') {
-      setActiveTab('member-passbook');
-    } else {
-      setActiveTab('dashboard');
-    }
-  }, [currentUser.role]);
-
   const handleOpenDeposit = (memberId?: string) => {
     setDepositMemberId(memberId);
     setIsDepositOpen(true);
@@ -60,6 +59,65 @@ export default function Home() {
   const handleOpenCollectLoan = (loanId?: string) => {
     setCollectLoanId(loanId);
     setIsLoanCollectOpen(true);
+  };
+
+  const renderMemberPortal = () => {
+    switch (activeTab) {
+      case 'subscriptions-due':
+        return <SubscriptionsDueView />;
+      case 'notices':
+      case 'member-notices':
+        return <NoticesView />;
+      case 'documents':
+        return <DocumentsView />;
+      case 'member-elections':
+        return <ElectionsView />;
+      case 'member-loans':
+        return <LoansView onOpenCollectInstallment={handleOpenCollectLoan} />;
+      default:
+        return <MemberPortalView />;
+    }
+  };
+
+  const renderMainContent = () => {
+    if (currentUser.role === 'SUPER_ADMIN') {
+      return <SuperAdminView />;
+    }
+    if (currentUser.role === 'MEMBER') {
+      return renderMemberPortal();
+    }
+    return (
+      <>
+        {activeTab === 'dashboard' && (
+          <DashboardView
+            onOpenAddMember={() => setIsAddMemberOpen(true)}
+            onOpenRecordDeposit={() => handleOpenDeposit()}
+            onOpenCollectInstallment={() => handleOpenCollectLoan()}
+            onNavigateTab={tab => setActiveTab(tab)}
+          />
+        )}
+        {activeTab === 'subscriptions-due' && <SubscriptionsDueView />}
+        {activeTab === 'bank-deposits' && <BankDepositsView />}
+        {activeTab === 'members' && (
+          <MembersView
+            onOpenAddMember={() => setIsAddMemberOpen(true)}
+            onOpenRecordDeposit={handleOpenDeposit}
+          />
+        )}
+        {activeTab === 'savings' && (
+          <SavingsView onOpenRecordDeposit={() => handleOpenDeposit()} />
+        )}
+        {activeTab === 'loans' && (
+          <LoansView onOpenCollectInstallment={handleOpenCollectLoan} />
+        )}
+        {activeTab === 'accounts' && <AccountsView />}
+        {activeTab === 'notices' && <NoticesView />}
+        {activeTab === 'documents' && <DocumentsView />}
+        {activeTab === 'meetings' && <MeetingsView />}
+        {activeTab === 'elections' && <ElectionsView />}
+        {activeTab === 'reports' && <ReportsView />}
+      </>
+    );
   };
 
   return (
@@ -79,88 +137,7 @@ export default function Home() {
 
         {/* Dynamic Main View Area */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-          {/* SUPER ADMIN PORTAL */}
-          {currentUser.role === 'SUPER_ADMIN' ? (
-            <SuperAdminView />
-          ) : currentUser.role === 'MEMBER' ? (
-            /* MEMBER PORTAL */
-            activeTab === 'subscriptions-due' ? (
-              <SubscriptionsDueView />
-            ) : activeTab === 'notices' || activeTab === 'member-notices' ? (
-              <NoticesView />
-            ) : activeTab === 'documents' ? (
-              <DocumentsView />
-            ) : activeTab === 'member-elections' ? (
-              <ElectionsView />
-            ) : activeTab === 'member-loans' ? (
-              <LoansView onOpenCollectInstallment={handleOpenCollectLoan} />
-            ) : (
-              <MemberPortalView />
-            )
-          ) : (
-            /* SAMITY ADMIN & MANAGER PORTAL */
-            <>
-              {activeTab === 'dashboard' && (
-                <DashboardView
-                  onOpenAddMember={() => setIsAddMemberOpen(true)}
-                  onOpenRecordDeposit={() => handleOpenDeposit()}
-                  onOpenCollectInstallment={() => handleOpenCollectLoan()}
-                  onNavigateTab={tab => setActiveTab(tab)}
-                />
-              )}
-
-              {activeTab === 'subscriptions-due' && (
-                <SubscriptionsDueView />
-              )}
-
-              {activeTab === 'bank-deposits' && (
-                <BankDepositsView />
-              )}
-
-              {activeTab === 'members' && (
-                <MembersView
-                  onOpenAddMember={() => setIsAddMemberOpen(true)}
-                  onOpenRecordDeposit={handleOpenDeposit}
-                />
-              )}
-
-              {activeTab === 'savings' && (
-                <SavingsView
-                  onOpenRecordDeposit={() => handleOpenDeposit()}
-                />
-              )}
-
-              {activeTab === 'loans' && (
-                <LoansView
-                  onOpenCollectInstallment={handleOpenCollectLoan}
-                />
-              )}
-
-              {activeTab === 'accounts' && (
-                <AccountsView />
-              )}
-
-              {activeTab === 'notices' && (
-                <NoticesView />
-              )}
-
-              {activeTab === 'documents' && (
-                <DocumentsView />
-              )}
-
-              {activeTab === 'meetings' && (
-                <MeetingsView />
-              )}
-
-              {activeTab === 'elections' && (
-                <ElectionsView />
-              )}
-
-              {activeTab === 'reports' && (
-                <ReportsView />
-              )}
-            </>
-          )}
+          {renderMainContent()}
         </main>
       </div>
 

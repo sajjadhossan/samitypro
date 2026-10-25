@@ -3,8 +3,8 @@
 import React from 'react';
 import { 
   LayoutDashboard, Users, PiggyBank, HandCoins, ReceiptText, 
-  CalendarCheck, Vote, FileBarChart, Settings, ShieldAlert,
-  CreditCard, MessageSquare, BookOpen, UserCheck, Bell,
+  CalendarCheck, Vote, FileBarChart, ShieldAlert,
+  CreditCard, MessageSquare, BookOpen, Bell,
   BadgePercent, Building2, FolderLock
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';

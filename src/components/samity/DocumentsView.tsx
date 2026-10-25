@@ -3,12 +3,10 @@
 import React, { useState } from 'react';
 import { FolderLock, FileText, Download, Plus, Search, ShieldCheck, FileCheck2 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
-import { translations } from '@/lib/i18n';
-import { SamityDocument } from '@/types';
+import { DocumentCategory } from '@/types';
 
 export function DocumentsView() {
   const { store, activeTenant, language, documents, currentUser } = useSamityStore();
-  const t = translations[language];
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -16,19 +14,19 @@ export function DocumentsView() {
 
   // Form
   const [titleBn, setTitleBn] = useState('');
-  const [category, setCategory] = useState<'REGISTRATION' | 'BYLAWS' | 'AUDIT_REPORT' | 'DEED' | 'GOVT_APPROVAL' | 'OTHER'>('REGISTRATION');
+  const [category, setCategory] = useState<DocumentCategory>('REGISTRATION');
   const [fileNumber, setFileNumber] = useState('');
   const [descBn, setDescBn] = useState('');
 
   const filteredDocs = documents.filter(doc => {
     const matchesSearch = 
       doc.titleBn.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (doc.fileNumber && doc.fileNumber.toLowerCase().includes(searchTerm.toLowerCase()));
+      Boolean(doc.fileNumber?.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCat = selectedCategory === 'ALL' || doc.category === selectedCategory;
     return matchesSearch && matchesCat;
   });
 
-  const handleUploadSubmit = (e: React.FormEvent) => {
+  const handleUploadSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!titleBn) return;
 
@@ -174,8 +172,9 @@ export function DocumentsView() {
 
             <form onSubmit={handleUploadSubmit} className="space-y-4 pt-4 text-xs">
               <div>
-                <label className="block text-slate-300 font-medium mb-1.5">নথির শিরোনাম (Title)</label>
+                <label htmlFor="doc-title" className="block text-slate-300 font-medium mb-1.5">নথির শিরোনাম (Title)</label>
                 <input
+                  id="doc-title"
                   type="text"
                   value={titleBn}
                   onChange={e => setTitleBn(e.target.value)}
@@ -187,10 +186,11 @@ export function DocumentsView() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1.5">ক্যাটাগরি</label>
+                  <label htmlFor="doc-category" className="block text-slate-300 font-medium mb-1.5">ক্যাটাগরি</label>
                   <select
+                    id="doc-category"
                     value={category}
-                    onChange={e => setCategory(e.target.value as any)}
+                    onChange={e => setCategory(e.target.value as DocumentCategory)}
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 focus:outline-none focus:border-indigo-500"
                   >
                     <option value="REGISTRATION">নিবন্ধন সনদ (Registration)</option>
@@ -202,8 +202,9 @@ export function DocumentsView() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1.5">স্মারক / নথি নম্বর</label>
+                  <label htmlFor="doc-file-number" className="block text-slate-300 font-medium mb-1.5">স্মারক / নথি নম্বর</label>
                   <input
+                    id="doc-file-number"
                     type="text"
                     value={fileNumber}
                     onChange={e => setFileNumber(e.target.value)}
@@ -214,8 +215,9 @@ export function DocumentsView() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1.5">সংক্ষিপ্ত বিবরণ</label>
+                <label htmlFor="doc-desc" className="block text-slate-300 font-medium mb-1.5">সংক্ষিপ্ত বিবরণ</label>
                 <textarea
+                  id="doc-desc"
                   rows={3}
                   value={descBn}
                   onChange={e => setDescBn(e.target.value)}

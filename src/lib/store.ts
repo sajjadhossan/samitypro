@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Tenant, User, Member, SavingsAccount, SavingsTransaction, 
-  Loan, Voucher, Meeting, Election, RealtimeEvent, Language, UserRole,
+  Loan, Voucher, Meeting, Election, RealtimeEvent, Language,
   MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder 
 } from '@/types';
 import { 
@@ -356,7 +356,6 @@ class DataStore {
     }
 
     // Add Credit voucher
-    const receiptNo = `LN-RCT-${Date.now().toString().slice(-5)}`;
     const voucher: Voucher = {
       id: `vch-${Date.now()}`,
       tenantId: params.tenantId,

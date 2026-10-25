@@ -2,22 +2,47 @@
 
 import React, { useState } from 'react';
 import { 
-  BadgePercent, Search, Filter, CheckCircle2, AlertCircle, 
-  Clock, Send, Receipt, Plus, DollarSign, FileSpreadsheet, Eye, Printer 
+  BadgePercent, Search, CheckCircle2, AlertCircle, 
+  Clock, Send, Receipt, Plus, Printer 
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
-import { translations, formatCurrency } from '@/lib/i18n';
-import { MonthlySubscription, PaidReceipt } from '@/types';
+import { formatCurrency } from '@/lib/i18n';
+import { FeePaymentStatus, PaidReceipt } from '@/types';
 import { PrintableReceiptModal } from '@/components/common/PrintableReceiptModal';
 import confetti from 'canvas-confetti';
 
+const getStatusBadgeClass = (status: FeePaymentStatus) => {
+  switch (status) {
+    case 'PAID':
+      return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+    case 'OVERDUE':
+      return 'bg-rose-500/20 text-rose-400 border border-rose-500/30';
+    case 'PARTIAL':
+      return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+    default:
+      return 'bg-slate-700/50 text-slate-300 border border-slate-600';
+  }
+};
+
+const getStatusLabel = (status: FeePaymentStatus) => {
+  switch (status) {
+    case 'PAID':
+      return 'পরিশোধিত';
+    case 'OVERDUE':
+      return 'বিলম্বিত বকেয়া';
+    case 'PARTIAL':
+      return 'আংশিক জমা';
+    default:
+      return 'বকেয়া';
+  }
+};
+
 export function SubscriptionsDueView() {
   const { store, activeTenant, language, subscriptions, members, receipts } = useSamityStore();
-  const t = translations[language];
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
-  const [selectedMonth, setSelectedMonth] = useState<string>('2026-10');
+  const selectedMonth = '2026-10';
 
   // Modal for payment
   const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
@@ -54,7 +79,7 @@ export function SubscriptionsDueView() {
     setIsCollectModalOpen(true);
   };
 
-  const handleCollectSubmit = (e: React.FormEvent) => {
+  const handleCollectSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!collectMemberId || collectAmount <= 0) return;
 
@@ -69,7 +94,7 @@ export function SubscriptionsDueView() {
     });
 
     try {
-      confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      void confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
     } catch {}
 
     setIsCollectModalOpen(false);
@@ -260,20 +285,11 @@ export function SubscriptionsDueView() {
                       ৳ {sub.dueAmount.toLocaleString()}
                     </td>
                     <td className="p-3.5">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                        isPaid ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                        isOverdue ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
-                        isPartial ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                        'bg-slate-700/50 text-slate-300 border border-slate-600'
-                      }`}>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${getStatusBadgeClass(sub.status)}`}>
                         {isPaid && <CheckCircle2 className="w-3 h-3" />}
                         {isOverdue && <AlertCircle className="w-3 h-3" />}
                         {isPartial && <Clock className="w-3 h-3" />}
-                        <span>
-                          {sub.status === 'PAID' ? 'পরিশোধিত' :
-                           sub.status === 'OVERDUE' ? 'বিলম্বিত বকেয়া' :
-                           sub.status === 'PARTIAL' ? 'আংশিক জমা' : 'বকেয়া'}
-                        </span>
+                        <span>{getStatusLabel(sub.status)}</span>
                       </span>
                     </td>
                     <td className="p-3.5">
@@ -357,8 +373,9 @@ export function SubscriptionsDueView() {
 
             <form onSubmit={handleCollectSubmit} className="space-y-4 pt-4 text-xs">
               <div>
-                <label className="block text-slate-300 font-medium mb-1.5">সদস্য নির্বাচন করুন</label>
+                <label htmlFor="collect-member-select" className="block text-slate-300 font-medium mb-1.5">সদস্য নির্বাচন করুন</label>
                 <select
+                  id="collect-member-select"
                   value={collectMemberId}
                   onChange={e => setCollectMemberId(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 focus:outline-none focus:border-emerald-500"
@@ -373,8 +390,9 @@ export function SubscriptionsDueView() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1.5">আদায়ের পরিমাণ (৳)</label>
+                  <label htmlFor="collect-amount-input" className="block text-slate-300 font-medium mb-1.5">আদায়ের পরিমাণ (৳)</label>
                   <input
+                    id="collect-amount-input"
                     type="number"
                     min="1"
                     value={collectAmount}
@@ -384,10 +402,11 @@ export function SubscriptionsDueView() {
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1.5">পেমেন্ট মাধ্যম</label>
+                  <label htmlFor="collect-payment-method" className="block text-slate-300 font-medium mb-1.5">পেমেন্ট মাধ্যম</label>
                   <select
+                    id="collect-payment-method"
                     value={paymentMethod}
-                    onChange={e => setPaymentMethod(e.target.value as any)}
+                    onChange={e => setPaymentMethod(e.target.value as 'CASH' | 'BANK' | 'BKASH' | 'NAGAD')}
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 focus:outline-none focus:border-emerald-500"
                   >
                     <option value="CASH">ক্যাশ (নগদ)</option>

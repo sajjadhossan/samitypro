@@ -1,23 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Bell, Plus, Pin, Calendar, Eye, Send, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Bell, Plus, Pin, Calendar, Eye, Send } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
-import { translations } from '@/lib/i18n';
-import { Notice } from '@/types';
+import { NoticeCategory, NoticePriority } from '@/types';
 
 export function NoticesView() {
   const { store, activeTenant, language, notices, currentUser } = useSamityStore();
-  const t = translations[language];
 
   const [isNewNoticeOpen, setIsNewNoticeOpen] = useState(false);
   const [titleBn, setTitleBn] = useState('');
   const [contentBn, setContentBn] = useState('');
-  const [category, setCategory] = useState<'GENERAL' | 'AGM' | 'MEETING' | 'FEE_REMINDER' | 'EMERGENCY'>('GENERAL');
-  const [priority, setPriority] = useState<'HIGH' | 'NORMAL' | 'URGENT'>('NORMAL');
+  const [category, setCategory] = useState<NoticeCategory>('GENERAL');
+  const [priority, setPriority] = useState<NoticePriority>('NORMAL');
   const [isPinned, setIsPinned] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!titleBn || !contentBn) return;
 
@@ -141,8 +139,9 @@ export function NoticesView() {
 
             <form onSubmit={handleSubmit} className="space-y-4 pt-4 text-xs">
               <div>
-                <label className="block text-slate-300 font-medium mb-1.5">বিজ্ঞপ্তির শিরোনাম</label>
+                <label htmlFor="notice-title" className="block text-slate-300 font-medium mb-1.5">বিজ্ঞপ্তির শিরোনাম</label>
                 <input
+                  id="notice-title"
                   type="text"
                   value={titleBn}
                   onChange={e => setTitleBn(e.target.value)}
@@ -154,10 +153,11 @@ export function NoticesView() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1.5">ক্যাটাগরি</label>
+                  <label htmlFor="notice-category" className="block text-slate-300 font-medium mb-1.5">ক্যাটাগরি</label>
                   <select
+                    id="notice-category"
                     value={category}
-                    onChange={e => setCategory(e.target.value as any)}
+                    onChange={e => setCategory(e.target.value as NoticeCategory)}
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 focus:outline-none focus:border-amber-500"
                   >
                     <option value="GENERAL">সাধারণ নোটিশ</option>
@@ -168,10 +168,11 @@ export function NoticesView() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1.5">অগ্রাধিকার</label>
+                  <label htmlFor="notice-priority" className="block text-slate-300 font-medium mb-1.5">অগ্রাধিকার</label>
                   <select
+                    id="notice-priority"
                     value={priority}
-                    onChange={e => setPriority(e.target.value as any)}
+                    onChange={e => setPriority(e.target.value as NoticePriority)}
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 focus:outline-none focus:border-amber-500"
                   >
                     <option value="NORMAL">স্বাভাবিক (Normal)</option>
@@ -182,8 +183,9 @@ export function NoticesView() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1.5">বিস্তারিত বিবরণ ও নির্দেশাবলী</label>
+                <label htmlFor="notice-content" className="block text-slate-300 font-medium mb-1.5">বিস্তারিত বিবরণ ও নির্দেশাবলী</label>
                 <textarea
+                  id="notice-content"
                   rows={5}
                   value={contentBn}
                   onChange={e => setContentBn(e.target.value)}

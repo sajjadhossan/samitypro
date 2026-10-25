@@ -23,10 +23,11 @@ export async function GET(request: NextRequest) {
       },
       errors: []
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
     return NextResponse.json({
       success: false,
-      message: err.message || 'Internal server error',
+      message,
       errorCode: 'INTERNAL_SERVER_ERROR',
       errors: []
     }, { status: 500 });

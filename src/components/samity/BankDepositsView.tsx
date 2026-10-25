@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Building2, Plus, CheckCircle2, Clock, FileText, Search } from 'lucide-react';
+import { Building2, Plus, CheckCircle2, Clock, Search } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
-import { translations, formatCurrency } from '@/lib/i18n';
+import { formatCurrency } from '@/lib/i18n';
 import { RecordBankDepositModal } from './RecordBankDepositModal';
 
 export function BankDepositsView() {
   const { bankDeposits, language } = useSamityStore();
-  const t = translations[language];
 
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
