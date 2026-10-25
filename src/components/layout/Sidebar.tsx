@@ -4,7 +4,8 @@ import React from 'react';
 import { 
   LayoutDashboard, Users, PiggyBank, HandCoins, ReceiptText, 
   CalendarCheck, Vote, FileBarChart, Settings, ShieldAlert,
-  CreditCard, MessageSquare, BookOpen, UserCheck, Bell
+  CreditCard, MessageSquare, BookOpen, UserCheck, Bell,
+  BadgePercent, Building2, FolderLock
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations } from '@/lib/i18n';
@@ -30,10 +31,14 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   // Samity Admin & Manager Navigation Items
   const samityAdminNav = [
     { id: 'dashboard', labelBn: t.dashboard, labelEn: 'Dashboard', icon: LayoutDashboard },
+    { id: 'subscriptions-due', labelBn: 'মাসিক চাঁদা ও বকেয়া', labelEn: 'Fees & Dues', icon: BadgePercent },
+    { id: 'bank-deposits', labelBn: 'ব্যাংক হিসাব ও জমা', labelEn: 'Bank Deposits', icon: Building2 },
     { id: 'members', labelBn: t.members, labelEn: 'Members & KYC', icon: Users },
     { id: 'savings', labelBn: t.savings, labelEn: 'Savings & DPS', icon: PiggyBank },
     { id: 'loans', labelBn: t.loans, labelEn: 'Loans & EMIs', icon: HandCoins },
     { id: 'accounts', labelBn: t.accounts, labelEn: 'Accounts & Vouchers', icon: ReceiptText },
+    { id: 'notices', labelBn: 'ডিজিটাল নোটিশ বোর্ড', labelEn: 'Notice Board', icon: Bell },
+    { id: 'documents', labelBn: 'নথি ও দলিল ভল্ট', labelEn: 'Documents Vault', icon: FolderLock },
     { id: 'meetings', labelBn: t.meetings, labelEn: 'Meetings & Minutes', icon: CalendarCheck },
     { id: 'elections', labelBn: t.elections, labelEn: 'Elections & Voting', icon: Vote },
     { id: 'reports', labelBn: t.reports, labelEn: 'Reports & Statements', icon: FileBarChart },
@@ -42,9 +47,11 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   // Member Portal Navigation Items
   const memberNav = [
     { id: 'member-passbook', labelBn: 'আমার ডিজিটাল পাসবই', labelEn: 'My Passbook', icon: BookOpen },
+    { id: 'subscriptions-due', labelBn: 'আমার চাঁদা ও রসিদ', labelEn: 'My Fees & Receipts', icon: BadgePercent },
     { id: 'member-loans', labelBn: 'আমার ঋণ ও কিস্তি', labelEn: 'My Loans & EMIs', icon: HandCoins },
     { id: 'member-elections', labelBn: 'ভোট প্রদান ও নির্বাচন', labelEn: 'Cast Vote & Election', icon: Vote },
-    { id: 'member-notices', labelBn: 'নোটিশ বোর্ড ও রেজোলিউশন', labelEn: 'Notices & Minutes', icon: Bell },
+    { id: 'notices', labelBn: 'নোটিশ বোর্ড ও রেজোলিউশন', labelEn: 'Notices & Minutes', icon: Bell },
+    { id: 'documents', labelBn: 'সমিতির নথি ও গঠনতন্ত্র', labelEn: 'Documents & By-Laws', icon: FolderLock },
   ];
 
   let currentNavItems = samityAdminNav;

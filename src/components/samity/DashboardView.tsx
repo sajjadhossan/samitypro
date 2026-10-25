@@ -22,7 +22,7 @@ export function DashboardView({
   onOpenCollectInstallment,
   onNavigateTab
 }: DashboardViewProps) {
-  const { activeTenant, language, members, loans, savingsTransactions, vouchers, events } = useSamityStore();
+  const { activeTenant, language, members, loans, savingsTransactions, vouchers, events, bankDeposits, subscriptions } = useSamityStore();
   const t = translations[language];
 
   const [todayStr, setTodayStr] = useState('2026-10-25');
@@ -48,7 +48,7 @@ export function DashboardView({
   const todaysTotalCollection = Math.max(todaysSavings, 14500);
 
   const cashInHand = 184500;
-  const bankBalance = 952000;
+  const bankBalance = bankDeposits.filter(b => b.status === 'APPROVED').reduce((sum, b) => sum + b.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -211,7 +211,10 @@ export function DashboardView({
         </div>
 
         {/* Bank Balance */}
-        <div className="glass-panel rounded-2xl p-4 border border-slate-800 flex items-center justify-between">
+        <div 
+          onClick={() => onNavigateTab('bank-deposits')}
+          className="glass-panel glass-card-hover rounded-2xl p-4 border border-slate-800 flex items-center justify-between cursor-pointer"
+        >
           <div className="flex items-center gap-3">
             <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400">
               <Building className="w-5 h-5" />
@@ -224,7 +227,7 @@ export function DashboardView({
             </div>
           </div>
           <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">
-            সোনালী ব্যাংক
+            ব্যাংক হিসাবসমূহ →
           </span>
         </div>
 

@@ -281,7 +281,12 @@ export interface RealtimeEvent {
     | 'NEW_VOUCHER_CREATED'
     | 'LOAN_APPROVED'
     | 'VOTE_CAST'
-    | 'SYSTEM_ANNOUNCEMENT';
+    | 'SYSTEM_ANNOUNCEMENT'
+    | 'BANK_DEPOSIT_ADDED'
+    | 'SUBSCRIPTION_PAID'
+    | 'RECEIPT_GENERATED'
+    | 'NOTICE_PUBLISHED'
+    | 'REMINDER_SENT';
   titleBn: string;
   titleEn: string;
   messageBn: string;
@@ -300,4 +305,141 @@ export interface PassbookRecord {
   withdrawAmount: number;
   balance: number;
   collectedBy: string;
+}
+
+export type FeePaymentStatus = 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE';
+
+export interface MonthlySubscription {
+  id: string;
+  tenantId: string;
+  memberId: string;
+  memberCode: string;
+  memberNameBn: string;
+  memberNameEn: string;
+  phone: string;
+  monthYear: string; // e.g. "2026-10"
+  monthNameBn: string; // e.g. "অক্টোবর ২০২৬"
+  feeAmount: number;
+  lateFee: number;
+  totalAmount: number;
+  paidAmount: number;
+  dueAmount: number;
+  status: FeePaymentStatus;
+  paymentDate?: string;
+  receiptNo?: string;
+  paymentMethod?: 'CASH' | 'BANK' | 'BKASH' | 'NAGAD';
+  collectedBy?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BankDeposit {
+  id: string;
+  tenantId: string;
+  bankName: string;
+  accountNumber: string;
+  branchName: string;
+  depositDate: string;
+  amount: number;
+  slipNumber: string;
+  depositSlipUrl?: string;
+  depositedBy: string;
+  approvedBy?: string;
+  status: 'APPROVED' | 'PENDING' | 'REJECTED';
+  voucherNo: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export type ReceiptType = 'SUBSCRIPTION' | 'SAVINGS' | 'LOAN_EMI' | 'ADMISSION' | 'SHARE';
+
+export interface PaidReceipt {
+  id: string;
+  tenantId: string;
+  receiptNo: string;
+  receiptType: ReceiptType;
+  titleBn: string;
+  titleEn: string;
+  memberId: string;
+  memberCode: string;
+  memberNameBn: string;
+  memberNameEn: string;
+  phone: string;
+  amount: number;
+  amountInWordsBn: string;
+  amountInWordsEn: string;
+  date: string;
+  paymentMethod: 'CASH' | 'BANK' | 'BKASH' | 'NAGAD';
+  transactionRef?: string;
+  notes?: string;
+  collectedBy: string;
+  collectorNameBn: string;
+  qrCodeData: string;
+  isVerified: boolean;
+  createdAt: string;
+}
+
+export interface Notice {
+  id: string;
+  tenantId: string;
+  titleBn: string;
+  titleEn: string;
+  contentBn: string;
+  contentEn: string;
+  category: 'GENERAL' | 'AGM' | 'MEETING' | 'FEE_REMINDER' | 'EMERGENCY';
+  priority: 'HIGH' | 'NORMAL' | 'URGENT';
+  publishedDate: string;
+  publishedBy: string;
+  publisherNameBn: string;
+  isPinned: boolean;
+  viewCount: number;
+}
+
+export interface SamityDocument {
+  id: string;
+  tenantId: string;
+  titleBn: string;
+  titleEn: string;
+  category: 'REGISTRATION' | 'BYLAWS' | 'AUDIT_REPORT' | 'DEED' | 'GOVT_APPROVAL' | 'OTHER';
+  fileNumber?: string;
+  fileUrl: string;
+  fileSize: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  descriptionBn?: string;
+}
+
+export interface LetterheadConfig {
+  tenantId: string;
+  samityNameBn: string;
+  samityNameEn: string;
+  govtRegNo: string;
+  establishedYear: number;
+  sloganBn: string;
+  sloganEn: string;
+  addressBn: string;
+  addressEn: string;
+  phone: string;
+  email: string;
+  website?: string;
+  logoUrl?: string;
+  sealTextBn: string;
+  presidentNameBn: string;
+  secretaryNameBn: string;
+  treasurerNameBn: string;
+}
+
+export interface DueReminder {
+  id: string;
+  tenantId: string;
+  memberId: string;
+  memberCode: string;
+  memberNameBn: string;
+  phone: string;
+  dueAmount: number;
+  dueMonthBn: string;
+  sentDate: string;
+  channel: 'SMS' | 'PUSH' | 'MANUAL';
+  status: 'DELIVERED' | 'PENDING' | 'FAILED';
 }

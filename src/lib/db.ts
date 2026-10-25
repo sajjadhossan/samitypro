@@ -1,6 +1,7 @@
 import { 
   Tenant, User, Member, SavingsAccount, SavingsTransaction, 
-  Loan, LoanRepayment, Voucher, Meeting, Election, RealtimeEvent 
+  Loan, LoanRepayment, Voucher, Meeting, Election, RealtimeEvent,
+  MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder
 } from '@/types';
 
 // Pre-seeded multi-tenant data
@@ -675,3 +676,334 @@ export const INITIAL_EVENTS: RealtimeEvent[] = [
     timestamp: '2026-10-25 12:00:00'
   }
 ];
+
+export const INITIAL_SUBSCRIPTIONS: MonthlySubscription[] = [
+  {
+    id: 'sub-001',
+    tenantId: 'samity-ekota',
+    memberId: 'mem-001',
+    memberCode: 'MEM-001',
+    memberNameBn: 'মো: কবির আহমেদ',
+    memberNameEn: 'Md. Kabir Ahmed',
+    phone: '+8801712345678',
+    monthYear: '2026-10',
+    monthNameBn: 'অক্টোবর ২০২৬',
+    feeAmount: 1500,
+    lateFee: 0,
+    totalAmount: 1500,
+    paidAmount: 1500,
+    dueAmount: 0,
+    status: 'PAID',
+    paymentDate: '2026-10-05',
+    receiptNo: 'RCT-SUB-98211',
+    paymentMethod: 'BKASH',
+    collectedBy: 'user-rafiq',
+    notes: 'বিকাশ মার্চেন্ট গেটওয়ে দিয়ে পরিশোধিত',
+    createdAt: '2026-10-01',
+    updatedAt: '2026-10-05'
+  },
+  {
+    id: 'sub-002',
+    tenantId: 'samity-ekota',
+    memberId: 'mem-002',
+    memberCode: 'MEM-002',
+    memberNameBn: 'মোসাঃ রোকেয়া বেগম',
+    memberNameEn: 'Most. Rokeya Begum',
+    phone: '+8801812345679',
+    monthYear: '2026-10',
+    monthNameBn: 'অক্টোবর ২০২৬',
+    feeAmount: 1500,
+    lateFee: 0,
+    totalAmount: 1500,
+    paidAmount: 1500,
+    dueAmount: 0,
+    status: 'PAID',
+    paymentDate: '2026-10-08',
+    receiptNo: 'RCT-SUB-98212',
+    paymentMethod: 'CASH',
+    collectedBy: 'user-tariq',
+    notes: 'অফিস ক্যাশে সরাসরি পরিশোধ',
+    createdAt: '2026-10-01',
+    updatedAt: '2026-10-08'
+  },
+  {
+    id: 'sub-003',
+    tenantId: 'samity-ekota',
+    memberId: 'mem-003',
+    memberCode: 'MEM-003',
+    memberNameBn: 'নাজমুল হুদা',
+    memberNameEn: 'Nazmul Huda',
+    phone: '+8801912345680',
+    monthYear: '2026-10',
+    monthNameBn: 'অক্টোবর ২০২৬',
+    feeAmount: 1500,
+    lateFee: 50,
+    totalAmount: 1550,
+    paidAmount: 0,
+    dueAmount: 1550,
+    status: 'OVERDUE',
+    notes: '১০ তারিখ অতিক্রম করায় বিলম্ব ফি ধার্য',
+    createdAt: '2026-10-01',
+    updatedAt: '2026-10-15'
+  },
+  {
+    id: 'sub-004',
+    tenantId: 'samity-ekota',
+    memberId: 'mem-004',
+    memberCode: 'MEM-004',
+    memberNameBn: 'ফরিদা ইয়াসমিন',
+    memberNameEn: 'Farida Yasmin',
+    phone: '+8801612345681',
+    monthYear: '2026-10',
+    monthNameBn: 'অক্টোবর ২০২৬',
+    feeAmount: 1500,
+    lateFee: 0,
+    totalAmount: 1500,
+    paidAmount: 0,
+    dueAmount: 1500,
+    status: 'UNPAID',
+    notes: 'নিয়মিত মাসিক চাঁদা বকেয়া',
+    createdAt: '2026-10-01',
+    updatedAt: '2026-10-01'
+  },
+  {
+    id: 'sub-005',
+    tenantId: 'samity-ekota',
+    memberId: 'mem-005',
+    memberCode: 'MEM-005',
+    memberNameBn: 'কামরুল হাসান',
+    memberNameEn: 'Kamrul Hasan',
+    phone: '+8801512345682',
+    monthYear: '2026-10',
+    monthNameBn: 'অক্টোবর ২০২৬',
+    feeAmount: 1500,
+    lateFee: 0,
+    totalAmount: 1500,
+    paidAmount: 1000,
+    dueAmount: 500,
+    status: 'PARTIAL',
+    paymentDate: '2026-10-12',
+    receiptNo: 'RCT-SUB-98213',
+    paymentMethod: 'CASH',
+    collectedBy: 'user-tariq',
+    notes: 'আংশিক জমা ১,০০০ টাকা, অবশিষ্ট বকেয়া ৫০০ টাকা',
+    createdAt: '2026-10-01',
+    updatedAt: '2026-10-12'
+  }
+];
+
+export const INITIAL_BANK_DEPOSITS: BankDeposit[] = [
+  {
+    id: 'bkdep-001',
+    tenantId: 'samity-ekota',
+    bankName: 'সোনালী ব্যাংক পিএলসি',
+    accountNumber: '20501180200341',
+    branchName: 'বনশ্রী কর্পোরেট শাখা, ঢাকা',
+    depositDate: '2026-10-20',
+    amount: 150000,
+    slipNumber: 'SLIP-SB-984021',
+    depositSlipUrl: '/slips/sonali_deposit.pdf',
+    depositedBy: 'মো: রফিকুল ইসলাম (ট্রেজারার)',
+    approvedBy: 'ইঞ্জিঃ সাজ্জাদ হোসাইন (সভাপতি)',
+    status: 'APPROVED',
+    voucherNo: 'VR-BK-001',
+    notes: 'সদস্যদের সঞ্চয় ও চাঁদা কালেকশন ব্যাংক হিসেবে জমা',
+    createdAt: '2026-10-20'
+  },
+  {
+    id: 'bkdep-002',
+    tenantId: 'samity-ekota',
+    bankName: 'ইসলামী ব্যাংক বাংলাদেশ পিএলসি',
+    accountNumber: '20502390100482',
+    branchName: 'রামপুরা শাখা, ঢাকা',
+    depositDate: '2026-10-15',
+    amount: 220000,
+    slipNumber: 'SLIP-IB-772910',
+    depositSlipUrl: '/slips/ibbl_deposit.pdf',
+    depositedBy: 'মো: রফিকুল ইসলাম (ট্রেজারার)',
+    approvedBy: 'ইঞ্জিঃ সাজ্জাদ হোসাইন (সভাপতি)',
+    status: 'APPROVED',
+    voucherNo: 'VR-BK-002',
+    notes: 'মুদারাবা স্থায়ী আমানত ও সাধারণ তহবিল জমা',
+    createdAt: '2026-10-15'
+  },
+  {
+    id: 'bkdep-003',
+    tenantId: 'samity-ekota',
+    bankName: 'ডাচ-বাংলা ব্যাংক পিএলসি',
+    accountNumber: '1151200084321',
+    branchName: 'খিলগাঁও শাখা, ঢাকা',
+    depositDate: '2026-10-24',
+    amount: 85000,
+    slipNumber: 'SLIP-DBBL-449102',
+    depositedBy: 'মো: রফিকুল ইসলাম (ট্রেজারার)',
+    status: 'PENDING',
+    voucherNo: 'VR-BK-003',
+    notes: 'অনলাইন কালেক্টেড ফান্ড ডিপোজিট (অনুমোদনের অপেক্ষায়)',
+    createdAt: '2026-10-24'
+  }
+];
+
+export const INITIAL_PAID_RECEIPTS: PaidReceipt[] = [
+  {
+    id: 'rct-001',
+    tenantId: 'samity-ekota',
+    receiptNo: 'RCT-SUB-98211',
+    receiptType: 'SUBSCRIPTION',
+    titleBn: 'মাসিক চাঁদা পরিশোধ রসিদ',
+    titleEn: 'Monthly Subscription Money Receipt',
+    memberId: 'mem-001',
+    memberCode: 'MEM-001',
+    memberNameBn: 'মো: কবির আহমেদ',
+    memberNameEn: 'Md. Kabir Ahmed',
+    phone: '+8801712345678',
+    amount: 1500,
+    amountInWordsBn: 'এক হাজার পাঁচশত টাকা মাত্র',
+    amountInWordsEn: 'One Thousand Five Hundred Taka Only',
+    date: '2026-10-05',
+    paymentMethod: 'BKASH',
+    transactionRef: 'TRX-BK7784910',
+    notes: 'অক্টোবর ২০২৬ মাসের নিয়মিত চাঁদা',
+    collectedBy: 'user-rafiq',
+    collectorNameBn: 'মো: রফিকুল ইসলাম',
+    qrCodeData: 'https://samitypro.org/verify/RCT-SUB-98211',
+    isVerified: true,
+    createdAt: '2026-10-05 10:30:00'
+  },
+  {
+    id: 'rct-002',
+    tenantId: 'samity-ekota',
+    receiptNo: 'RCT-SUB-98212',
+    receiptType: 'SUBSCRIPTION',
+    titleBn: 'মাসিক চাঁদা পরিশোধ রসিদ',
+    titleEn: 'Monthly Subscription Money Receipt',
+    memberId: 'mem-002',
+    memberCode: 'MEM-002',
+    memberNameBn: 'মোসাঃ রোকেয়া বেগম',
+    memberNameEn: 'Most. Rokeya Begum',
+    phone: '+8801812345679',
+    amount: 1500,
+    amountInWordsBn: 'এক হাজার পাঁচশত টাকা মাত্র',
+    amountInWordsEn: 'One Thousand Five Hundred Taka Only',
+    date: '2026-10-08',
+    paymentMethod: 'CASH',
+    notes: 'অক্টোবর ২০২৬ মাসের নিয়মিত চাঁদা',
+    collectedBy: 'user-tariq',
+    collectorNameBn: 'তারেক মাহমুদ',
+    qrCodeData: 'https://samitypro.org/verify/RCT-SUB-98212',
+    isVerified: true,
+    createdAt: '2026-10-08 11:45:00'
+  }
+];
+
+export const INITIAL_NOTICES: Notice[] = [
+  {
+    id: 'not-001',
+    tenantId: 'samity-ekota',
+    titleBn: '৮ম বার্ষিক সাধারণ সভা (AGM) ও অডিট রিপোর্ট উপস্থাপন সংক্রান্ত বিজ্ঞপ্তি',
+    titleEn: '8th Annual General Meeting (AGM) Notice',
+    contentBn: 'এতদ্বারা একতা বহুমুখী সমবায় সমিতি লিমিটেড-এর সকল সম্মানিত সাধারণ ও আজীবন সদস্যদের অবগতির জন্য জানানো যাচ্ছে যে, আগামী ১৫ নভেম্বর ২০২৬ রোজ শুক্রবার সকাল ১০:০০ ঘটিকায় সমিতির কার্যালয় প্রাঙ্গণে ৮ম বার্ষিক সাধারণ সভা অনুষ্ঠিত হইবে। উক্ত সভায় বিগত বছরের নিরীক্ষিত হিসাব বিবরণী ও বার্ষিক বাজেট অনুমোদনের সিদ্ধান্ত গৃহীত হইবে। সকল সদস্যকে যথাসময়ে উপস্থিত থাকার জন্য অনুরোধ করা হলো।',
+    contentEn: 'Notice is hereby given to all valued members that the 8th Annual General Meeting (AGM) of Ekota Multipurpose Co-operative Society Ltd. will be held on Friday, November 15, 2026 at 10:00 AM at the Society Registered Office.',
+    category: 'AGM',
+    priority: 'HIGH',
+    publishedDate: '2026-10-20',
+    publishedBy: 'user-superadmin',
+    publisherNameBn: 'ইঞ্জিঃ সাজ্জাদ হোসাইন (সভাপতি)',
+    isPinned: true,
+    viewCount: 142
+  },
+  {
+    id: 'not-002',
+    tenantId: 'samity-ekota',
+    titleBn: 'অক্টোবর ২০২৬ মাসের মাসিক সঞ্চয় ও চাঁদা জমাদান সংক্রান্ত জরুরি তাগাদা',
+    titleEn: 'Monthly Subscription & Savings Payment Reminder for October 2026',
+    contentBn: 'সমিতির সকল সম্মানিত সদস্যদের জানানো যাচ্ছে যে, চলতি অক্টোবর ২০২৬ মাসের নিয়মিত চাঁদা ও ডিপিএস কিস্তি আগামী ৩১ অক্টোবরের মধ্যে অফিস ক্যাশ অথবা বিকাশ/নগদ অ্যাপের মাধ্যমে পরিশোধ করার জন্য বিশেষভাবে অনুরোধ করা যাচ্ছে।',
+    contentEn: 'All members are cordially requested to clear their monthly dues and DPS installments for October 2026 on or before October 31 via cash or mobile banking.',
+    category: 'FEE_REMINDER',
+    priority: 'NORMAL',
+    publishedDate: '2026-10-22',
+    publishedBy: 'user-rafiq',
+    publisherNameBn: 'মো: রফিকুল ইসলাম (ট্রেজারার)',
+    isPinned: false,
+    viewCount: 89
+  }
+];
+
+export const INITIAL_DOCUMENTS: SamityDocument[] = [
+  {
+    id: 'doc-001',
+    tenantId: 'samity-ekota',
+    titleBn: 'সমবায় অধিদপ্তর কর্তৃক প্রদত্ত সরকারি নিবন্ধন সনদপত্র',
+    titleEn: 'Government Co-operative Registration Certificate',
+    category: 'REGISTRATION',
+    fileNumber: 'REG-DHAKA-2018-9842',
+    fileUrl: '/docs/registration_certificate.pdf',
+    fileSize: '2.4 MB',
+    uploadedBy: 'user-superadmin',
+    uploadedAt: '2024-01-05',
+    descriptionBn: 'জেলা সমবায় কার্যালয় ঢাকা কর্তৃক ইস্যুকৃত মূল নিবন্ধন সনদপত্র'
+  },
+  {
+    id: 'doc-002',
+    tenantId: 'samity-ekota',
+    titleBn: 'সমিতির অনুমোদিত উপ-আইন ও গঠনতন্ত্র (By-Laws)',
+    titleEn: 'Approved Society Constitution & By-Laws',
+    category: 'BYLAWS',
+    fileNumber: 'BYLAW-EKOTA-VER-2.1',
+    fileUrl: '/docs/society_bylaws.pdf',
+    fileSize: '4.8 MB',
+    uploadedBy: 'user-superadmin',
+    uploadedAt: '2024-01-10',
+    descriptionBn: 'সাধারণ সদস্যদের অধিকার, ঋণ নীতিমালা ও পরিচালনা পরিষদ নির্বাচন সংক্রান্ত বিধিমালা'
+  },
+  {
+    id: 'doc-003',
+    tenantId: 'samity-ekota',
+    titleBn: '২০২৪-২০২৫ অর্থবছরের সরকারি নিরীক্ষক কর্তৃক নিরীক্ষিত অডিট রিপোর্ট',
+    titleEn: 'Audited Financial Statement & Audit Report 2024-2025',
+    category: 'AUDIT_REPORT',
+    fileNumber: 'AUDIT-GOB-2025-09',
+    fileUrl: '/docs/audit_report_2025.pdf',
+    fileSize: '3.1 MB',
+    uploadedBy: 'user-rafiq',
+    uploadedAt: '2025-08-14',
+    descriptionBn: 'সিএ ফার্ম ও সমবায় কর্মকর্তা কর্তৃক স্বাক্ষরিত বার্ষিক ব্যালান্স শীট ও আয়-ব্যয় হিসাব'
+  }
+];
+
+export const INITIAL_LETTERHEAD_CONFIG: LetterheadConfig = {
+  tenantId: 'samity-ekota',
+  samityNameBn: 'একতা বহুমুখী সমবায় সমিতি লিমিটেড',
+  samityNameEn: 'Ekota Multipurpose Co-operative Society Ltd.',
+  govtRegNo: 'রেজিস্ট্রেশন নং: REG-DHAKA-2018-9842 (গণপ্রজাতন্ত্রী বাংলাদেশ সরকার অনুমোদিত)',
+  establishedYear: 2018,
+  sloganBn: 'সঞ্চয়ে সমৃদ্ধি, সমবায়ে শক্তি — স্বনির্ভর আগামীর প্রত্যয়',
+  sloganEn: 'Prosperity in Savings, Power in Co-operation',
+  addressBn: 'বাড়ি ১২, রোড ৪, ব্লক সি, বনশ্রী, ঢাকা-১২১৯',
+  addressEn: 'House 12, Road 4, Block C, Banasree, Dhaka-1219',
+  phone: '+8801711223344, +8801822334455',
+  email: 'info@ekotasamity.org',
+  website: 'https://ekotasamity.org',
+  logoUrl: '/logo.png',
+  sealTextBn: 'একতা বহুমুখী সমবায় সমিতি লিঃ * ঢাকা * রেজিস্টার্ড',
+  presidentNameBn: 'ইঞ্জিঃ সাজ্জাদ হোসাইন (সভাপতি)',
+  secretaryNameBn: 'মো: আব্দুল করিম (সাধারণ সম্পাদক)',
+  treasurerNameBn: 'মো: রফিকুল ইসলাম (ট্রেজারার)'
+};
+
+export const INITIAL_REMINDERS: DueReminder[] = [
+  {
+    id: 'rem-001',
+    tenantId: 'samity-ekota',
+    memberId: 'mem-003',
+    memberCode: 'MEM-003',
+    memberNameBn: 'নাজমুল হুদা',
+    phone: '+8801912345680',
+    dueAmount: 1550,
+    dueMonthBn: 'অক্টোবর ২০২৬',
+    sentDate: '2026-10-22',
+    channel: 'SMS',
+    status: 'DELIVERED'
+  }
+];
+

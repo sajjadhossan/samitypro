@@ -3,13 +3,16 @@
 import { useState, useEffect } from 'react';
 import { 
   Tenant, User, Member, SavingsAccount, SavingsTransaction, 
-  Loan, Voucher, Meeting, Election, RealtimeEvent, Language, UserRole 
+  Loan, Voucher, Meeting, Election, RealtimeEvent, Language, UserRole,
+  MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder 
 } from '@/types';
 import { 
   INITIAL_TENANTS, INITIAL_USERS, INITIAL_MEMBERS, 
   INITIAL_SAVINGS_ACCOUNTS, INITIAL_SAVINGS_TRANSACTIONS, 
   INITIAL_LOANS, INITIAL_VOUCHERS, INITIAL_MEETINGS, 
-  INITIAL_ELECTIONS, INITIAL_EVENTS 
+  INITIAL_ELECTIONS, INITIAL_EVENTS,
+  INITIAL_SUBSCRIPTIONS, INITIAL_BANK_DEPOSITS, INITIAL_PAID_RECEIPTS,
+  INITIAL_NOTICES, INITIAL_DOCUMENTS, INITIAL_LETTERHEAD_CONFIG, INITIAL_REMINDERS
 } from './db';
 
 const STORAGE_KEYS = {
@@ -23,6 +26,13 @@ const STORAGE_KEYS = {
   MEETINGS: 'samitypro_meetings',
   ELECTIONS: 'samitypro_elections',
   EVENTS: 'samitypro_events',
+  SUBSCRIPTIONS: 'samitypro_subscriptions',
+  BANK_DEPOSITS: 'samitypro_bank_deposits',
+  RECEIPTS: 'samitypro_receipts',
+  NOTICES: 'samitypro_notices',
+  DOCUMENTS: 'samitypro_documents',
+  LETTERHEAD: 'samitypro_letterhead',
+  REMINDERS: 'samitypro_reminders',
   CURRENT_TENANT_ID: 'samitypro_active_tenant',
   CURRENT_USER_ID: 'samitypro_active_user',
   LANGUAGE: 'samitypro_language'
@@ -56,6 +66,13 @@ class DataStore {
   meetings: Meeting[] = INITIAL_MEETINGS;
   elections: Election[] = INITIAL_ELECTIONS;
   events: RealtimeEvent[] = INITIAL_EVENTS;
+  subscriptions: MonthlySubscription[] = INITIAL_SUBSCRIPTIONS;
+  bankDeposits: BankDeposit[] = INITIAL_BANK_DEPOSITS;
+  receipts: PaidReceipt[] = INITIAL_PAID_RECEIPTS;
+  notices: Notice[] = INITIAL_NOTICES;
+  documents: SamityDocument[] = INITIAL_DOCUMENTS;
+  letterhead: LetterheadConfig = INITIAL_LETTERHEAD_CONFIG;
+  reminders: DueReminder[] = INITIAL_REMINDERS;
 
   currentTenantId: string = 'samity-ekota';
   currentUserId: string = 'user-rafiq';
@@ -93,6 +110,34 @@ class DataStore {
       if (storedEvents) this.events = JSON.parse(storedEvents);
       else localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(this.events));
 
+      const storedSubs = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
+      if (storedSubs) this.subscriptions = JSON.parse(storedSubs);
+      else localStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
+
+      const storedBankDep = localStorage.getItem(STORAGE_KEYS.BANK_DEPOSITS);
+      if (storedBankDep) this.bankDeposits = JSON.parse(storedBankDep);
+      else localStorage.setItem(STORAGE_KEYS.BANK_DEPOSITS, JSON.stringify(this.bankDeposits));
+
+      const storedReceipts = localStorage.getItem(STORAGE_KEYS.RECEIPTS);
+      if (storedReceipts) this.receipts = JSON.parse(storedReceipts);
+      else localStorage.setItem(STORAGE_KEYS.RECEIPTS, JSON.stringify(this.receipts));
+
+      const storedNotices = localStorage.getItem(STORAGE_KEYS.NOTICES);
+      if (storedNotices) this.notices = JSON.parse(storedNotices);
+      else localStorage.setItem(STORAGE_KEYS.NOTICES, JSON.stringify(this.notices));
+
+      const storedDocs = localStorage.getItem(STORAGE_KEYS.DOCUMENTS);
+      if (storedDocs) this.documents = JSON.parse(storedDocs);
+      else localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(this.documents));
+
+      const storedLetterhead = localStorage.getItem(STORAGE_KEYS.LETTERHEAD);
+      if (storedLetterhead) this.letterhead = JSON.parse(storedLetterhead);
+      else localStorage.setItem(STORAGE_KEYS.LETTERHEAD, JSON.stringify(this.letterhead));
+
+      const storedReminders = localStorage.getItem(STORAGE_KEYS.REMINDERS);
+      if (storedReminders) this.reminders = JSON.parse(storedReminders);
+      else localStorage.setItem(STORAGE_KEYS.REMINDERS, JSON.stringify(this.reminders));
+
       const savedTenantId = localStorage.getItem(STORAGE_KEYS.CURRENT_TENANT_ID);
       if (savedTenantId) this.currentTenantId = savedTenantId;
 
@@ -121,6 +166,16 @@ class DataStore {
       if (storedLoans) this.loans = JSON.parse(storedLoans);
       const storedEvents = localStorage.getItem(STORAGE_KEYS.EVENTS);
       if (storedEvents) this.events = JSON.parse(storedEvents);
+      const storedSubs = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
+      if (storedSubs) this.subscriptions = JSON.parse(storedSubs);
+      const storedBankDep = localStorage.getItem(STORAGE_KEYS.BANK_DEPOSITS);
+      if (storedBankDep) this.bankDeposits = JSON.parse(storedBankDep);
+      const storedReceipts = localStorage.getItem(STORAGE_KEYS.RECEIPTS);
+      if (storedReceipts) this.receipts = JSON.parse(storedReceipts);
+      const storedNotices = localStorage.getItem(STORAGE_KEYS.NOTICES);
+      if (storedNotices) this.notices = JSON.parse(storedNotices);
+      const storedDocs = localStorage.getItem(STORAGE_KEYS.DOCUMENTS);
+      if (storedDocs) this.documents = JSON.parse(storedDocs);
       emitChange();
     } catch {}
   }
@@ -135,6 +190,13 @@ class DataStore {
       localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(this.vouchers));
       localStorage.setItem(STORAGE_KEYS.ELECTIONS, JSON.stringify(this.elections));
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(this.events));
+      localStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
+      localStorage.setItem(STORAGE_KEYS.BANK_DEPOSITS, JSON.stringify(this.bankDeposits));
+      localStorage.setItem(STORAGE_KEYS.RECEIPTS, JSON.stringify(this.receipts));
+      localStorage.setItem(STORAGE_KEYS.NOTICES, JSON.stringify(this.notices));
+      localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(this.documents));
+      localStorage.setItem(STORAGE_KEYS.LETTERHEAD, JSON.stringify(this.letterhead));
+      localStorage.setItem(STORAGE_KEYS.REMINDERS, JSON.stringify(this.reminders));
       localStorage.setItem(STORAGE_KEYS.CURRENT_TENANT_ID, this.currentTenantId);
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, this.currentUserId);
       localStorage.setItem(STORAGE_KEYS.LANGUAGE, this.language);
@@ -359,6 +421,257 @@ class DataStore {
     if (this.events.length > 50) this.events.pop();
   }
 
+  recordMonthlySubscription(params: {
+    tenantId: string;
+    memberId: string;
+    monthYear: string;
+    monthNameBn?: string;
+    amount: number;
+    paymentMethod: 'CASH' | 'BANK' | 'BKASH' | 'NAGAD';
+    notes?: string;
+  }): PaidReceipt | null {
+    const member = this.members.find(m => m.id === params.memberId);
+    if (!member) return null;
+
+    const monthNameBn = params.monthNameBn || 'অক্টোবর ২০২৬';
+    let sub = this.subscriptions.find(s => s.memberId === params.memberId && s.monthYear === params.monthYear);
+    const receiptNo = `RCT-SUB-${Date.now().toString().slice(-5)}`;
+    const today = new Date().toISOString().split('T')[0];
+
+    if (sub) {
+      sub.paidAmount += params.amount;
+      sub.dueAmount = Math.max(0, sub.totalAmount - sub.paidAmount);
+      sub.status = sub.dueAmount === 0 ? 'PAID' : 'PARTIAL';
+      sub.paymentDate = today;
+      sub.receiptNo = receiptNo;
+      sub.paymentMethod = params.paymentMethod;
+      sub.collectedBy = this.currentUserId;
+      sub.updatedAt = today;
+    } else {
+      const newSub: MonthlySubscription = {
+        id: `sub-${Date.now()}`,
+        tenantId: params.tenantId,
+        memberId: params.memberId,
+        memberCode: member.memberCode,
+        memberNameBn: member.nameBn,
+        memberNameEn: member.nameEn,
+        phone: member.phone,
+        monthYear: params.monthYear,
+        monthNameBn,
+        feeAmount: params.amount,
+        lateFee: 0,
+        totalAmount: params.amount,
+        paidAmount: params.amount,
+        dueAmount: 0,
+        status: 'PAID',
+        paymentDate: today,
+        receiptNo,
+        paymentMethod: params.paymentMethod,
+        collectedBy: this.currentUserId,
+        notes: params.notes,
+        createdAt: today,
+        updatedAt: today
+      };
+      this.subscriptions.unshift(newSub);
+      sub = newSub;
+    }
+
+    const receipt: PaidReceipt = {
+      id: `rct-${Date.now()}`,
+      tenantId: params.tenantId,
+      receiptNo,
+      receiptType: 'SUBSCRIPTION',
+      titleBn: 'মাসিক চাঁদা পরিশোধ রসিদ',
+      titleEn: 'Monthly Subscription Money Receipt',
+      memberId: member.id,
+      memberCode: member.memberCode,
+      memberNameBn: member.nameBn,
+      memberNameEn: member.nameEn,
+      phone: member.phone,
+      amount: params.amount,
+      amountInWordsBn: `${params.amount.toLocaleString()} টাকা মাত্র`,
+      amountInWordsEn: `${params.amount} Taka Only`,
+      date: today,
+      paymentMethod: params.paymentMethod,
+      notes: params.notes || `${sub.monthNameBn} এর চাঁদা পরিশোধ`,
+      collectedBy: this.currentUserId,
+      collectorNameBn: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'কোষাধ্যক্ষ / অ্যাডমিন',
+      qrCodeData: `https://samitypro.org/verify/${receiptNo}`,
+      isVerified: true,
+      createdAt: new Date().toISOString()
+    };
+    this.receipts.unshift(receipt);
+
+    // Credit voucher
+    const voucher: Voucher = {
+      id: `vch-${Date.now()}`,
+      tenantId: params.tenantId,
+      voucherNo: `VR-${Date.now().toString().slice(-4)}`,
+      type: 'CREDIT',
+      category: 'মাসিক চাঁদা আদায়',
+      amount: params.amount,
+      descriptionBn: `${member.nameBn} (${member.memberCode}) এর মাসিক চাঁদা আদায়। রসিদ: ${receiptNo}`,
+      descriptionEn: `Monthly subscription from ${member.nameEn}. Receipt: ${receiptNo}`,
+      paidToOrReceivedFrom: member.nameBn,
+      paymentMethod: params.paymentMethod,
+      date: today,
+      createdBy: this.currentUserId
+    };
+    this.vouchers.unshift(voucher);
+
+    this.addEvent({
+      tenantId: params.tenantId,
+      type: 'SUBSCRIPTION_PAID',
+      titleBn: 'মাসিক চাঁদা আদায় সম্পন্ন',
+      titleEn: 'Monthly Subscription Paid',
+      messageBn: `${member.nameBn} (${member.memberCode}) মাসিক চাঁদা ৳ ${params.amount.toLocaleString()} পরিশোধ করেছেন। রসিদ নং: ${receiptNo}`,
+      messageEn: `${member.nameEn} paid subscription ৳ ${params.amount.toLocaleString()}. Receipt: ${receiptNo}`,
+      amount: params.amount,
+      memberId: member.id,
+      memberName: member.nameBn
+    });
+
+    this.save();
+    return receipt;
+  }
+
+  recordBankDeposit(params: {
+    tenantId: string;
+    bankName: string;
+    accountNumber: string;
+    branchName: string;
+    amount: number;
+    slipNumber: string;
+    depositSlipUrl?: string;
+    notes?: string;
+  }): BankDeposit {
+    const today = new Date().toISOString().split('T')[0];
+    const voucherNo = `VR-BK-${Date.now().toString().slice(-4)}`;
+    const deposit: BankDeposit = {
+      id: `bkdep-${Date.now()}`,
+      tenantId: params.tenantId,
+      bankName: params.bankName,
+      accountNumber: params.accountNumber,
+      branchName: params.branchName,
+      depositDate: today,
+      amount: params.amount,
+      slipNumber: params.slipNumber,
+      depositSlipUrl: params.depositSlipUrl,
+      depositedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'কোষাধ্যক্ষ',
+      approvedBy: 'ইঞ্জিঃ সাজ্জাদ হোসাইন (সভাপতি)',
+      status: 'APPROVED',
+      voucherNo,
+      notes: params.notes,
+      createdAt: today
+    };
+    this.bankDeposits.unshift(deposit);
+
+    const voucher: Voucher = {
+      id: `vch-${Date.now()}`,
+      tenantId: params.tenantId,
+      voucherNo,
+      type: 'CREDIT',
+      category: 'ব্যাংক জমা / আমানত',
+      amount: params.amount,
+      descriptionBn: `${params.bankName} (${params.accountNumber}) এ জমা। স্লিপ নং: ${params.slipNumber}`,
+      descriptionEn: `Bank deposit into ${params.bankName} (${params.accountNumber}). Slip: ${params.slipNumber}`,
+      paidToOrReceivedFrom: params.bankName,
+      paymentMethod: 'BANK',
+      date: today,
+      createdBy: this.currentUserId
+    };
+    this.vouchers.unshift(voucher);
+
+    this.addEvent({
+      tenantId: params.tenantId,
+      type: 'BANK_DEPOSIT_ADDED',
+      titleBn: 'নতুন ব্যাংক ডিপোজিট সফল',
+      titleEn: 'New Bank Deposit Recorded',
+      messageBn: `${params.bankName}-এ ৳ ${params.amount.toLocaleString()} জমা হয়েছে। স্লিপ নং: ${params.slipNumber}`,
+      messageEn: `৳ ${params.amount.toLocaleString()} deposited to ${params.bankName}. Slip: ${params.slipNumber}`,
+      amount: params.amount
+    });
+
+    this.save();
+    return deposit;
+  }
+
+  publishNotice(noticeData: Omit<Notice, 'id' | 'viewCount'>): Notice {
+    const newNotice: Notice = {
+      ...noticeData,
+      id: `not-${Date.now()}`,
+      viewCount: 1
+    };
+    this.notices.unshift(newNotice);
+    this.addEvent({
+      tenantId: noticeData.tenantId,
+      type: 'NOTICE_PUBLISHED',
+      titleBn: 'নতুন সাধারণ বিজ্ঞপ্তি প্রকাশিত',
+      titleEn: 'New Notice Published',
+      messageBn: noticeData.titleBn,
+      messageEn: noticeData.titleEn
+    });
+    this.save();
+    return newNotice;
+  }
+
+  uploadDocument(docData: Omit<SamityDocument, 'id'>): SamityDocument {
+    const doc: SamityDocument = {
+      ...docData,
+      id: `doc-${Date.now()}`
+    };
+    this.documents.unshift(doc);
+    this.save();
+    return doc;
+  }
+
+  sendDueReminder(params: {
+    tenantId: string;
+    memberId: string;
+    channel: 'SMS' | 'PUSH' | 'MANUAL';
+  }): DueReminder | null {
+    const member = this.members.find(m => m.id === params.memberId);
+    if (!member) return null;
+
+    const sub = this.subscriptions.find(s => s.memberId === params.memberId && s.status !== 'PAID');
+    const dueAmount = sub?.dueAmount || 1500;
+    const dueMonthBn = sub?.monthNameBn || 'অক্টোবর ২০২৬';
+
+    const reminder: DueReminder = {
+      id: `rem-${Date.now()}`,
+      tenantId: params.tenantId,
+      memberId: member.id,
+      memberCode: member.memberCode,
+      memberNameBn: member.nameBn,
+      phone: member.phone,
+      dueAmount,
+      dueMonthBn,
+      sentDate: new Date().toISOString().split('T')[0],
+      channel: params.channel,
+      status: 'DELIVERED'
+    };
+    this.reminders.unshift(reminder);
+
+    this.addEvent({
+      tenantId: params.tenantId,
+      type: 'REMINDER_SENT',
+      titleBn: 'বকেয়া তাগাদা SMS পাঠানো হয়েছে',
+      titleEn: 'Due Reminder SMS Sent',
+      messageBn: `${member.nameBn} (${member.phone})-কে ৳ ${dueAmount.toLocaleString()} বকেয়া পরিশোধের তাগাদা পাঠানো হয়েছে।`,
+      messageEn: `Reminder sent to ${member.nameEn} for ৳ ${dueAmount.toLocaleString()}`,
+      memberId: member.id,
+      memberName: member.nameBn
+    });
+
+    this.save();
+    return reminder;
+  }
+
+  updateLetterhead(config: LetterheadConfig) {
+    this.letterhead = config;
+    this.save();
+  }
+
   createTenant(tenant: Tenant) {
     this.tenants.push(tenant);
     this.save();
@@ -395,6 +708,13 @@ export function useSamityStore() {
     meetings: store.meetings.filter(m => m.tenantId === activeTenant?.id),
     elections: store.elections.filter(e => e.tenantId === activeTenant?.id),
     events: store.events.filter(e => e.tenantId === activeTenant?.id || !e.tenantId),
+    subscriptions: store.subscriptions.filter(s => s.tenantId === activeTenant?.id),
+    bankDeposits: store.bankDeposits.filter(b => b.tenantId === activeTenant?.id),
+    receipts: store.receipts.filter(r => r.tenantId === activeTenant?.id),
+    notices: store.notices.filter(n => n.tenantId === activeTenant?.id),
+    documents: store.documents.filter(d => d.tenantId === activeTenant?.id),
+    letterhead: store.letterhead,
+    reminders: store.reminders.filter(r => r.tenantId === activeTenant?.id),
     language: store.language,
     setLanguage: (lang: Language) => store.setLanguage(lang),
     setCurrentTenant: (id: string) => store.setCurrentTenant(id),

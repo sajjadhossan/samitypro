@@ -18,6 +18,10 @@ import { AddMemberModal } from '@/components/samity/AddMemberModal';
 import { RecordDepositModal } from '@/components/samity/RecordDepositModal';
 import { CollectInstallmentModal } from '@/components/samity/CollectInstallmentModal';
 import { ApkDownloadModal } from '@/components/common/ApkDownloadModal';
+import { SubscriptionsDueView } from '@/components/samity/SubscriptionsDueView';
+import { BankDepositsView } from '@/components/samity/BankDepositsView';
+import { NoticesView } from '@/components/samity/NoticesView';
+import { DocumentsView } from '@/components/samity/DocumentsView';
 
 import { useSamityStore } from '@/lib/store';
 import { 
@@ -80,7 +84,13 @@ export default function Home() {
             <SuperAdminView />
           ) : currentUser.role === 'MEMBER' ? (
             /* MEMBER PORTAL */
-            activeTab === 'member-elections' ? (
+            activeTab === 'subscriptions-due' ? (
+              <SubscriptionsDueView />
+            ) : activeTab === 'notices' || activeTab === 'member-notices' ? (
+              <NoticesView />
+            ) : activeTab === 'documents' ? (
+              <DocumentsView />
+            ) : activeTab === 'member-elections' ? (
               <ElectionsView />
             ) : activeTab === 'member-loans' ? (
               <LoansView onOpenCollectInstallment={handleOpenCollectLoan} />
@@ -97,6 +107,14 @@ export default function Home() {
                   onOpenCollectInstallment={() => handleOpenCollectLoan()}
                   onNavigateTab={tab => setActiveTab(tab)}
                 />
+              )}
+
+              {activeTab === 'subscriptions-due' && (
+                <SubscriptionsDueView />
+              )}
+
+              {activeTab === 'bank-deposits' && (
+                <BankDepositsView />
               )}
 
               {activeTab === 'members' && (
@@ -120,6 +138,14 @@ export default function Home() {
 
               {activeTab === 'accounts' && (
                 <AccountsView />
+              )}
+
+              {activeTab === 'notices' && (
+                <NoticesView />
+              )}
+
+              {activeTab === 'documents' && (
+                <DocumentsView />
               )}
 
               {activeTab === 'meetings' && (
