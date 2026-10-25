@@ -1,0 +1,259 @@
+'use client';
+
+import React, { useState } from 'react';
+import { 
+  Building2, Users, Bell, Globe, Smartphone, ShieldCheck, 
+  ChevronDown, Check, Zap, RefreshCw, LogOut, ArrowRightLeft, Radio
+} from 'lucide-react';
+import { useSamityStore } from '@/lib/store';
+import { translations, toBengaliNumber } from '@/lib/i18n';
+import { UserRole } from '@/types';
+
+interface HeaderProps {
+  onOpenApkModal: () => void;
+}
+
+export function Header({ onOpenApkModal }: HeaderProps) {
+  const { 
+    tenants, activeTenant, currentUser, language, setLanguage, 
+    setCurrentTenant, setCurrentUser, events 
+  } = useSamityStore();
+
+  const [showTenantDropdown, setShowTenantDropdown] = useState(false);
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+
+  const t = translations[language];
+
+  const roleOptions: { role: UserRole; labelBn: string; labelEn: string; icon: any }[] = [
+    { role: 'SUPER_ADMIN', labelBn: 'সুপার অ্যাডমিন (মালিক)', labelEn: 'Super Admin (Owner)', icon: ShieldCheck },
+    { role: 'SAMITY_ADMIN', labelBn: 'সমিতি অ্যাডমিন (সভাপতি)', labelEn: 'Samity Admin (President)', icon: Building2 },
+    { role: 'MANAGER', labelBn: 'ম্যানেজার / কোষাধ্যক্ষ', labelEn: 'Manager / Treasurer', icon: Users },
+    { role: 'FIELD_COLLECTOR', labelBn: 'মাঠ কর্মী (কালেক্টর)', labelEn: 'Field Collector', icon: RefreshCw },
+    { role: 'MEMBER', labelBn: 'সাধারণ সদস্য (কবির আহমেদ)', labelEn: 'Member (Kabir Ahmed)', icon: Users },
+  ];
+
+  const handleRoleSelect = (role: UserRole) => {
+    if (role === 'SUPER_ADMIN') {
+      setCurrentUser('user-superadmin');
+    } else if (role === 'SAMITY_ADMIN') {
+      setCurrentUser('user-rafiq');
+    } else if (role === 'MANAGER') {
+      setCurrentUser('user-tareq');
+    } else if (role === 'FIELD_COLLECTOR') {
+      setCurrentUser('user-sumon');
+    } else if (role === 'MEMBER') {
+      setCurrentUser('user-kabir');
+    }
+    setShowRoleDropdown(false);
+  };
+
+  return (
+    <header className="sticky top-0 z-40 w-full glass-panel border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        
+        {/* Brand Logo & Name */}
+        <div className="flex items-center space-x-3">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 p-0.5 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+            <div className="h-full w-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+              <Building2 className="h-5 w-5 text-emerald-400" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-200 bg-clip-text text-transparent">
+                {language === 'bn' ? 'সমিতিপ্রো' : 'SamityPro'}
+              </span>
+              <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                SaaS v2.5
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 hidden sm:block truncate max-w-xs">
+              {language === 'bn' ? activeTenant?.nameBn : activeTenant?.nameEn}
+            </p>
+          </div>
+        </div>
+
+        {/* Center: Live Real-time Indicator & Tenant Switcher */}
+        <div className="hidden md:flex items-center gap-3">
+          {/* Live Sync Status */}
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-xs font-medium">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <Radio className="w-3.5 h-3.5 animate-pulse" />
+            <span>{language === 'bn' ? 'লাইভ সিঙ্ক সংযুক্ত' : 'Live Sync Online'}</span>
+          </div>
+
+          {/* Tenant Switcher (Multi-Tenant Selector) */}
+          {currentUser.role !== 'MEMBER' && (
+            <div className="relative">
+              <button
+                onClick={() => setShowTenantDropdown(!showTenantDropdown)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-xs text-slate-200 border border-slate-700/80 transition"
+              >
+                <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="font-medium max-w-[150px] truncate">
+                  {language === 'bn' ? activeTenant?.nameBn : activeTenant?.nameEn}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+
+              {showTenantDropdown && (
+                <div className="absolute left-0 mt-2 w-72 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
+                  <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-3 py-1">
+                    {t.selectSamity}
+                  </div>
+                  {tenants.map(tenant => (
+                    <button
+                      key={tenant.id}
+                      onClick={() => {
+                        setCurrentTenant(tenant.id);
+                        setShowTenantDropdown(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between transition ${
+                        tenant.id === activeTenant?.id
+                          ? 'bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/30'
+                          : 'text-slate-300 hover:bg-slate-800'
+                      }`}
+                    >
+                      <div>
+                        <div className="truncate">{language === 'bn' ? tenant.nameBn : tenant.nameEn}</div>
+                        <div className="text-[10px] text-slate-500">{tenant.type} • {tenant.plan}</div>
+                      </div>
+                      {tenant.id === activeTenant?.id && <Check className="w-4 h-4 text-emerald-400" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Right Actions: Role Switcher, Language Toggle, APK Download & Notifications */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          
+          {/* Mobile APK Action Button */}
+          <button
+            onClick={onOpenApkModal}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600/20 to-teal-600/20 hover:from-emerald-600/30 hover:to-teal-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-medium transition cursor-pointer"
+            title="Download Android APK"
+          >
+            <Smartphone className="w-4 h-4 text-emerald-400" />
+            <span className="hidden sm:inline">
+              {language === 'bn' ? 'অ্যান্ড্রয়েড APK' : 'Android APK'}
+            </span>
+          </button>
+
+          {/* Role Switcher (For Demo & Architecture Walkthrough) */}
+          <div className="relative">
+            <button
+              onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-medium transition"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden md:inline font-medium">
+                {currentUser.role === 'SUPER_ADMIN' ? 'Super Admin' : 
+                 currentUser.role === 'SAMITY_ADMIN' ? 'President' :
+                 currentUser.role === 'MANAGER' ? 'Manager' :
+                 currentUser.role === 'FIELD_COLLECTOR' ? 'Collector' : 'Member'}
+              </span>
+              <ChevronDown className="w-3 h-3 text-indigo-400" />
+            </button>
+
+            {showRoleDropdown && (
+              <div className="absolute right-0 mt-2 w-64 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl p-2 z-50">
+                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-3 py-1">
+                  {t.switchRole}
+                </div>
+                {roleOptions.map(opt => (
+                  <button
+                    key={opt.role}
+                    onClick={() => handleRoleSelect(opt.role)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between transition ${
+                      currentUser.role === opt.role 
+                        ? 'bg-indigo-500/20 text-indigo-300 font-semibold' 
+                        : 'text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    <span>{language === 'bn' ? opt.labelBn : opt.labelEn}</span>
+                    {currentUser.role === opt.role && <Check className="w-3.5 h-3.5 text-indigo-400" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Language Toggle (Bangla / English) */}
+          <button
+            onClick={() => setLanguage(language === 'bn' ? 'en' : 'bn')}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 transition"
+            title="Toggle Language"
+          >
+            <Globe className="w-3.5 h-3.5 text-amber-400" />
+            <span className="font-semibold">{language === 'bn' ? 'English' : 'বাংলা'}</span>
+          </button>
+
+          {/* Notification Bell */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+              className="relative p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+            >
+              <Bell className="w-4 h-4" />
+              {events.length > 0 && (
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-slate-950"></span>
+              )}
+            </button>
+
+            {showNotifDropdown && (
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl p-3 z-50">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <h4 className="text-xs font-semibold text-slate-200">
+                    {language === 'bn' ? 'রিয়েল-টাইম লাইভ নোটিফিকেশন' : 'Live Real-time Notifications'}
+                  </h4>
+                  <span className="text-[10px] text-emerald-400 font-mono">
+                    {language === 'bn' ? toBengaliNumber(events.length) : events.length} updates
+                  </span>
+                </div>
+                <div className="divide-y divide-slate-800/60 max-h-72 overflow-y-auto mt-2">
+                  {events.slice(0, 6).map(evt => (
+                    <div key={evt.id} className="py-2 text-xs">
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 mb-0.5">
+                        <span className="font-semibold text-emerald-400">
+                          {language === 'bn' ? evt.titleBn : evt.titleEn}
+                        </span>
+                        <span className="text-[10px] text-slate-500">{evt.timestamp.split(' ')[1] || ''}</span>
+                      </div>
+                      <p className="text-slate-300 text-[11px] leading-relaxed">
+                        {language === 'bn' ? evt.messageBn : evt.messageEn}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Current User Avatar */}
+          <div className="flex items-center gap-2 pl-1 border-l border-slate-800">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-emerald-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-inner">
+              {currentUser.nameEn.charAt(0)}
+            </div>
+            <div className="hidden lg:block text-left">
+              <div className="text-xs font-medium text-slate-200 leading-tight">
+                {language === 'bn' ? currentUser.nameBn : currentUser.nameEn}
+              </div>
+              <div className="text-[10px] text-emerald-400 uppercase font-mono">
+                {currentUser.role}
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </header>
+  );
+}
