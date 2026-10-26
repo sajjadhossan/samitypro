@@ -81,6 +81,48 @@ function emitChange() {
   }
 }
 
+type StoreCollectionKey =
+  | 'tenants' | 'members' | 'savingsAccounts' | 'savingsTransactions'
+  | 'savingsPolicies' | 'loans' | 'loanPolicies' | 'vouchers'
+  | 'chartOfAccounts' | 'meetings' | 'elections' | 'events'
+  | 'subscriptions' | 'bankDeposits' | 'receipts' | 'notices'
+  | 'documents' | 'letterhead' | 'reminders' | 'signatureSeal'
+  | 'voucherPrefix' | 'auditLogs' | 'approvalItems' | 'generatedDocs'
+  | 'gatewayConfig' | 'schedulerConfig' | 'offlineQueue'
+  | 'subscriptionPolicies' | 'lateFeeWaivers';
+
+const STORE_STORAGE_MAPPINGS: [string, StoreCollectionKey][] = [
+  [STORAGE_KEYS.TENANTS, 'tenants'],
+  [STORAGE_KEYS.MEMBERS, 'members'],
+  [STORAGE_KEYS.SAVINGS_ACCOUNTS, 'savingsAccounts'],
+  [STORAGE_KEYS.SAVINGS_TX, 'savingsTransactions'],
+  [STORAGE_KEYS.SAVINGS_POLICIES, 'savingsPolicies'],
+  [STORAGE_KEYS.LOANS, 'loans'],
+  [STORAGE_KEYS.LOAN_POLICIES, 'loanPolicies'],
+  [STORAGE_KEYS.VOUCHERS, 'vouchers'],
+  [STORAGE_KEYS.CHART_OF_ACCOUNTS, 'chartOfAccounts'],
+  [STORAGE_KEYS.MEETINGS, 'meetings'],
+  [STORAGE_KEYS.ELECTIONS, 'elections'],
+  [STORAGE_KEYS.EVENTS, 'events'],
+  [STORAGE_KEYS.SUBSCRIPTIONS, 'subscriptions'],
+  [STORAGE_KEYS.BANK_DEPOSITS, 'bankDeposits'],
+  [STORAGE_KEYS.RECEIPTS, 'receipts'],
+  [STORAGE_KEYS.NOTICES, 'notices'],
+  [STORAGE_KEYS.DOCUMENTS, 'documents'],
+  [STORAGE_KEYS.LETTERHEAD, 'letterhead'],
+  [STORAGE_KEYS.REMINDERS, 'reminders'],
+  [STORAGE_KEYS.SIGNATURE_SEAL, 'signatureSeal'],
+  [STORAGE_KEYS.VOUCHER_PREFIX, 'voucherPrefix'],
+  [STORAGE_KEYS.AUDIT_LOGS, 'auditLogs'],
+  [STORAGE_KEYS.APPROVALS, 'approvalItems'],
+  [STORAGE_KEYS.GENERATED_DOCS, 'generatedDocs'],
+  [STORAGE_KEYS.GATEWAY_CONFIG, 'gatewayConfig'],
+  [STORAGE_KEYS.SCHEDULER_CONFIG, 'schedulerConfig'],
+  [STORAGE_KEYS.OFFLINE_QUEUE, 'offlineQueue'],
+  [STORAGE_KEYS.SUBSCRIPTION_POLICIES, 'subscriptionPolicies'],
+  [STORAGE_KEYS.LATE_FEE_WAIVERS, 'lateFeeWaivers'],
+];
+
 // In-memory fallback / cache
 class DataStore {
   tenants: Tenant[] = INITIAL_TENANTS;
@@ -119,124 +161,32 @@ class DataStore {
   language: Language = 'bn';
   initialized = false;
 
+  private syncCollectionWithStorage(key: string, prop: StoreCollectionKey) {
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        (this as Record<string, any>)[prop] = JSON.parse(stored);
+      } else {
+        localStorage.setItem(key, JSON.stringify((this as Record<string, any>)[prop]));
+      }
+    } catch {}
+  }
+
+  private loadCollectionFromStorage(key: string, prop: StoreCollectionKey) {
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        (this as Record<string, any>)[prop] = JSON.parse(stored);
+      }
+    } catch {}
+  }
+
   init() {
     if (typeof window === 'undefined' || this.initialized) return;
     try {
-      const storedTenants = localStorage.getItem(STORAGE_KEYS.TENANTS);
-      if (storedTenants) this.tenants = JSON.parse(storedTenants);
-      else localStorage.setItem(STORAGE_KEYS.TENANTS, JSON.stringify(this.tenants));
-
-      const storedMembers = localStorage.getItem(STORAGE_KEYS.MEMBERS);
-      if (storedMembers) this.members = JSON.parse(storedMembers);
-      else localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(this.members));
-
-      const storedSavingsAccs = localStorage.getItem(STORAGE_KEYS.SAVINGS_ACCOUNTS);
-      if (storedSavingsAccs) this.savingsAccounts = JSON.parse(storedSavingsAccs);
-      else localStorage.setItem(STORAGE_KEYS.SAVINGS_ACCOUNTS, JSON.stringify(this.savingsAccounts));
-
-      const storedSavingsPolicies = localStorage.getItem(STORAGE_KEYS.SAVINGS_POLICIES);
-      if (storedSavingsPolicies) this.savingsPolicies = JSON.parse(storedSavingsPolicies);
-      else localStorage.setItem(STORAGE_KEYS.SAVINGS_POLICIES, JSON.stringify(this.savingsPolicies));
-
-      const storedLoanPolicies = localStorage.getItem(STORAGE_KEYS.LOAN_POLICIES);
-      if (storedLoanPolicies) this.loanPolicies = JSON.parse(storedLoanPolicies);
-      else localStorage.setItem(STORAGE_KEYS.LOAN_POLICIES, JSON.stringify(this.loanPolicies));
-
-      const storedSavingsTx = localStorage.getItem(STORAGE_KEYS.SAVINGS_TX);
-      if (storedSavingsTx) this.savingsTransactions = JSON.parse(storedSavingsTx);
-      else localStorage.setItem(STORAGE_KEYS.SAVINGS_TX, JSON.stringify(this.savingsTransactions));
-
-      const storedLoans = localStorage.getItem(STORAGE_KEYS.LOANS);
-      if (storedLoans) this.loans = JSON.parse(storedLoans);
-      else localStorage.setItem(STORAGE_KEYS.LOANS, JSON.stringify(this.loans));
-
-      const storedVouchers = localStorage.getItem(STORAGE_KEYS.VOUCHERS);
-      if (storedVouchers) this.vouchers = JSON.parse(storedVouchers);
-      else localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(this.vouchers));
-
-      const storedCoa = localStorage.getItem(STORAGE_KEYS.CHART_OF_ACCOUNTS);
-      if (storedCoa) this.chartOfAccounts = JSON.parse(storedCoa);
-      else localStorage.setItem(STORAGE_KEYS.CHART_OF_ACCOUNTS, JSON.stringify(this.chartOfAccounts));
-
-      const storedMeetings = localStorage.getItem(STORAGE_KEYS.MEETINGS);
-      if (storedMeetings) this.meetings = JSON.parse(storedMeetings);
-      else localStorage.setItem(STORAGE_KEYS.MEETINGS, JSON.stringify(this.meetings));
-
-      const storedElections = localStorage.getItem(STORAGE_KEYS.ELECTIONS);
-      if (storedElections) this.elections = JSON.parse(storedElections);
-      else localStorage.setItem(STORAGE_KEYS.ELECTIONS, JSON.stringify(this.elections));
-
-      const storedEvents = localStorage.getItem(STORAGE_KEYS.EVENTS);
-      if (storedEvents) this.events = JSON.parse(storedEvents);
-      else localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(this.events));
-
-      const storedSubs = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
-      if (storedSubs) this.subscriptions = JSON.parse(storedSubs);
-      else localStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
-
-      const storedBankDep = localStorage.getItem(STORAGE_KEYS.BANK_DEPOSITS);
-      if (storedBankDep) this.bankDeposits = JSON.parse(storedBankDep);
-      else localStorage.setItem(STORAGE_KEYS.BANK_DEPOSITS, JSON.stringify(this.bankDeposits));
-
-      const storedReceipts = localStorage.getItem(STORAGE_KEYS.RECEIPTS);
-      if (storedReceipts) this.receipts = JSON.parse(storedReceipts);
-      else localStorage.setItem(STORAGE_KEYS.RECEIPTS, JSON.stringify(this.receipts));
-
-      const storedNotices = localStorage.getItem(STORAGE_KEYS.NOTICES);
-      if (storedNotices) this.notices = JSON.parse(storedNotices);
-      else localStorage.setItem(STORAGE_KEYS.NOTICES, JSON.stringify(this.notices));
-
-      const storedDocs = localStorage.getItem(STORAGE_KEYS.DOCUMENTS);
-      if (storedDocs) this.documents = JSON.parse(storedDocs);
-      else localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(this.documents));
-
-      const storedLetterhead = localStorage.getItem(STORAGE_KEYS.LETTERHEAD);
-      if (storedLetterhead) this.letterhead = JSON.parse(storedLetterhead);
-      else localStorage.setItem(STORAGE_KEYS.LETTERHEAD, JSON.stringify(this.letterhead));
-
-      const storedReminders = localStorage.getItem(STORAGE_KEYS.REMINDERS);
-      if (storedReminders) this.reminders = JSON.parse(storedReminders);
-      else localStorage.setItem(STORAGE_KEYS.REMINDERS, JSON.stringify(this.reminders));
-
-      const storedSigSeal = localStorage.getItem(STORAGE_KEYS.SIGNATURE_SEAL);
-      if (storedSigSeal) this.signatureSeal = JSON.parse(storedSigSeal);
-      else localStorage.setItem(STORAGE_KEYS.SIGNATURE_SEAL, JSON.stringify(this.signatureSeal));
-
-      const storedPrefix = localStorage.getItem(STORAGE_KEYS.VOUCHER_PREFIX);
-      if (storedPrefix) this.voucherPrefix = JSON.parse(storedPrefix);
-      else localStorage.setItem(STORAGE_KEYS.VOUCHER_PREFIX, JSON.stringify(this.voucherPrefix));
-
-      const storedAudit = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
-      if (storedAudit) this.auditLogs = JSON.parse(storedAudit);
-      else localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(this.auditLogs));
-
-      const storedApprovals = localStorage.getItem(STORAGE_KEYS.APPROVALS);
-      if (storedApprovals) this.approvalItems = JSON.parse(storedApprovals);
-      else localStorage.setItem(STORAGE_KEYS.APPROVALS, JSON.stringify(this.approvalItems));
-
-      const storedGenDocs = localStorage.getItem(STORAGE_KEYS.GENERATED_DOCS);
-      if (storedGenDocs) this.generatedDocs = JSON.parse(storedGenDocs);
-      else localStorage.setItem(STORAGE_KEYS.GENERATED_DOCS, JSON.stringify(this.generatedDocs));
-
-      const storedGateways = localStorage.getItem(STORAGE_KEYS.GATEWAY_CONFIG);
-      if (storedGateways) this.gatewayConfig = JSON.parse(storedGateways);
-      else localStorage.setItem(STORAGE_KEYS.GATEWAY_CONFIG, JSON.stringify(this.gatewayConfig));
-
-      const storedSched = localStorage.getItem(STORAGE_KEYS.SCHEDULER_CONFIG);
-      if (storedSched) this.schedulerConfig = JSON.parse(storedSched);
-      else localStorage.setItem(STORAGE_KEYS.SCHEDULER_CONFIG, JSON.stringify(this.schedulerConfig));
-
-      const storedQueue = localStorage.getItem(STORAGE_KEYS.OFFLINE_QUEUE);
-      if (storedQueue) this.offlineQueue = JSON.parse(storedQueue);
-      else localStorage.setItem(STORAGE_KEYS.OFFLINE_QUEUE, JSON.stringify(this.offlineQueue));
-
-      const storedSubPol = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTION_POLICIES);
-      if (storedSubPol) this.subscriptionPolicies = JSON.parse(storedSubPol);
-      else localStorage.setItem(STORAGE_KEYS.SUBSCRIPTION_POLICIES, JSON.stringify(this.subscriptionPolicies));
-
-      const storedWaivers = localStorage.getItem(STORAGE_KEYS.LATE_FEE_WAIVERS);
-      if (storedWaivers) this.lateFeeWaivers = JSON.parse(storedWaivers);
-      else localStorage.setItem(STORAGE_KEYS.LATE_FEE_WAIVERS, JSON.stringify(this.lateFeeWaivers));
+      for (const [key, prop] of STORE_STORAGE_MAPPINGS) {
+        this.syncCollectionWithStorage(key, prop);
+      }
 
       const savedTenantId = localStorage.getItem(STORAGE_KEYS.CURRENT_TENANT_ID);
       if (savedTenantId) this.currentTenantId = savedTenantId;
@@ -260,52 +210,9 @@ class DataStore {
 
   refreshFromStorage() {
     try {
-      const storedMembers = localStorage.getItem(STORAGE_KEYS.MEMBERS);
-      if (storedMembers) this.members = JSON.parse(storedMembers);
-      const storedLoans = localStorage.getItem(STORAGE_KEYS.LOANS);
-      if (storedLoans) this.loans = JSON.parse(storedLoans);
-      const storedEvents = localStorage.getItem(STORAGE_KEYS.EVENTS);
-      if (storedEvents) this.events = JSON.parse(storedEvents);
-      const storedSubs = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
-      if (storedSubs) this.subscriptions = JSON.parse(storedSubs);
-      const storedBankDep = localStorage.getItem(STORAGE_KEYS.BANK_DEPOSITS);
-      if (storedBankDep) this.bankDeposits = JSON.parse(storedBankDep);
-      const storedReceipts = localStorage.getItem(STORAGE_KEYS.RECEIPTS);
-      if (storedReceipts) this.receipts = JSON.parse(storedReceipts);
-      const storedNotices = localStorage.getItem(STORAGE_KEYS.NOTICES);
-      if (storedNotices) this.notices = JSON.parse(storedNotices);
-      const storedDocs = localStorage.getItem(STORAGE_KEYS.DOCUMENTS);
-      if (storedDocs) this.documents = JSON.parse(storedDocs);
-      const storedAudit = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
-      if (storedAudit) this.auditLogs = JSON.parse(storedAudit);
-      const storedApprovals = localStorage.getItem(STORAGE_KEYS.APPROVALS);
-      if (storedApprovals) this.approvalItems = JSON.parse(storedApprovals);
-      const storedGenDocs = localStorage.getItem(STORAGE_KEYS.GENERATED_DOCS);
-      if (storedGenDocs) this.generatedDocs = JSON.parse(storedGenDocs);
-      const storedGateways = localStorage.getItem(STORAGE_KEYS.GATEWAY_CONFIG);
-      if (storedGateways) this.gatewayConfig = JSON.parse(storedGateways);
-      const storedSched = localStorage.getItem(STORAGE_KEYS.SCHEDULER_CONFIG);
-      if (storedSched) this.schedulerConfig = JSON.parse(storedSched);
-      const storedQueue = localStorage.getItem(STORAGE_KEYS.OFFLINE_QUEUE);
-      if (storedQueue) this.offlineQueue = JSON.parse(storedQueue);
-      const storedSubPol = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTION_POLICIES);
-      if (storedSubPol) this.subscriptionPolicies = JSON.parse(storedSubPol);
-      const storedWaivers = localStorage.getItem(STORAGE_KEYS.LATE_FEE_WAIVERS);
-      if (storedWaivers) this.lateFeeWaivers = JSON.parse(storedWaivers);
-      const storedSavAccs = localStorage.getItem(STORAGE_KEYS.SAVINGS_ACCOUNTS);
-      if (storedSavAccs) this.savingsAccounts = JSON.parse(storedSavAccs);
-      const storedSavPol = localStorage.getItem(STORAGE_KEYS.SAVINGS_POLICIES);
-      if (storedSavPol) this.savingsPolicies = JSON.parse(storedSavPol);
-      const storedLoanPol = localStorage.getItem(STORAGE_KEYS.LOAN_POLICIES);
-      if (storedLoanPol) this.loanPolicies = JSON.parse(storedLoanPol);
-      const storedCoa = localStorage.getItem(STORAGE_KEYS.CHART_OF_ACCOUNTS);
-      if (storedCoa) this.chartOfAccounts = JSON.parse(storedCoa);
-      const storedVouchers = localStorage.getItem(STORAGE_KEYS.VOUCHERS);
-      if (storedVouchers) this.vouchers = JSON.parse(storedVouchers);
-      const storedMeetings = localStorage.getItem(STORAGE_KEYS.MEETINGS);
-      if (storedMeetings) this.meetings = JSON.parse(storedMeetings);
-      const storedElections = localStorage.getItem(STORAGE_KEYS.ELECTIONS);
-      if (storedElections) this.elections = JSON.parse(storedElections);
+      for (const [key, prop] of STORE_STORAGE_MAPPINGS) {
+        this.loadCollectionFromStorage(key, prop);
+      }
       emitChange();
     } catch {}
   }
@@ -313,41 +220,16 @@ class DataStore {
   save() {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem(STORAGE_KEYS.TENANTS, JSON.stringify(this.tenants));
-      localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(this.members));
-      localStorage.setItem(STORAGE_KEYS.SAVINGS_ACCOUNTS, JSON.stringify(this.savingsAccounts));
-      localStorage.setItem(STORAGE_KEYS.SAVINGS_TX, JSON.stringify(this.savingsTransactions));
-      localStorage.setItem(STORAGE_KEYS.SAVINGS_POLICIES, JSON.stringify(this.savingsPolicies));
-      localStorage.setItem(STORAGE_KEYS.LOANS, JSON.stringify(this.loans));
-      localStorage.setItem(STORAGE_KEYS.LOAN_POLICIES, JSON.stringify(this.loanPolicies));
-      localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(this.vouchers));
-      localStorage.setItem(STORAGE_KEYS.CHART_OF_ACCOUNTS, JSON.stringify(this.chartOfAccounts));
-      localStorage.setItem(STORAGE_KEYS.MEETINGS, JSON.stringify(this.meetings));
-      localStorage.setItem(STORAGE_KEYS.ELECTIONS, JSON.stringify(this.elections));
-      localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(this.events));
-      localStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
-      localStorage.setItem(STORAGE_KEYS.BANK_DEPOSITS, JSON.stringify(this.bankDeposits));
-      localStorage.setItem(STORAGE_KEYS.RECEIPTS, JSON.stringify(this.receipts));
-      localStorage.setItem(STORAGE_KEYS.NOTICES, JSON.stringify(this.notices));
-      localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(this.documents));
-      localStorage.setItem(STORAGE_KEYS.LETTERHEAD, JSON.stringify(this.letterhead));
-      localStorage.setItem(STORAGE_KEYS.REMINDERS, JSON.stringify(this.reminders));
-      localStorage.setItem(STORAGE_KEYS.SIGNATURE_SEAL, JSON.stringify(this.signatureSeal));
-      localStorage.setItem(STORAGE_KEYS.VOUCHER_PREFIX, JSON.stringify(this.voucherPrefix));
-      localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(this.auditLogs));
-      localStorage.setItem(STORAGE_KEYS.APPROVALS, JSON.stringify(this.approvalItems));
-      localStorage.setItem(STORAGE_KEYS.GENERATED_DOCS, JSON.stringify(this.generatedDocs));
-      localStorage.setItem(STORAGE_KEYS.GATEWAY_CONFIG, JSON.stringify(this.gatewayConfig));
-      localStorage.setItem(STORAGE_KEYS.SCHEDULER_CONFIG, JSON.stringify(this.schedulerConfig));
-      localStorage.setItem(STORAGE_KEYS.OFFLINE_QUEUE, JSON.stringify(this.offlineQueue));
-      localStorage.setItem(STORAGE_KEYS.SUBSCRIPTION_POLICIES, JSON.stringify(this.subscriptionPolicies));
-      localStorage.setItem(STORAGE_KEYS.LATE_FEE_WAIVERS, JSON.stringify(this.lateFeeWaivers));
+      for (const [key, prop] of STORE_STORAGE_MAPPINGS) {
+        localStorage.setItem(key, JSON.stringify((this as Record<string, any>)[prop]));
+      }
       localStorage.setItem(STORAGE_KEYS.CURRENT_TENANT_ID, this.currentTenantId);
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, this.currentUserId);
       localStorage.setItem(STORAGE_KEYS.LANGUAGE, this.language);
     } catch {}
     emitChange();
   }
+
 
   setLanguage(lang: Language) {
     this.language = lang;
@@ -1617,7 +1499,15 @@ class DataStore {
     sub.lateFee -= actualWaiver;
     sub.totalAmount = sub.feeAmount + sub.lateFee;
     sub.dueAmount = Math.max(0, sub.totalAmount - sub.paidAmount);
-    sub.status = sub.dueAmount === 0 ? 'PAID' : (sub.paidAmount > 0 ? 'PARTIAL' : (sub.status === 'OVERDUE' ? 'OVERDUE' : 'UNPAID'));
+    if (sub.dueAmount === 0) {
+      sub.status = 'PAID';
+    } else if (sub.paidAmount > 0) {
+      sub.status = 'PARTIAL';
+    } else if (sub.status === 'OVERDUE') {
+      sub.status = 'OVERDUE';
+    } else {
+      sub.status = 'UNPAID';
+    }
     sub.updatedAt = new Date().toISOString().split('T')[0];
 
     const waiverRecord: LateFeeWaiverRecord = {
@@ -1797,6 +1687,39 @@ class DataStore {
     return true;
   }
 
+  private updateVoucherAccountBalances(
+    tenantId: string,
+    type: 'DEBIT' | 'CREDIT' | 'JOURNAL',
+    accountHeadCode: string,
+    paymentMethod: PaymentMethod,
+    amount: number
+  ) {
+    const targetHead = this.chartOfAccounts.find(c => c.tenantId === tenantId && c.code === accountHeadCode);
+    if (targetHead) {
+      if (type === 'DEBIT') {
+        const isDebitNormal = targetHead.group === 'EXPENSE' || targetHead.group === 'ASSET';
+        targetHead.currentBalance += isDebitNormal ? amount : -amount;
+      } else if (type === 'CREDIT') {
+        const isCreditNormal = targetHead.group === 'INCOME' || targetHead.group === 'LIABILITY';
+        targetHead.currentBalance += isCreditNormal ? amount : -amount;
+      }
+    }
+
+    if (paymentMethod === 'CASH') {
+      const cashHead = this.chartOfAccounts.find(c => c.tenantId === tenantId && c.code === '1010');
+      if (cashHead) {
+        if (type === 'CREDIT') cashHead.currentBalance += amount;
+        else if (type === 'DEBIT') cashHead.currentBalance = Math.max(0, cashHead.currentBalance - amount);
+      }
+    } else if (paymentMethod === 'BANK') {
+      const bankHead = this.chartOfAccounts.find(c => c.tenantId === tenantId && (c.code === '1020' || c.code === '1021'));
+      if (bankHead) {
+        if (type === 'CREDIT') bankHead.currentBalance += amount;
+        else if (type === 'DEBIT') bankHead.currentBalance = Math.max(0, bankHead.currentBalance - amount);
+      }
+    }
+  }
+
   createVoucher(params: {
     tenantId: string;
     type: 'DEBIT' | 'CREDIT' | 'JOURNAL';
@@ -1816,7 +1739,15 @@ class DataStore {
     approvedBy?: string;
   }): Voucher {
     const today = params.date || new Date().toISOString().split('T')[0];
-    const prefix = params.type === 'DEBIT' ? 'VR-EXP-' : params.type === 'CREDIT' ? 'VR-REC-' : 'VR-JNL-';
+    let prefix = 'VR-JNL-';
+    let typeNameBn = 'স্থানান্তর';
+    if (params.type === 'DEBIT') {
+      prefix = 'VR-EXP-';
+      typeNameBn = 'খরচ';
+    } else if (params.type === 'CREDIT') {
+      prefix = 'VR-REC-';
+      typeNameBn = 'জমা';
+    }
     const voucherNo = `${prefix}${Date.now().toString().slice(-5)}`;
 
     const voucher: Voucher = {
@@ -1844,45 +1775,20 @@ class DataStore {
 
     this.vouchers.unshift(voucher);
 
-    // Update balances of relevant account heads
-    const targetHead = this.chartOfAccounts.find(c => c.tenantId === params.tenantId && c.code === params.accountHeadCode);
-    if (targetHead) {
-      if (params.type === 'DEBIT') {
-        if (targetHead.group === 'EXPENSE' || targetHead.group === 'ASSET') {
-          targetHead.currentBalance += params.amount;
-        } else {
-          targetHead.currentBalance -= params.amount;
-        }
-      } else if (params.type === 'CREDIT') {
-        if (targetHead.group === 'INCOME' || targetHead.group === 'LIABILITY') {
-          targetHead.currentBalance += params.amount;
-        } else {
-          targetHead.currentBalance -= params.amount;
-        }
-      }
-    }
-
-    // Cash / Bank balance sync
-    if (params.paymentMethod === 'CASH') {
-      const cashHead = this.chartOfAccounts.find(c => c.tenantId === params.tenantId && c.code === '1010');
-      if (cashHead) {
-        if (params.type === 'CREDIT') cashHead.currentBalance += params.amount;
-        else if (params.type === 'DEBIT') cashHead.currentBalance = Math.max(0, cashHead.currentBalance - params.amount);
-      }
-    } else if (params.paymentMethod === 'BANK') {
-      const bankHead = this.chartOfAccounts.find(c => c.tenantId === params.tenantId && (c.code === '1020' || c.code === '1021'));
-      if (bankHead) {
-        if (params.type === 'CREDIT') bankHead.currentBalance += params.amount;
-        else if (params.type === 'DEBIT') bankHead.currentBalance = Math.max(0, bankHead.currentBalance - params.amount);
-      }
-    }
+    this.updateVoucherAccountBalances(
+      params.tenantId,
+      params.type,
+      params.accountHeadCode,
+      params.paymentMethod,
+      params.amount
+    );
 
     this.addEvent({
       tenantId: params.tenantId,
       type: 'NEW_VOUCHER_CREATED',
       titleBn: 'নতুন হিসাব ভাউচার সংরক্ষিত',
       titleEn: 'New Voucher Recorded',
-      messageBn: `${params.type === 'DEBIT' ? 'খরচ' : params.type === 'CREDIT' ? 'জমা' : 'স্থানান্তর'} ভাউচার নং ${voucherNo}: ৳${params.amount.toLocaleString()} (${params.category})`,
+      messageBn: `${typeNameBn} ভাউচার নং ${voucherNo}: ৳${params.amount.toLocaleString()} (${params.category})`,
       messageEn: `Voucher ${voucherNo}: ৳${params.amount.toLocaleString()}`,
       amount: params.amount
     });
@@ -2374,7 +2280,7 @@ class DataStore {
       performedBy: entry.performedBy || 'বর্তমান ব্যবহারকারী',
       performedByRole: entry.performedByRole || 'ADMIN',
       timestamp: new Date().toLocaleString('en-GB', { timeZone: 'Asia/Dhaka' }),
-      ipAddress: entry.ipAddress || '192.168.1.3'
+      ipAddress: entry.ipAddress || '127.0.0.1'
     };
     this.auditLogs.unshift(newLog);
     this.save();
@@ -2399,12 +2305,24 @@ class DataStore {
       }
     }
 
+    let entity: import('@/types').AuditEntity = 'EXPENSE';
+    if (item.type === 'BANK_DEPOSIT') {
+      entity = 'DEPOSIT';
+    } else if (item.type === 'LOAN_APPLICATION') {
+      entity = 'LOAN';
+    }
+
+    const actionText = status === 'APPROVED'
+      ? 'অনুমোদন করা হয়েছে'
+      : `প্রত্যাখ্যান করা হয়েছে (${rejectionReason || ''})`;
+    const descriptionBn = `${item.titleBn} - ${actionText}`;
+
     this.addAuditLog({
       tenantId: item.tenantId,
       action: status === 'APPROVED' ? 'APPROVE' : 'REJECT',
-      entity: item.type === 'BANK_DEPOSIT' ? 'DEPOSIT' : item.type === 'LOAN_APPLICATION' ? 'LOAN' : 'EXPENSE',
+      entity,
       entityId: item.referenceId,
-      descriptionBn: `${item.titleBn} - ${status === 'APPROVED' ? 'অনুমোদন করা হয়েছে' : `প্রত্যাখ্যান করা হয়েছে (${rejectionReason || ''})`}`,
+      descriptionBn,
       performedBy: approvedBy,
       performedByRole: 'APPROVER'
     });
@@ -2483,6 +2401,21 @@ class DataStore {
     return JSON.stringify(backupData, null, 2);
   }
 
+  private applyBackupCollections(data: Record<string, unknown>) {
+    const backupKeys: StoreCollectionKey[] = [
+      'members', 'savingsAccounts', 'savingsPolicies', 'savingsTransactions',
+      'loans', 'loanPolicies', 'vouchers', 'chartOfAccounts', 'subscriptions',
+      'bankDeposits', 'receipts', 'notices', 'letterhead', 'signatureSeal',
+      'voucherPrefix', 'approvalItems', 'generatedDocs'
+    ];
+
+    for (const key of backupKeys) {
+      if (data[key] !== undefined) {
+        (this as Record<string, any>)[key] = data[key];
+      }
+    }
+  }
+
   restoreFullBackup(jsonString: string): { success: boolean; message: string } {
     try {
       const data = JSON.parse(jsonString);
@@ -2490,23 +2423,7 @@ class DataStore {
         return { success: false, message: 'অবৈধ ব্যাকআপ ফাইল। প্রয়োজনীয় ডাটা ফিল্ড অনুপস্থিত।' };
       }
 
-      if (data.members) this.members = data.members;
-      if (data.savingsAccounts) this.savingsAccounts = data.savingsAccounts;
-      if (data.savingsPolicies) this.savingsPolicies = data.savingsPolicies;
-      if (data.savingsTransactions) this.savingsTransactions = data.savingsTransactions;
-      if (data.loans) this.loans = data.loans;
-      if (data.loanPolicies) this.loanPolicies = data.loanPolicies;
-      if (data.vouchers) this.vouchers = data.vouchers;
-      if (data.chartOfAccounts) this.chartOfAccounts = data.chartOfAccounts;
-      if (data.subscriptions) this.subscriptions = data.subscriptions;
-      if (data.bankDeposits) this.bankDeposits = data.bankDeposits;
-      if (data.receipts) this.receipts = data.receipts;
-      if (data.notices) this.notices = data.notices;
-      if (data.letterhead) this.letterhead = data.letterhead;
-      if (data.signatureSeal) this.signatureSeal = data.signatureSeal;
-      if (data.voucherPrefix) this.voucherPrefix = data.voucherPrefix;
-      if (data.approvalItems) this.approvalItems = data.approvalItems;
-      if (data.generatedDocs) this.generatedDocs = data.generatedDocs;
+      this.applyBackupCollections(data);
 
       this.addAuditLog({
         tenantId: this.currentTenantId,
@@ -2650,8 +2567,9 @@ class DataStore {
       deliveryNote = `Botpress এআই ওয়েবহুক (${this.gatewayConfig.botpressWebhookUrl}) মারফত মেম্বার কোড ${member.memberCode}`;
     }
 
+    const reminderId = `rem-${Date.now()}-${this.reminders.length + 1}`;
     const reminder: DueReminder = {
-      id: `rem-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      id: reminderId,
       tenantId: this.currentTenantId,
       memberId: member.id,
       memberCode: member.memberCode,
@@ -2801,12 +2719,18 @@ class DataStore {
         ];
 
     // Seed default attendees from members of this tenant
+    const getRoleBn = (category: string) => {
+      if (category === 'ADVISORY') return 'উপদেষ্টা';
+      if (category === 'EXECUTIVE') return 'কার্যনির্বাহী সদস্য';
+      return 'সাধারণ সদস্য';
+    };
+
     const tenantMembers = this.members.filter(m => m.tenantId === meetingData.tenantId && m.status === 'ACTIVE');
     const attendees: MeetingAttendee[] = tenantMembers.slice(0, 20).map(m => ({
       memberId: m.id,
       memberCode: m.memberCode,
       nameBn: m.nameBn,
-      roleBn: m.category === 'ADVISORY' ? 'উপদেষ্টা' : m.category === 'EXECUTIVE' ? 'কার্যনির্বাহী সদস্য' : 'সাধারণ সদস্য',
+      roleBn: getRoleBn(m.category),
       phone: m.phone,
       isPresent: false
     }));
@@ -3515,7 +3439,7 @@ export const store = new DataStore();
 
 // React Hook to subscribe to store changes
 export function useSamityStore() {
-  const [tick, setTick] = useState(0);
+  const [, setTick] = useState(0);
 
   useEffect(() => {
     store.init();
