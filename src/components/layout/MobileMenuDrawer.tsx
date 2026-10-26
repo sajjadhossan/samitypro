@@ -379,6 +379,20 @@ export function MobileMenuDrawer({
                 </button>
 
                 <button
+                  onClick={() => handleNavigate('member-portal')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'member-portal' || activeTab === 'member-passbook'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <BookOpen className="w-4 h-4 text-emerald-400" />
+                    <span>পাসবই ও মেম্বার পোর্টাল (মডিউল ১০)</span>
+                  </div>
+                </button>
+
+                <button
                   onClick={() => handleNavigate('audit-trail')}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
                     activeTab === 'audit-trail'

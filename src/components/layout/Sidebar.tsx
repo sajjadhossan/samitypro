@@ -48,6 +48,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'documents', labelBn: 'নথি ও দলিল ভল্ট', labelEn: 'Documents Vault', icon: FolderLock },
     { id: 'elections', labelBn: 'নির্বাচন ও ভোট (মডিউল ৮)', labelEn: 'Elections & Voting (Mod 8)', icon: Vote },
     { id: 'reports', labelBn: 'রিপোর্ট ও বিবরণী (মডিউল ৯)', labelEn: 'Reports & Audit (Mod 9)', icon: FileBarChart },
+    { id: 'member-portal', labelBn: 'পাসবই ও মেম্বার পোর্টাল (মডিউল ১০)', labelEn: 'Member Portal (Mod 10)', icon: BookOpen },
     { id: 'audit-trail', labelBn: 'অডিট ট্রেইল লগ', labelEn: 'Audit Trail', icon: History },
     { id: 'backup-restore', labelBn: 'ব্যাকআপ ও রিস্টোর', labelEn: 'Backup & Restore', icon: Database },
     { id: 'settings', labelBn: 'সেটিংস ও কনফিগারেশন', labelEn: 'Settings & Setup', icon: Sliders },
@@ -55,7 +56,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
 
   // Member Portal Navigation Items
   const memberNav = [
-    { id: 'member-passbook', labelBn: 'আমার ডিজিটাল পাসবই', labelEn: 'My Passbook', icon: BookOpen },
+    { id: 'member-passbook', labelBn: 'আমার ডিজিটাল পাসবই (মডিউল ১০)', labelEn: 'My Passbook (Mod 10)', icon: BookOpen },
     { id: 'subscriptions-due', labelBn: 'আমার চাঁদা ও রসিদ', labelEn: 'My Fees & Receipts', icon: BadgePercent },
     { id: 'member-loans', labelBn: 'আমার ঋণ ও কিস্তি', labelEn: 'My Loans & EMIs', icon: HandCoins },
     { id: 'member-elections', labelBn: 'ভোট প্রদান ও নির্বাচন', labelEn: 'Cast Vote & Election', icon: Vote },

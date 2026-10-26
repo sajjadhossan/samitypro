@@ -146,6 +146,7 @@ export default function Home() {
         {activeTab === 'meetings' && <MeetingsView />}
         {activeTab === 'elections' && <ElectionsView />}
         {activeTab === 'reports' && <ReportsView />}
+        {activeTab === 'member-portal' && <MemberPortalView />}
         {activeTab === 'audit-trail' && <AuditTrailView />}
         {activeTab === 'backup-restore' && <BackupRestoreView />}
         {activeTab === 'settings' && <SettingsView />}

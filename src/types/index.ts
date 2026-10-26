@@ -923,7 +923,14 @@ export interface AuditLog {
   ipAddress?: string;
 }
 
-export type ApprovalType = 'BANK_DEPOSIT' | 'LOAN_APPLICATION' | 'EXPENSE_VOUCHER';
+export type ApprovalType = 
+  | 'BANK_DEPOSIT' 
+  | 'LOAN_APPLICATION' 
+  | 'EXPENSE_VOUCHER' 
+  | 'SAVINGS_WITHDRAWAL' 
+  | 'DPS_OPENING' 
+  | 'CERTIFICATE_REQUEST' 
+  | 'KYC_UPDATE';
 export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface ApprovalItem {
