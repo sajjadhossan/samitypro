@@ -72,6 +72,10 @@ export default function Home() {
 
   const renderMemberPortal = () => {
     switch (activeTab) {
+      case 'members':
+        return <MembersView onOpenAddMember={() => setIsAddMemberOpen(true)} onOpenRecordDeposit={handleOpenDeposit} />;
+      case 'bank-deposits':
+        return <BankDepositsView />;
       case 'subscriptions-due':
         return <SubscriptionsDueView />;
       case 'notices':
@@ -159,7 +163,7 @@ export default function Home() {
       />
 
       {/* Main Body with Sidebar + Content */}
-      <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto pb-20 md:pb-6 overflow-x-hidden">
+      <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto pb-24 md:pb-6 overflow-x-hidden">
         
         {/* Sidebar Navigation (Desktop only) */}
         <Sidebar 
@@ -173,53 +177,55 @@ export default function Home() {
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar (Tailored for Android APK / Mobile Web with 3-Dot Menu) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-800/90 bg-slate-950/95 backdrop-blur-md px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center justify-around text-[10px]">
+      {/* Mobile Bottom Navigation Bar (Optimized touch targets & safe area padding) */}
+      <nav 
+        aria-label="Mobile Navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-800/90 bg-slate-950/95 backdrop-blur-md px-1 py-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center justify-around text-[10px] pointer-events-auto touch-manipulation select-none"
+      >
         {currentUser.role === 'MEMBER' ? (
           <>
             <button
               onClick={() => setActiveTab('member-passbook')}
-              className={`flex flex-col items-center gap-1 p-1 transition ${
-                activeTab === 'member-passbook' ? 'text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+              className={`flex flex-col items-center justify-center min-w-[56px] min-h-[46px] p-1 rounded-xl transition cursor-pointer active:scale-95 touch-manipulation ${
+                activeTab === 'member-passbook' ? 'text-emerald-400 font-bold bg-emerald-500/10' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <BookOpen className="w-5 h-5" />
+              <BookOpen className="w-5 h-5 mb-0.5" />
               <span>পাসবই</span>
             </button>
             <button
               onClick={() => setActiveTab('subscriptions-due')}
-              className={`flex flex-col items-center gap-1 p-1 transition ${
-                activeTab === 'subscriptions-due' ? 'text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+              className={`flex flex-col items-center justify-center min-w-[56px] min-h-[46px] p-1 rounded-xl transition cursor-pointer active:scale-95 touch-manipulation ${
+                activeTab === 'subscriptions-due' ? 'text-emerald-400 font-bold bg-emerald-500/10' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <BadgePercent className="w-5 h-5" />
+              <BadgePercent className="w-5 h-5 mb-0.5" />
               <span>চাঁদা ও রসিদ</span>
             </button>
             <button
               onClick={() => setActiveTab('member-loans')}
-              className={`flex flex-col items-center gap-1 p-1 transition ${
-                activeTab === 'member-loans' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+              className={`flex flex-col items-center justify-center min-w-[56px] min-h-[46px] p-1 rounded-xl transition cursor-pointer active:scale-95 touch-manipulation ${
+                activeTab === 'member-loans' ? 'text-cyan-400 font-bold bg-cyan-500/10' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <HandCoins className="w-5 h-5" />
+              <HandCoins className="w-5 h-5 mb-0.5" />
               <span>ঋণ কিস্তি</span>
             </button>
             <button
               onClick={() => setActiveTab('member-elections')}
-              className={`flex flex-col items-center gap-1 p-1 transition ${
-                activeTab === 'member-elections' ? 'text-indigo-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+              className={`flex flex-col items-center justify-center min-w-[56px] min-h-[46px] p-1 rounded-xl transition cursor-pointer active:scale-95 touch-manipulation ${
+                activeTab === 'member-elections' ? 'text-indigo-400 font-bold bg-indigo-500/10' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Users className="w-5 h-5" />
+              <Users className="w-5 h-5 mb-0.5" />
               <span>ভোট দিন</span>
             </button>
             <button
               onClick={() => setIsMenuDrawerOpen(true)}
-              className="flex flex-col items-center gap-1 p-1 text-amber-400 font-bold hover:text-amber-300 transition active:scale-95 cursor-pointer"
+              className="flex flex-col items-center justify-center min-w-[56px] min-h-[46px] p-1 rounded-xl text-amber-400 font-bold hover:text-amber-300 transition active:scale-95 cursor-pointer touch-manipulation bg-amber-500/10 border border-amber-500/30"
+              aria-label="সকল মেনু খুলুন"
             >
-              <div className="w-6 h-6 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
-                <MoreVertical className="w-4 h-4 text-amber-400" />
-              </div>
+              <MoreVertical className="w-5 h-5 mb-0.5 text-amber-400" />
               <span>৩-ডট মেনু</span>
             </button>
           </>
@@ -227,52 +233,51 @@ export default function Home() {
           <>
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`flex flex-col items-center gap-1 p-1 transition ${
-                activeTab === 'dashboard' ? 'text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+              className={`flex flex-col items-center justify-center min-w-[56px] min-h-[46px] p-1 rounded-xl transition cursor-pointer active:scale-95 touch-manipulation ${
+                activeTab === 'dashboard' ? 'text-emerald-400 font-bold bg-emerald-500/10' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <LayoutDashboard className="w-5 h-5" />
+              <LayoutDashboard className="w-5 h-5 mb-0.5" />
               <span>ড্যাশবোর্ড</span>
             </button>
             <button
               onClick={() => setActiveTab('members')}
-              className={`flex flex-col items-center gap-1 p-1 transition ${
-                activeTab === 'members' ? 'text-indigo-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+              className={`flex flex-col items-center justify-center min-w-[56px] min-h-[46px] p-1 rounded-xl transition cursor-pointer active:scale-95 touch-manipulation ${
+                activeTab === 'members' ? 'text-indigo-400 font-bold bg-indigo-500/10' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Users className="w-5 h-5" />
+              <Users className="w-5 h-5 mb-0.5" />
               <span>সদস্য</span>
             </button>
             <button
               onClick={() => setActiveTab('subscriptions-due')}
-              className={`flex flex-col items-center gap-1 p-1 transition ${
-                activeTab === 'subscriptions-due' ? 'text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+              className={`flex flex-col items-center justify-center min-w-[56px] min-h-[46px] p-1 rounded-xl transition cursor-pointer active:scale-95 touch-manipulation ${
+                activeTab === 'subscriptions-due' ? 'text-emerald-400 font-bold bg-emerald-500/10' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <BadgePercent className="w-5 h-5" />
-              <span>চাঁদা ও বকেয়া</span>
+              <BadgePercent className="w-5 h-5 mb-0.5" />
+              <span>চাঁদা বকেয়া</span>
             </button>
             <button
               onClick={() => setActiveTab('bank-deposits')}
-              className={`flex flex-col items-center gap-1 p-1 transition ${
-                activeTab === 'bank-deposits' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+              className={`flex flex-col items-center justify-center min-w-[56px] min-h-[46px] p-1 rounded-xl transition cursor-pointer active:scale-95 touch-manipulation ${
+                activeTab === 'bank-deposits' ? 'text-cyan-400 font-bold bg-cyan-500/10' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Building2 className="w-5 h-5" />
+              <Building2 className="w-5 h-5 mb-0.5" />
               <span>ব্যাংক হিসাব</span>
             </button>
             <button
               onClick={() => setIsMenuDrawerOpen(true)}
-              className="flex flex-col items-center gap-1 p-1 text-amber-400 font-bold hover:text-amber-300 transition active:scale-95 cursor-pointer"
+              className="flex flex-col items-center justify-center min-w-[56px] min-h-[46px] p-1 rounded-xl text-amber-400 font-bold hover:text-amber-300 transition active:scale-95 cursor-pointer touch-manipulation bg-amber-500/10 border border-amber-500/30"
+              aria-label="সকল মেনু খুলুন"
             >
-              <div className="w-6 h-6 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
-                <MoreVertical className="w-4 h-4 text-amber-400" />
-              </div>
+              <MoreVertical className="w-5 h-5 mb-0.5 text-amber-400" />
               <span>৩-ডট মেনু</span>
             </button>
           </>
         )}
-      </div>
+      </nav>
 
       {/* Slide-out 3-Dot Drawer Menu (All Boards & Modules) */}
       <MobileMenuDrawer

@@ -130,20 +130,19 @@ export function ApkDownloadModal({ isOpen, onClose }: ApkDownloadModalProps) {
         {/* Footer actions */}
         <div className="flex items-center justify-between pt-4 border-t border-slate-800">
           <span className="text-xs text-slate-500 font-mono">
-            Version 1.0.5 • Production Ready
+            Version 1.0.6 • Production Ready
           </span>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                alert(language === 'bn' 
-                  ? 'বিল্ড ডেমো: আপনার রিপোজিটরি গিটহাবে পুশ করার পর Actions ট্যাব থেকে অথবা লোকাল টার্মিনালে `./gradlew assembleDebug` রান করে সরাসরি তৈরি APK ডাউনলোড করতে পারবেন।'
-                  : 'Build demo: Push to GitHub Actions or run `./gradlew assembleDebug` in the android/ directory to generate your production APK.');
-              }}
+            <a
+              href="https://github.com/sajjadhossan/samitypro/releases"
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium text-xs transition shadow-lg shadow-emerald-500/20"
             >
               <Download className="w-4 h-4" />
-              <span>{language === 'bn' ? 'APK বিল্ড ডাউনলোড গাইড' : 'Download APK Build Package'}</span>
-            </button>
+              <span>{language === 'bn' ? 'গিটহাব রিলিজ থেকে APK ডাউনলোড' : 'Download APK from Releases'}</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </a>
           </div>
         </div>
 

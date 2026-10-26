@@ -150,7 +150,7 @@
   <div class="card">
     <div id="loader-section">
       <div class="spinner"></div>
-      <span class="badge">অফিশিয়াল মোবাইল অ্যাপ v1.0.5</span>
+      <span class="badge">অফিশিয়াল মোবাইল অ্যাপ v1.0.6</span>
       <h1>সমিতিপ্রো (SamityPro)</h1>
       <p id="loading-msg" class="status-text">সার্ভারের সাথে সংযোগ স্থাপন করা হচ্ছে...</p>
     </div>
@@ -245,8 +245,8 @@
       const savedUrl = localStorage.getItem('samitypro_server_url');
       const candidates = [];
       if (savedUrl) candidates.push(savedUrl);
+      candidates.push(CLOUD_URL); // Primary: Live Cloud Vercel Server
       candidates.push(DEFAULT_LOCAL);
-      candidates.push(CLOUD_URL);
       candidates.push(DEFAULT_LOCALHOST);
 
       for (const url of candidates) {

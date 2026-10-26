@@ -16,6 +16,11 @@
     overscroll-behavior-x: none;
     -webkit-overflow-scrolling: touch;
   }
+
+  button, a, input, select, textarea, [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 /* Allow horizontal scroll only inside dedicated scroll containers like tables */

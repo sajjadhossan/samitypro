@@ -7,8 +7,8 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     cleartext: true,
-    // In production or mobile APK, if configured, can load live cloud Vercel URL or local web assets
-    url: process.env.CAPACITOR_SERVER_URL || undefined,
+    // Connects directly to live Vercel cloud deployment for real-time synchronization
+    url: 'https://samitypro.vercel.app',
     allowNavigation: [
       '*'
     ]

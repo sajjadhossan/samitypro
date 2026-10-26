@@ -50,13 +50,16 @@ export function MobileMenuDrawer({
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity animate-in fade-in cursor-pointer"
+        className="fixed inset-0 z-10 bg-slate-950/80 backdrop-blur-sm transition-opacity animate-in fade-in cursor-pointer"
         onClick={onClose}
       />
 
       {/* Slide-over Drawer */}
-      <div className="fixed inset-y-0 right-0 max-w-full flex pointer-events-auto">
-        <div className="relative w-screen max-w-xs sm:max-w-sm bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300 z-10">
+      <div className="fixed inset-y-0 right-0 z-20 max-w-full flex pointer-events-auto">
+        <div 
+          className="relative w-screen max-w-xs sm:max-w-sm bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300"
+          onClick={e => e.stopPropagation()}
+        >
           
           {/* Drawer Header */}
           <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
@@ -77,7 +80,7 @@ export function MobileMenuDrawer({
                      currentUser.role === 'MANAGER' ? 'ম্যানেজার' :
                      currentUser.role === 'FIELD_COLLECTOR' ? 'কালেক্টর' : 'সদস্য'}
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">v1.0.5</span>
+                  <span className="text-[10px] text-slate-400 font-mono">v1.0.6</span>
                 </div>
               </div>
             </div>

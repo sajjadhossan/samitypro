@@ -217,7 +217,7 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
           {/* 3-Dot All Modules & Boards Menu Button */}
           <button
             onClick={onOpenMenu}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 transition active:scale-95 cursor-pointer shadow-sm shadow-amber-500/10 shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 active:bg-amber-500/30 text-amber-400 border border-amber-500/30 transition active:scale-95 cursor-pointer shadow-sm shadow-amber-500/10 shrink-0 touch-manipulation pointer-events-auto"
             title="সকল মডিউল ও বোর্ড মেনু (৩-ডট)"
             aria-label="Open 3-dot menu"
           >
@@ -229,7 +229,8 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
           <div className="relative">
             <button
               onClick={() => setShowNotifDropdown(!showNotifDropdown)}
-              className="relative p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+              className="relative p-2 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 transition cursor-pointer touch-manipulation"
+              aria-label="Notifications"
             >
               <Bell className="w-4 h-4" />
               {events.length > 0 && (
@@ -238,47 +239,134 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
             </button>
 
             {showNotifDropdown && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl p-3 z-50">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                  <h4 className="text-xs font-semibold text-slate-200">
-                    {language === 'bn' ? 'রিয়েল-টাইম লাইভ নোটিফিকেশন' : 'Live Real-time Notifications'}
-                  </h4>
-                  <span className="text-[10px] text-emerald-400 font-mono">
-                    {language === 'bn' ? toBengaliNumber(events.length) : events.length} updates
-                  </span>
-                </div>
-                <div className="divide-y divide-slate-800/60 max-h-72 overflow-y-auto mt-2">
-                  {events.slice(0, 6).map(evt => (
-                    <div key={evt.id} className="py-2 text-xs">
-                      <div className="flex items-center justify-between text-[11px] text-slate-400 mb-0.5">
-                        <span className="font-semibold text-emerald-400">
-                          {language === 'bn' ? evt.titleBn : evt.titleEn}
-                        </span>
-                        <span className="text-[10px] text-slate-500">{evt.timestamp.split(' ')[1] || ''}</span>
+              <>
+                <div 
+                  className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs"
+                  onClick={() => setShowNotifDropdown(false)}
+                />
+                <div className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-16 sm:top-auto sm:mt-2 sm:w-96 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95">
+                  <div className="flex items-center justify-between pb-2.5 border-b border-slate-800">
+                    <h4 className="text-xs font-bold text-slate-100 flex items-center gap-2">
+                      <Bell className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>{language === 'bn' ? 'রিয়েল-টাইম লাইভ নোটিফিকেশন' : 'Live Real-time Notifications'}</span>
+                    </h4>
+                    <span className="text-[10px] text-emerald-400 font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                      {language === 'bn' ? toBengaliNumber(events.length) : events.length} updates
+                    </span>
+                  </div>
+                  <div className="divide-y divide-slate-800/60 max-h-80 overflow-y-auto mt-2">
+                    {events.slice(0, 8).map(evt => (
+                      <div key={evt.id} className="py-2.5 text-xs">
+                        <div className="flex items-center justify-between text-[11px] text-slate-400 mb-0.5">
+                          <span className="font-semibold text-emerald-400">
+                            {language === 'bn' ? evt.titleBn : evt.titleEn}
+                          </span>
+                          <span className="text-[10px] text-slate-500">{evt.timestamp.split(' ')[1] || ''}</span>
+                        </div>
+                        <p className="text-slate-300 text-[11px] leading-relaxed">
+                          {language === 'bn' ? evt.messageBn : evt.messageEn}
+                        </p>
                       </div>
-                      <p className="text-slate-300 text-[11px] leading-relaxed">
-                        {language === 'bn' ? evt.messageBn : evt.messageEn}
-                      </p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  <div className="pt-2 mt-2 border-t border-slate-800 text-center">
+                    <button
+                      onClick={() => setShowNotifDropdown(false)}
+                      className="text-xs text-slate-400 hover:text-white font-medium"
+                    >
+                      বন্ধ করুন (Close)
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
 
-          {/* Current User Avatar */}
-          <div className="flex items-center gap-2 pl-1 border-l border-slate-800">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-emerald-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-inner">
-              {currentUser.nameEn.charAt(0)}
-            </div>
-            <div className="hidden lg:block text-left">
-              <div className="text-xs font-medium text-slate-200 leading-tight">
-                {language === 'bn' ? currentUser.nameBn : currentUser.nameEn}
+          {/* Current User Avatar & Profile Modal Trigger */}
+          <div className="relative">
+            <button
+              onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+              className="flex items-center gap-2 pl-1 border-l border-slate-800 cursor-pointer active:scale-95 transition touch-manipulation group"
+              title="ব্যবহারকারী প্রোফাইল ও ভূমিকা (Profile)"
+              aria-label="User profile"
+            >
+              <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-emerald-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-inner group-hover:ring-2 ring-emerald-400/50 transition">
+                {currentUser.nameEn.charAt(0)}
               </div>
-              <div className="text-[10px] text-emerald-400 uppercase font-mono">
-                {currentUser.role}
+              <div className="hidden lg:block text-left">
+                <div className="text-xs font-medium text-slate-200 leading-tight">
+                  {language === 'bn' ? currentUser.nameBn : currentUser.nameEn}
+                </div>
+                <div className="text-[10px] text-emerald-400 uppercase font-mono">
+                  {currentUser.role}
+                </div>
               </div>
-            </div>
+            </button>
+
+            {/* User Profile & Role Switch Modal (Universal for mobile & desktop) */}
+            {showRoleDropdown && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs"
+                  onClick={() => setShowRoleDropdown(false)}
+                />
+                <div className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-16 sm:top-auto sm:mt-2 sm:w-80 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95">
+                  {/* Profile Header */}
+                  <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-emerald-500 to-indigo-600 flex items-center justify-center text-lg font-bold text-white shadow-md">
+                      {currentUser.nameEn.charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-bold text-white truncate">
+                        {language === 'bn' ? currentUser.nameBn : currentUser.nameEn}
+                      </h4>
+                      <p className="text-xs text-slate-400 truncate">{currentUser.email}</p>
+                      <span className="inline-block mt-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        {currentUser.role === 'SUPER_ADMIN' ? 'সুপার অ্যাডমিন' : 
+                         currentUser.role === 'SAMITY_ADMIN' ? 'সভাপতি / অ্যাডমিন' :
+                         currentUser.role === 'MANAGER' ? 'ম্যানেজার' :
+                         currentUser.role === 'FIELD_COLLECTOR' ? 'কালেক্টর' : 'সাধারণ সদস্য'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Samity Context */}
+                  <div className="py-2.5 px-3 rounded-xl bg-slate-950/60 border border-slate-800/80 my-3 text-xs">
+                    <div className="text-[10px] text-slate-500 font-semibold uppercase">সংযুক্ত সমিতি</div>
+                    <div className="font-bold text-slate-200 mt-0.5">
+                      {language === 'bn' ? activeTenant?.nameBn : activeTenant?.nameEn}
+                    </div>
+                  </div>
+
+                  {/* Switch Role Section */}
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    {t.switchRole}
+                  </div>
+                  <div className="space-y-1">
+                    {roleOptions.map(opt => (
+                      <button
+                        key={opt.role}
+                        onClick={() => handleRoleSelect(opt.role)}
+                        className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition cursor-pointer ${
+                          currentUser.role === opt.role 
+                            ? 'bg-emerald-500/15 text-emerald-400 font-bold border border-emerald-500/30' 
+                            : 'text-slate-300 hover:bg-slate-800'
+                        }`}
+                      >
+                        <span>{language === 'bn' ? opt.labelBn : opt.labelEn}</span>
+                        {currentUser.role === opt.role && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* App Version Info */}
+                  <div className="pt-3 mt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
+                    <span>SamityPro Mobile</span>
+                    <span className="font-mono text-cyan-400 font-bold">v1.0.6</span>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
         </div>
