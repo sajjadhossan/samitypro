@@ -22,6 +22,7 @@ import { SubscriptionsDueView } from '@/components/samity/SubscriptionsDueView';
 import { BankDepositsView } from '@/components/samity/BankDepositsView';
 import { NoticesView } from '@/components/samity/NoticesView';
 import { DocumentsView } from '@/components/samity/DocumentsView';
+import { SettingsView } from '@/components/settings/SettingsView';
 
 import { useSamityStore } from '@/lib/store';
 import { 
@@ -116,6 +117,7 @@ export default function Home() {
         {activeTab === 'meetings' && <MeetingsView />}
         {activeTab === 'elections' && <ElectionsView />}
         {activeTab === 'reports' && <ReportsView />}
+        {activeTab === 'settings' && <SettingsView />}
       </>
     );
   };

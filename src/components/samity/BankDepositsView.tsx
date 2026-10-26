@@ -5,11 +5,13 @@ import { Building2, Plus, CheckCircle2, Clock, Search } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/i18n';
 import { RecordBankDepositModal } from './RecordBankDepositModal';
+import { BulkBankDepositModal } from './BulkBankDepositModal';
 
 export function BankDepositsView() {
   const { bankDeposits, language } = useSamityStore();
 
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const totalBankBalance = bankDeposits
@@ -29,6 +31,11 @@ export function BankDepositsView() {
         onClose={() => setIsDepositModalOpen(false)}
       />
 
+      <BulkBankDepositModal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+      />
+
       {/* Top Header */}
       <div className="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -43,13 +50,22 @@ export function BankDepositsView() {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsDepositModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold shadow-lg shadow-cyan-500/20 transition cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{language === 'bn' ? 'নতুন ব্যাংক ডিপোজিট এন্ট্রি' : 'Record Bank Deposit'}</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => setIsBulkModalOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/30 text-xs font-semibold shadow-lg shadow-cyan-500/10 transition cursor-pointer"
+          >
+            <Building2 className="w-4 h-4" />
+            <span>{language === 'bn' ? 'বাল্ক ব্যাংক ডিপোজিট' : 'Bulk Bank Deposit'}</span>
+          </button>
+          <button
+            onClick={() => setIsDepositModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold shadow-lg shadow-cyan-500/20 transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{language === 'bn' ? 'নতুন ব্যাংক ডিপোজিট' : 'Record Deposit'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Bank Account Summary Cards */}

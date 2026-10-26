@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { 
   Tenant, User, Member, SavingsAccount, SavingsTransaction, 
   Loan, Voucher, Meeting, Election, RealtimeEvent, Language,
-  MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder 
+  MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder,
+  SignatureSealConfig, VoucherPrefixConfig, BulkDepositItem
 } from '@/types';
 import { 
   INITIAL_TENANTS, INITIAL_USERS, INITIAL_MEMBERS, 
@@ -12,7 +13,8 @@ import {
   INITIAL_LOANS, INITIAL_VOUCHERS, INITIAL_MEETINGS, 
   INITIAL_ELECTIONS, INITIAL_EVENTS,
   INITIAL_SUBSCRIPTIONS, INITIAL_BANK_DEPOSITS, INITIAL_PAID_RECEIPTS,
-  INITIAL_NOTICES, INITIAL_DOCUMENTS, INITIAL_LETTERHEAD_CONFIG, INITIAL_REMINDERS
+  INITIAL_NOTICES, INITIAL_DOCUMENTS, INITIAL_LETTERHEAD_CONFIG, INITIAL_REMINDERS,
+  INITIAL_SIGNATURE_SEAL_CONFIG, INITIAL_VOUCHER_PREFIX_CONFIG
 } from './db';
 
 const STORAGE_KEYS = {
@@ -33,6 +35,8 @@ const STORAGE_KEYS = {
   DOCUMENTS: 'samitypro_documents',
   LETTERHEAD: 'samitypro_letterhead',
   REMINDERS: 'samitypro_reminders',
+  SIGNATURE_SEAL: 'samitypro_sig_seal',
+  VOUCHER_PREFIX: 'samitypro_voucher_prefix',
   CURRENT_TENANT_ID: 'samitypro_active_tenant',
   CURRENT_USER_ID: 'samitypro_active_user',
   LANGUAGE: 'samitypro_language'
@@ -73,6 +77,8 @@ class DataStore {
   documents: SamityDocument[] = INITIAL_DOCUMENTS;
   letterhead: LetterheadConfig = INITIAL_LETTERHEAD_CONFIG;
   reminders: DueReminder[] = INITIAL_REMINDERS;
+  signatureSeal: SignatureSealConfig = INITIAL_SIGNATURE_SEAL_CONFIG;
+  voucherPrefix: VoucherPrefixConfig = INITIAL_VOUCHER_PREFIX_CONFIG;
 
   currentTenantId: string = 'samity-ekota';
   currentUserId: string = 'user-rafiq';
@@ -138,6 +144,14 @@ class DataStore {
       if (storedReminders) this.reminders = JSON.parse(storedReminders);
       else localStorage.setItem(STORAGE_KEYS.REMINDERS, JSON.stringify(this.reminders));
 
+      const storedSigSeal = localStorage.getItem(STORAGE_KEYS.SIGNATURE_SEAL);
+      if (storedSigSeal) this.signatureSeal = JSON.parse(storedSigSeal);
+      else localStorage.setItem(STORAGE_KEYS.SIGNATURE_SEAL, JSON.stringify(this.signatureSeal));
+
+      const storedPrefix = localStorage.getItem(STORAGE_KEYS.VOUCHER_PREFIX);
+      if (storedPrefix) this.voucherPrefix = JSON.parse(storedPrefix);
+      else localStorage.setItem(STORAGE_KEYS.VOUCHER_PREFIX, JSON.stringify(this.voucherPrefix));
+
       const savedTenantId = localStorage.getItem(STORAGE_KEYS.CURRENT_TENANT_ID);
       if (savedTenantId) this.currentTenantId = savedTenantId;
 
@@ -197,6 +211,8 @@ class DataStore {
       localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(this.documents));
       localStorage.setItem(STORAGE_KEYS.LETTERHEAD, JSON.stringify(this.letterhead));
       localStorage.setItem(STORAGE_KEYS.REMINDERS, JSON.stringify(this.reminders));
+      localStorage.setItem(STORAGE_KEYS.SIGNATURE_SEAL, JSON.stringify(this.signatureSeal));
+      localStorage.setItem(STORAGE_KEYS.VOUCHER_PREFIX, JSON.stringify(this.voucherPrefix));
       localStorage.setItem(STORAGE_KEYS.CURRENT_TENANT_ID, this.currentTenantId);
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, this.currentUserId);
       localStorage.setItem(STORAGE_KEYS.LANGUAGE, this.language);
@@ -671,6 +687,62 @@ class DataStore {
     this.save();
   }
 
+  updateSignatureSeal(config: Partial<SignatureSealConfig>) {
+    this.signatureSeal = { ...this.signatureSeal, ...config };
+    this.save();
+  }
+
+  updateVoucherPrefix(config: Partial<VoucherPrefixConfig>) {
+    this.voucherPrefix = { ...this.voucherPrefix, ...config };
+    this.save();
+  }
+
+  updateTenantProfile(tenantId: string, updates: Partial<Tenant>) {
+    this.tenants = this.tenants.map(t => t.id === tenantId ? { ...t, ...updates } : t);
+    this.save();
+  }
+
+  recordBulkBankDeposits(items: BulkDepositItem[], approvedBy?: string) {
+    const createdDeposits: BankDeposit[] = [];
+    const timestamp = new Date().toISOString().split('T')[0];
+    
+    items.forEach((item, index) => {
+      const deposit: BankDeposit = {
+        id: `bkdep-bulk-${Date.now()}-${index}`,
+        tenantId: this.currentTenantId,
+        bankName: item.bankName,
+        accountNumber: item.accountNumber,
+        branchName: item.branchName,
+        depositDate: item.depositDate || timestamp,
+        amount: item.amount,
+        slipNumber: item.slipNumber,
+        depositedBy: item.depositorName,
+        approvedBy: approvedBy || 'অ্যাডমিন',
+        status: 'APPROVED',
+        voucherNo: `${this.voucherPrefix.depositPrefix}${Date.now().toString().slice(-4)}-${index + 1}`,
+        notes: `বাল্ক ব্যাংক জমা: ${item.category}`,
+        createdAt: timestamp
+      };
+      this.bankDeposits.unshift(deposit);
+      createdDeposits.push(deposit);
+    });
+
+    const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+
+    this.addEvent({
+      tenantId: this.currentTenantId,
+      type: 'BANK_DEPOSIT_ADDED',
+      titleBn: 'বাল্ক ব্যাংক ডিপোজিট সম্পন্ন',
+      titleEn: 'Bulk Bank Deposit Recorded',
+      messageBn: `মোট ${items.length}টি ব্যাংক ডিপোজিট স্লিপে সর্বমোট ৳ ${totalAmount.toLocaleString()} ব্যাংকে জমা রেকর্ড করা হয়েছে।`,
+      messageEn: `Bulk bank deposit of ৳ ${totalAmount.toLocaleString()} recorded across ${items.length} slips.`,
+      amount: totalAmount
+    });
+
+    this.save();
+    return createdDeposits;
+  }
+
   createTenant(tenant: Tenant) {
     this.tenants.push(tenant);
     this.save();
@@ -714,9 +786,16 @@ export function useSamityStore() {
     documents: store.documents.filter(d => d.tenantId === activeTenant?.id),
     letterhead: store.letterhead,
     reminders: store.reminders.filter(r => r.tenantId === activeTenant?.id),
+    signatureSeal: store.signatureSeal,
+    voucherPrefix: store.voucherPrefix,
     language: store.language,
     setLanguage: (lang: Language) => store.setLanguage(lang),
     setCurrentTenant: (id: string) => store.setCurrentTenant(id),
     setCurrentUser: (id: string) => store.setCurrentUser(id),
+    updateLetterhead: (config: LetterheadConfig) => store.updateLetterhead(config),
+    updateSignatureSeal: (config: Partial<SignatureSealConfig>) => store.updateSignatureSeal(config),
+    updateVoucherPrefix: (config: Partial<VoucherPrefixConfig>) => store.updateVoucherPrefix(config),
+    updateTenantProfile: (tenantId: string, updates: Partial<Tenant>) => store.updateTenantProfile(tenantId, updates),
+    recordBulkBankDeposits: (items: BulkDepositItem[], approvedBy?: string) => store.recordBulkBankDeposits(items, approvedBy),
   };
 }

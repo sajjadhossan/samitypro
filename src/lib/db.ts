@@ -1,7 +1,8 @@
 import { 
   Tenant, User, Member, SavingsAccount, SavingsTransaction, 
   Loan, Voucher, Meeting, Election, RealtimeEvent,
-  MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder
+  MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder,
+  SignatureSealConfig, VoucherPrefixConfig
 } from '@/types';
 
 // Pre-seeded multi-tenant data
@@ -1006,4 +1007,38 @@ export const INITIAL_REMINDERS: DueReminder[] = [
     status: 'DELIVERED'
   }
 ];
+
+export const INITIAL_SIGNATURE_SEAL_CONFIG: SignatureSealConfig = {
+  tenantId: 'samity-ekota',
+  presidentName: 'ইঞ্জিঃ সাজ্জাদ হোসাইন',
+  presidentTitleBn: 'সভাপতি (President)',
+  presidentSignatureUrl: '',
+  secretaryName: 'মো: আব্দুল করিম',
+  secretaryTitleBn: 'সাধারণ সম্পাদক (General Secretary)',
+  secretarySignatureUrl: '',
+  cashierName: 'মো: রফিকুল ইসলাম',
+  cashierTitleBn: 'ক্যাশিয়ার / ট্রেজারার (Cashier & Treasurer)',
+  cashierSignatureUrl: '',
+  officialSealUrl: '',
+  sealTextBn: 'একতা বহুমুখী সমবায় সমিতি লিঃ * ঢাকা * রেজিস্টার্ড',
+  showSignatureOnReceipt: true,
+  showSealOnReceipt: true,
+};
+
+export const INITIAL_VOUCHER_PREFIX_CONFIG: VoucherPrefixConfig = {
+  tenantId: 'samity-ekota',
+  receiptPrefix: 'RCT-',
+  memberCodePrefix: 'MEM-',
+  depositPrefix: 'DEP-',
+  expensePrefix: 'EXP-',
+  loanPrefix: 'LN-',
+  nextReceiptNumber: 98214,
+  currencySymbol: '৳',
+  fiscalYear: '2026-2027',
+  paperSize: 'A4',
+  enableWatermark: true,
+  watermarkTextBn: 'একতা বহুমুখী সমবায় সমিতি লিঃ',
+  footerNoteBn: 'এটি একটি কম্পিউটার জেনারেটেড ডিজিটাল রসিদ। কোনো স্বাক্ষরের ত্রুটি থাকলে অবিলম্বে অফিসে যোগাযোগ করুন।',
+};
+
 

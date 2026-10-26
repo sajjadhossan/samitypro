@@ -450,3 +450,51 @@ export interface DueReminder {
   channel: 'SMS' | 'PUSH' | 'MANUAL';
   status: 'DELIVERED' | 'PENDING' | 'FAILED';
 }
+
+export type PrintPaperSize = 'A4' | 'A5' | 'THERMAL_80MM';
+
+export interface SignatureSealConfig {
+  tenantId: string;
+  presidentName: string;
+  presidentTitleBn: string;
+  presidentSignatureUrl?: string;
+  secretaryName: string;
+  secretaryTitleBn: string;
+  secretarySignatureUrl?: string;
+  cashierName: string;
+  cashierTitleBn: string;
+  cashierSignatureUrl?: string;
+  officialSealUrl?: string;
+  sealTextBn: string;
+  showSignatureOnReceipt: boolean;
+  showSealOnReceipt: boolean;
+}
+
+export interface VoucherPrefixConfig {
+  tenantId: string;
+  receiptPrefix: string;      // e.g. "REC-"
+  memberCodePrefix: string;   // e.g. "MEM-"
+  depositPrefix: string;      // e.g. "DEP-"
+  expensePrefix: string;      // e.g. "EXP-"
+  loanPrefix: string;         // e.g. "LN-"
+  nextReceiptNumber: number;
+  currencySymbol: string;     // e.g. "৳"
+  fiscalYear: string;         // e.g. "2026-2027"
+  paperSize: PrintPaperSize;
+  enableWatermark: boolean;
+  watermarkTextBn: string;
+  footerNoteBn: string;
+}
+
+export interface BulkDepositItem {
+  id: string;
+  bankName: string;
+  accountNumber: string;
+  branchName: string;
+  depositDate: string;
+  amount: number;
+  slipNumber: string;
+  depositorName: string;
+  category: string;
+}
+

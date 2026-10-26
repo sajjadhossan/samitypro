@@ -12,7 +12,7 @@ interface PrintableReceiptModalProps {
 }
 
 export function PrintableReceiptModal({ isOpen, onClose, receipt }: PrintableReceiptModalProps) {
-  const { letterhead, language } = useSamityStore();
+  const { letterhead, language, signatureSeal, voucherPrefix } = useSamityStore();
 
   if (!isOpen || !receipt) return null;
 
@@ -48,7 +48,14 @@ export function PrintableReceiptModal({ isOpen, onClose, receipt }: PrintableRec
         </div>
 
         {/* Printable Receipt Paper Container */}
-        <div className="p-6 sm:p-8 space-y-6 print:p-6" id="printable-area">
+        <div className="p-6 sm:p-8 space-y-6 print:p-6 relative overflow-hidden" id="printable-area">
+          
+          {/* Dynamic Watermark */}
+          {voucherPrefix.enableWatermark && (
+            <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none text-4xl font-black rotate-[-15deg] select-none text-slate-900">
+              {voucherPrefix.watermarkTextBn}
+            </div>
+          )}
           
           {/* Letterhead Header */}
           <div className="text-center border-b-2 border-emerald-700 pb-4 relative">
@@ -145,28 +152,40 @@ export function PrintableReceiptModal({ isOpen, onClose, receipt }: PrintableRec
             </div>
 
             {/* Official Seal Badge */}
-            <div className="hidden sm:flex flex-col items-center">
-              <div className="w-16 h-16 rounded-full border-2 border-dashed border-emerald-600 flex items-center justify-center text-center p-1 text-[8px] font-bold text-emerald-800 rotate-[-12deg] bg-emerald-50/50">
-                একতা বহুমুখী সমবায় সমিতি<br/>★ ঢাকা ★<br/>রেজিস্টার্ড
+            {signatureSeal.showSealOnReceipt && (
+              <div className="hidden sm:flex flex-col items-center">
+                <div className="w-20 h-20 rounded-full border-2 border-dashed border-emerald-600 flex items-center justify-center text-center p-1 text-[8px] font-bold text-emerald-800 rotate-[-12deg] bg-emerald-50/50 leading-tight">
+                  {signatureSeal.sealTextBn}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Signatures */}
             <div className="flex gap-6 text-center text-xs">
               <div>
                 <div className="h-10 flex items-end justify-center font-serif italic text-emerald-800 font-bold text-sm">
-                  {receipt.collectorNameBn.split(' ')[0]}
+                  {signatureSeal.cashierSignatureUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={signatureSeal.cashierSignatureUrl} alt="Cashier Sign" className="max-h-9 max-w-24 object-contain" />
+                  ) : (
+                    signatureSeal.cashierName || receipt.collectorNameBn.split(' ')[0]
+                  )}
                 </div>
                 <div className="w-24 border-t border-slate-400 pt-1 text-[10px] text-slate-600 font-semibold">
-                  আদায়কারী
+                  {signatureSeal.cashierTitleBn || 'আদায়কারী'}
                 </div>
               </div>
               <div>
                 <div className="h-10 flex items-end justify-center font-serif italic text-slate-800 font-bold text-sm">
-                  সাজ্জাদ
+                  {signatureSeal.presidentSignatureUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={signatureSeal.presidentSignatureUrl} alt="President Sign" className="max-h-9 max-w-24 object-contain" />
+                  ) : (
+                    signatureSeal.presidentName || 'সভাপতি'
+                  )}
                 </div>
                 <div className="w-28 border-t border-slate-400 pt-1 text-[10px] text-slate-600 font-semibold">
-                  সভাপতি / সম্পাদক
+                  {signatureSeal.presidentTitleBn || 'সভাপতি / সম্পাদক'}
                 </div>
               </div>
             </div>
@@ -175,7 +194,7 @@ export function PrintableReceiptModal({ isOpen, onClose, receipt }: PrintableRec
 
           {/* Footer note */}
           <div className="text-center text-[10px] text-slate-400 border-t border-slate-200 pt-2 font-mono">
-            {letterhead.sloganBn} | এটি সফটওয়্যার কর্তৃক জেনারেটকৃত ডিজিটাল রসিদ
+            {voucherPrefix.footerNoteBn || letterhead.sloganBn} | এটি সফটওয়্যার কর্তৃক জেনারেটকৃত ডিজিটাল রসিদ
           </div>
 
         </div>
