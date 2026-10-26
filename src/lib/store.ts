@@ -2523,7 +2523,7 @@ class DataStore {
     }
   }
 
-  exportTableToCsv(tableName: 'members' | 'deposits' | 'receipts' | 'vouchers' | 'audit'): string {
+  exportTableToCsv(tableName: 'members' | 'deposits' | 'receipts' | 'vouchers' | 'audit' | 'loans' | 'defaulters' | 'collection_sheet' | 'trial_balance'): string {
     const tenantId = this.currentTenantId;
     if (tableName === 'members') {
       const rows = this.members.filter(m => m.tenantId === tenantId);
@@ -2545,12 +2545,54 @@ class DataStore {
       const headers = ['VoucherNo', 'Type', 'Category', 'Amount', 'DescriptionBn', 'Party', 'Date', 'PaymentMethod'];
       const lines = rows.map(r => `"${r.voucherNo}","${r.type}","${r.category}","${r.amount}","${r.descriptionBn}","${r.paidToOrReceivedFrom}","${r.date}","${r.paymentMethod}"`);
       return [headers.join(','), ...lines].join('\n');
+    } else if (tableName === 'loans') {
+      const rows = this.loans.filter(l => l.tenantId === tenantId);
+      const headers = ['LoanNumber', 'MemberCode', 'MemberName', 'Principal', 'InterestRate', 'TotalPayable', 'Paid', 'Outstanding', 'Status', 'DisbursementDate'];
+      const lines = rows.map(l => {
+        const mem = this.members.find(m => m.id === l.memberId);
+        return `"${l.loanNumber}","${mem?.memberCode || ''}","${mem?.nameBn || ''}","${l.principalAmount}","${l.interestRatePercent}%","${l.totalPayable}","${l.totalPaid}","${l.outstandingBalance}","${l.status}","${l.disbursementDate || ''}"`;
+      });
+      return [headers.join(','), ...lines].join('\n');
+    } else if (tableName === 'defaulters') {
+      const rows = this.loans.filter(l => l.tenantId === tenantId && (l.status === 'DEFAULTED' || l.installments.some(ins => ins.status === 'OVERDUE')));
+      const headers = ['LoanNumber', 'MemberCode', 'MemberName', 'Phone', 'OverdueInstallments', 'OverdueAmount', 'TotalOutstanding', 'Guarantor', 'GuarantorPhone'];
+      const lines = rows.map(l => {
+        const mem = this.members.find(m => m.id === l.memberId);
+        const overdueInst = l.installments.filter(ins => ins.status === 'OVERDUE');
+        const overdueAmount = overdueInst.reduce((sum, ins) => sum + (ins.totalDue - (ins.paidAmount || 0)), 0);
+        return `"${l.loanNumber}","${mem?.memberCode || ''}","${mem?.nameBn || ''}","${mem?.phone || ''}","${overdueInst.length}","${overdueAmount}","${l.outstandingBalance}","${l.guarantor1?.name || ''}","${l.guarantor1?.phone || ''}"`;
+      });
+      return [headers.join(','), ...lines].join('\n');
+    } else if (tableName === 'collection_sheet') {
+      const rows = this.members.filter(m => m.tenantId === tenantId);
+      const headers = ['MemberCode', 'NameBn', 'Phone', 'SavingsBalance', 'RegularSavingsCollected', 'LoanEmiCollected', 'TotalCollected', 'Signature'];
+      const lines = rows.map(m => `"${m.memberCode}","${m.nameBn}","${m.phone}","${m.savingsBalance}","2000","${m.loanOutstanding > 0 ? '9166' : '0'}","${m.loanOutstanding > 0 ? '11166' : '2000'}",""`);
+      return [headers.join(','), ...lines].join('\n');
+    } else if (tableName === 'trial_balance') {
+      const tb = this.getTrialBalance(tenantId);
+      const headers = ['Code', 'AccountHeadBn', 'AccountHeadEn', 'Group', 'Debit', 'Credit'];
+      const lines = tb.items.map(i => `"${i.code}","${i.nameBn}","${i.nameEn}","${i.group}","${i.debit}","${i.credit}"`);
+      lines.push(`"TOTAL","মোট","Total","","${tb.totalDebit}","${tb.totalCredit}"`);
+      return [headers.join(','), ...lines].join('\n');
     } else {
       const rows = this.auditLogs.filter(a => a.tenantId === tenantId);
       const headers = ['ID', 'Action', 'Entity', 'EntityID', 'Description', 'PerformedBy', 'Role', 'Timestamp', 'IP'];
       const lines = rows.map(r => `"${r.id}","${r.action}","${r.entity}","${r.entityId}","${r.descriptionBn}","${r.performedBy}","${r.performedByRole}","${r.timestamp}","${r.ipAddress || ''}"`);
       return [headers.join(','), ...lines].join('\n');
     }
+  }
+
+  logReportAction(reportNameBn: string, format: string) {
+    const user = this.users.find(u => u.id === this.currentUserId);
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'EXPORT',
+      entity: 'REPORT',
+      entityId: `rep-${Date.now()}`,
+      descriptionBn: `${reportNameBn} (${format.toUpperCase()} ফরম্যাটে) জেনারেট/ডাউনলোড করা হয়েছে`,
+      performedBy: user?.nameBn || 'হিসাবরক্ষক (অ্যাডমিন)',
+      performedByRole: user?.role || 'ADMIN'
+    });
   }
 
   updateGatewayConfig(config: Partial<CommunicationGatewayConfig>) {
@@ -3594,5 +3636,6 @@ export function useSamityStore() {
     toggleVoterEligibility: (electionId: string, memberId: string, isEligible: boolean, reason?: string) => store.toggleVoterEligibility(electionId, memberId, isEligible, reason),
     publishElectionResults: (electionId: string, certifiedBy: string) => store.publishElectionResults(electionId, certifiedBy),
     softDeleteElection: (electionId: string, reason?: string) => store.softDeleteElection(electionId, reason),
+    logReportAction: (reportNameBn: string, format: string) => store.logReportAction(reportNameBn, format),
   };
 }

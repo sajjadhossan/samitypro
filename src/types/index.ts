@@ -893,7 +893,22 @@ export interface BulkDepositItem {
 }
 
 export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'EXPORT' | 'IMPORT' | 'RESTORE' | 'LOGIN';
-export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'SETTINGS' | 'DOCUMENT' | 'BACKUP' | 'TENANT' | 'SUBSCRIPTION' | 'SAVINGS_ACCOUNT' | 'MEETING' | 'NOTICE' | 'ELECTION' | 'OTHER';
+export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'SETTINGS' | 'DOCUMENT' | 'BACKUP' | 'TENANT' | 'SUBSCRIPTION' | 'SAVINGS_ACCOUNT' | 'MEETING' | 'NOTICE' | 'ELECTION' | 'REPORT' | 'OTHER';
+
+export type ReportType = 
+  | 'COLLECTION_SHEET' 
+  | 'PASSBOOK' 
+  | 'BALANCE_SHEET' 
+  | 'INCOME_EXPENDITURE' 
+  | 'DEFAULTERS' 
+  | 'TRIAL_BALANCE';
+
+export interface FinancialStatementFilter {
+  startDate?: string;
+  endDate?: string;
+  memberId?: string;
+  category?: string;
+}
 
 export interface AuditLog {
   id: string;

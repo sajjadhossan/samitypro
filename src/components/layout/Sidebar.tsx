@@ -47,7 +47,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'meetings', labelBn: 'সভা ও রেজোলিউশন (মডিউল ৭)', labelEn: 'Meetings & Minutes (Mod 7)', icon: CalendarCheck },
     { id: 'documents', labelBn: 'নথি ও দলিল ভল্ট', labelEn: 'Documents Vault', icon: FolderLock },
     { id: 'elections', labelBn: 'নির্বাচন ও ভোট (মডিউল ৮)', labelEn: 'Elections & Voting (Mod 8)', icon: Vote },
-    { id: 'reports', labelBn: t.reports, labelEn: 'Reports & Statements', icon: FileBarChart },
+    { id: 'reports', labelBn: 'রিপোর্ট ও বিবরণী (মডিউল ৯)', labelEn: 'Reports & Audit (Mod 9)', icon: FileBarChart },
     { id: 'audit-trail', labelBn: 'অডিট ট্রেইল লগ', labelEn: 'Audit Trail', icon: History },
     { id: 'backup-restore', labelBn: 'ব্যাকআপ ও রিস্টোর', labelEn: 'Backup & Restore', icon: Database },
     { id: 'settings', labelBn: 'সেটিংস ও কনফিগারেশন', labelEn: 'Settings & Setup', icon: Sliders },

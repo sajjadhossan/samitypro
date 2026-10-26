@@ -374,7 +374,7 @@ export function MobileMenuDrawer({
                 >
                   <div className="flex items-center gap-2.5">
                     <FileBarChart className="w-4 h-4 text-emerald-400" />
-                    <span>আর্থিক রিপোর্ট ও অডিট (Reports)</span>
+                    <span>আর্থিক রিপোর্ট ও বিবরণী (মডিউল ৯)</span>
                   </div>
                 </button>
 
