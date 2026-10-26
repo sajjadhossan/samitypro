@@ -5,7 +5,8 @@ import {
   Tenant, User, Member, SavingsAccount, SavingsTransaction, 
   Loan, Voucher, Meeting, Election, RealtimeEvent, Language,
   MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder,
-  SignatureSealConfig, VoucherPrefixConfig, BulkDepositItem
+  SignatureSealConfig, VoucherPrefixConfig, BulkDepositItem,
+  AuditLog, ApprovalItem, GeneratedDocument, ApprovalStatus
 } from '@/types';
 import { 
   INITIAL_TENANTS, INITIAL_USERS, INITIAL_MEMBERS, 
@@ -14,7 +15,8 @@ import {
   INITIAL_ELECTIONS, INITIAL_EVENTS,
   INITIAL_SUBSCRIPTIONS, INITIAL_BANK_DEPOSITS, INITIAL_PAID_RECEIPTS,
   INITIAL_NOTICES, INITIAL_DOCUMENTS, INITIAL_LETTERHEAD_CONFIG, INITIAL_REMINDERS,
-  INITIAL_SIGNATURE_SEAL_CONFIG, INITIAL_VOUCHER_PREFIX_CONFIG
+  INITIAL_SIGNATURE_SEAL_CONFIG, INITIAL_VOUCHER_PREFIX_CONFIG,
+  INITIAL_AUDIT_LOGS, INITIAL_APPROVAL_ITEMS, INITIAL_GENERATED_DOCUMENTS
 } from './db';
 
 const STORAGE_KEYS = {
@@ -37,6 +39,9 @@ const STORAGE_KEYS = {
   REMINDERS: 'samitypro_reminders',
   SIGNATURE_SEAL: 'samitypro_sig_seal',
   VOUCHER_PREFIX: 'samitypro_voucher_prefix',
+  AUDIT_LOGS: 'samitypro_audit_logs',
+  APPROVALS: 'samitypro_approvals',
+  GENERATED_DOCS: 'samitypro_gen_docs',
   CURRENT_TENANT_ID: 'samitypro_active_tenant',
   CURRENT_USER_ID: 'samitypro_active_user',
   LANGUAGE: 'samitypro_language'
@@ -79,6 +84,9 @@ class DataStore {
   reminders: DueReminder[] = INITIAL_REMINDERS;
   signatureSeal: SignatureSealConfig = INITIAL_SIGNATURE_SEAL_CONFIG;
   voucherPrefix: VoucherPrefixConfig = INITIAL_VOUCHER_PREFIX_CONFIG;
+  auditLogs: AuditLog[] = INITIAL_AUDIT_LOGS;
+  approvalItems: ApprovalItem[] = INITIAL_APPROVAL_ITEMS;
+  generatedDocs: GeneratedDocument[] = INITIAL_GENERATED_DOCUMENTS;
 
   currentTenantId: string = 'samity-ekota';
   currentUserId: string = 'user-rafiq';
@@ -152,6 +160,18 @@ class DataStore {
       if (storedPrefix) this.voucherPrefix = JSON.parse(storedPrefix);
       else localStorage.setItem(STORAGE_KEYS.VOUCHER_PREFIX, JSON.stringify(this.voucherPrefix));
 
+      const storedAudit = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
+      if (storedAudit) this.auditLogs = JSON.parse(storedAudit);
+      else localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(this.auditLogs));
+
+      const storedApprovals = localStorage.getItem(STORAGE_KEYS.APPROVALS);
+      if (storedApprovals) this.approvalItems = JSON.parse(storedApprovals);
+      else localStorage.setItem(STORAGE_KEYS.APPROVALS, JSON.stringify(this.approvalItems));
+
+      const storedGenDocs = localStorage.getItem(STORAGE_KEYS.GENERATED_DOCS);
+      if (storedGenDocs) this.generatedDocs = JSON.parse(storedGenDocs);
+      else localStorage.setItem(STORAGE_KEYS.GENERATED_DOCS, JSON.stringify(this.generatedDocs));
+
       const savedTenantId = localStorage.getItem(STORAGE_KEYS.CURRENT_TENANT_ID);
       if (savedTenantId) this.currentTenantId = savedTenantId;
 
@@ -190,6 +210,12 @@ class DataStore {
       if (storedNotices) this.notices = JSON.parse(storedNotices);
       const storedDocs = localStorage.getItem(STORAGE_KEYS.DOCUMENTS);
       if (storedDocs) this.documents = JSON.parse(storedDocs);
+      const storedAudit = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
+      if (storedAudit) this.auditLogs = JSON.parse(storedAudit);
+      const storedApprovals = localStorage.getItem(STORAGE_KEYS.APPROVALS);
+      if (storedApprovals) this.approvalItems = JSON.parse(storedApprovals);
+      const storedGenDocs = localStorage.getItem(STORAGE_KEYS.GENERATED_DOCS);
+      if (storedGenDocs) this.generatedDocs = JSON.parse(storedGenDocs);
       emitChange();
     } catch {}
   }
@@ -213,6 +239,9 @@ class DataStore {
       localStorage.setItem(STORAGE_KEYS.REMINDERS, JSON.stringify(this.reminders));
       localStorage.setItem(STORAGE_KEYS.SIGNATURE_SEAL, JSON.stringify(this.signatureSeal));
       localStorage.setItem(STORAGE_KEYS.VOUCHER_PREFIX, JSON.stringify(this.voucherPrefix));
+      localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(this.auditLogs));
+      localStorage.setItem(STORAGE_KEYS.APPROVALS, JSON.stringify(this.approvalItems));
+      localStorage.setItem(STORAGE_KEYS.GENERATED_DOCS, JSON.stringify(this.generatedDocs));
       localStorage.setItem(STORAGE_KEYS.CURRENT_TENANT_ID, this.currentTenantId);
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, this.currentUserId);
       localStorage.setItem(STORAGE_KEYS.LANGUAGE, this.language);
@@ -743,6 +772,199 @@ class DataStore {
     return createdDeposits;
   }
 
+  addAuditLog(entry: {
+    tenantId?: string;
+    action: import('@/types').AuditAction;
+    entity: import('@/types').AuditEntity;
+    entityId: string;
+    descriptionBn: string;
+    performedBy?: string;
+    performedByRole?: string;
+    ipAddress?: string;
+  }) {
+    const newLog: AuditLog = {
+      id: `audit-${Date.now()}`,
+      tenantId: entry.tenantId || this.currentTenantId,
+      action: entry.action,
+      entity: entry.entity,
+      entityId: entry.entityId,
+      descriptionBn: entry.descriptionBn,
+      performedBy: entry.performedBy || 'বর্তমান ব্যবহারকারী',
+      performedByRole: entry.performedByRole || 'ADMIN',
+      timestamp: new Date().toLocaleString('en-GB', { timeZone: 'Asia/Dhaka' }),
+      ipAddress: entry.ipAddress || '192.168.1.3'
+    };
+    this.auditLogs.unshift(newLog);
+    this.save();
+    return newLog;
+  }
+
+  updateApprovalStatus(id: string, status: ApprovalStatus, approvedBy: string, rejectionReason?: string) {
+    const item = this.approvalItems.find(a => a.id === id);
+    if (!item) return;
+
+    item.status = status;
+    item.approvedBy = approvedBy;
+    item.actionDate = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Dhaka' });
+    if (rejectionReason) item.rejectionReason = rejectionReason;
+
+    // Sync with corresponding BankDeposit if applicable
+    if (item.type === 'BANK_DEPOSIT') {
+      const deposit = this.bankDeposits.find(d => d.id === item.referenceId);
+      if (deposit) {
+        deposit.status = status === 'APPROVED' ? 'APPROVED' : 'REJECTED';
+        deposit.approvedBy = approvedBy;
+      }
+    }
+
+    this.addAuditLog({
+      tenantId: item.tenantId,
+      action: status === 'APPROVED' ? 'APPROVE' : 'REJECT',
+      entity: item.type === 'BANK_DEPOSIT' ? 'DEPOSIT' : item.type === 'LOAN_APPLICATION' ? 'LOAN' : 'EXPENSE',
+      entityId: item.referenceId,
+      descriptionBn: `${item.titleBn} - ${status === 'APPROVED' ? 'অনুমোদন করা হয়েছে' : `প্রত্যাখ্যান করা হয়েছে (${rejectionReason || ''})`}`,
+      performedBy: approvedBy,
+      performedByRole: 'APPROVER'
+    });
+
+    this.save();
+  }
+
+  addApprovalItem(item: Omit<ApprovalItem, 'id' | 'requestedAt'>) {
+    const newItem: ApprovalItem = {
+      ...item,
+      id: `appr-${Date.now()}`,
+      requestedAt: new Date().toLocaleString('en-GB', { timeZone: 'Asia/Dhaka' })
+    };
+    this.approvalItems.unshift(newItem);
+    this.save();
+    return newItem;
+  }
+
+  addGeneratedDocument(doc: Omit<GeneratedDocument, 'id'>) {
+    const newDoc: GeneratedDocument = {
+      ...doc,
+      id: `gdoc-${Date.now()}`
+    };
+    this.generatedDocs.unshift(newDoc);
+    
+    this.addAuditLog({
+      tenantId: doc.tenantId,
+      action: 'CREATE',
+      entity: 'DOCUMENT',
+      entityId: newDoc.id,
+      descriptionBn: `অফিসিয়াল ডকুমেন্ট জেনারেট করা হয়েছে: ${doc.titleBn} (রেফারেন্স: ${doc.referenceNo})`,
+      performedBy: doc.issuedBy,
+      performedByRole: 'OFFICER'
+    });
+
+    this.save();
+    return newDoc;
+  }
+
+  exportFullBackup(): string {
+    const backupData = {
+      version: '1.0.2',
+      exportedAt: new Date().toISOString(),
+      tenantId: this.currentTenantId,
+      tenants: this.tenants.filter(t => t.id === this.currentTenantId),
+      members: this.members.filter(m => m.tenantId === this.currentTenantId),
+      savingsTransactions: this.savingsTransactions.filter(t => t.tenantId === this.currentTenantId),
+      loans: this.loans.filter(l => l.tenantId === this.currentTenantId),
+      vouchers: this.vouchers.filter(v => v.tenantId === this.currentTenantId),
+      subscriptions: this.subscriptions.filter(s => s.tenantId === this.currentTenantId),
+      bankDeposits: this.bankDeposits.filter(b => b.tenantId === this.currentTenantId),
+      receipts: this.receipts.filter(r => r.tenantId === this.currentTenantId),
+      notices: this.notices.filter(n => n.tenantId === this.currentTenantId),
+      letterhead: this.letterhead,
+      signatureSeal: this.signatureSeal,
+      voucherPrefix: this.voucherPrefix,
+      auditLogs: this.auditLogs.filter(a => a.tenantId === this.currentTenantId),
+      approvalItems: this.approvalItems.filter(a => a.tenantId === this.currentTenantId),
+      generatedDocs: this.generatedDocs.filter(g => g.tenantId === this.currentTenantId)
+    };
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'EXPORT',
+      entity: 'BACKUP',
+      entityId: `backup-${Date.now()}`,
+      descriptionBn: 'সমিতির পূর্ণাঙ্গ ডাটাবেজ ব্যাকআপ (JSON) এক্সপোর্ট সম্পন্ন হয়েছে',
+      performedBy: 'অ্যাডমিন ইউজার',
+      performedByRole: 'OWNER'
+    });
+
+    return JSON.stringify(backupData, null, 2);
+  }
+
+  restoreFullBackup(jsonString: string): { success: boolean; message: string } {
+    try {
+      const data = JSON.parse(jsonString);
+      if (!data.tenantId || !data.members) {
+        return { success: false, message: 'অবৈধ ব্যাকআপ ফাইল। প্রয়োজনীয় ডাটা ফিল্ড অনুপস্থিত।' };
+      }
+
+      if (data.members) this.members = data.members;
+      if (data.savingsTransactions) this.savingsTransactions = data.savingsTransactions;
+      if (data.loans) this.loans = data.loans;
+      if (data.vouchers) this.vouchers = data.vouchers;
+      if (data.subscriptions) this.subscriptions = data.subscriptions;
+      if (data.bankDeposits) this.bankDeposits = data.bankDeposits;
+      if (data.receipts) this.receipts = data.receipts;
+      if (data.notices) this.notices = data.notices;
+      if (data.letterhead) this.letterhead = data.letterhead;
+      if (data.signatureSeal) this.signatureSeal = data.signatureSeal;
+      if (data.voucherPrefix) this.voucherPrefix = data.voucherPrefix;
+      if (data.approvalItems) this.approvalItems = data.approvalItems;
+      if (data.generatedDocs) this.generatedDocs = data.generatedDocs;
+
+      this.addAuditLog({
+        tenantId: this.currentTenantId,
+        action: 'RESTORE',
+        entity: 'BACKUP',
+        entityId: `restore-${Date.now()}`,
+        descriptionBn: `ব্যাকআপ ফাইল হইতে সফলভাবে রিস্টোর সম্পন্ন (সদস্য: ${data.members?.length || 0} জন, ভাউচার: ${data.vouchers?.length || 0}টি)`,
+        performedBy: 'অ্যাডমিন ইউজার',
+        performedByRole: 'OWNER'
+      });
+
+      this.save();
+      return { success: true, message: 'সফলভাবে ব্যাকআপ থেকে ডাটা রিস্টোর করা হয়েছে।' };
+    } catch (err: any) {
+      return { success: false, message: `রিস্টোর ব্যর্থ: ${err.message}` };
+    }
+  }
+
+  exportTableToCsv(tableName: 'members' | 'deposits' | 'receipts' | 'vouchers' | 'audit'): string {
+    const tenantId = this.currentTenantId;
+    if (tableName === 'members') {
+      const rows = this.members.filter(m => m.tenantId === tenantId);
+      const headers = ['MemberCode', 'NameBn', 'NameEn', 'Phone', 'NID', 'AdmissionDate', 'Status', 'SavingsBalance'];
+      const lines = rows.map(r => `"${r.memberCode}","${r.nameBn}","${r.nameEn}","${r.phone}","${r.nid}","${r.admissionDate}","${r.status}","${r.savingsBalance}"`);
+      return [headers.join(','), ...lines].join('\n');
+    } else if (tableName === 'deposits') {
+      const rows = this.bankDeposits.filter(b => b.tenantId === tenantId);
+      const headers = ['BankName', 'AccountNumber', 'Branch', 'SlipNo', 'Date', 'Amount', 'Status', 'Depositor'];
+      const lines = rows.map(r => `"${r.bankName}","${r.accountNumber}","${r.branchName}","${r.slipNumber}","${r.depositDate}","${r.amount}","${r.status}","${r.depositedBy}"`);
+      return [headers.join(','), ...lines].join('\n');
+    } else if (tableName === 'receipts') {
+      const rows = this.receipts.filter(r => r.tenantId === tenantId);
+      const headers = ['ReceiptNo', 'Type', 'MemberCode', 'MemberName', 'Phone', 'Amount', 'Date', 'PaymentMethod', 'Collector'];
+      const lines = rows.map(r => `"${r.receiptNo}","${r.receiptType}","${r.memberCode}","${r.memberNameBn}","${r.phone}","${r.amount}","${r.date}","${r.paymentMethod}","${r.collectorNameBn}"`);
+      return [headers.join(','), ...lines].join('\n');
+    } else if (tableName === 'vouchers') {
+      const rows = this.vouchers.filter(v => v.tenantId === tenantId);
+      const headers = ['VoucherNo', 'Type', 'Category', 'Amount', 'DescriptionBn', 'Party', 'Date', 'PaymentMethod'];
+      const lines = rows.map(r => `"${r.voucherNo}","${r.type}","${r.category}","${r.amount}","${r.descriptionBn}","${r.paidToOrReceivedFrom}","${r.date}","${r.paymentMethod}"`);
+      return [headers.join(','), ...lines].join('\n');
+    } else {
+      const rows = this.auditLogs.filter(a => a.tenantId === tenantId);
+      const headers = ['ID', 'Action', 'Entity', 'EntityID', 'Description', 'PerformedBy', 'Role', 'Timestamp', 'IP'];
+      const lines = rows.map(r => `"${r.id}","${r.action}","${r.entity}","${r.entityId}","${r.descriptionBn}","${r.performedBy}","${r.performedByRole}","${r.timestamp}","${r.ipAddress || ''}"`);
+      return [headers.join(','), ...lines].join('\n');
+    }
+  }
+
   createTenant(tenant: Tenant) {
     this.tenants.push(tenant);
     this.save();
@@ -788,6 +1010,9 @@ export function useSamityStore() {
     reminders: store.reminders.filter(r => r.tenantId === activeTenant?.id),
     signatureSeal: store.signatureSeal,
     voucherPrefix: store.voucherPrefix,
+    auditLogs: store.auditLogs.filter(a => a.tenantId === activeTenant?.id),
+    approvalItems: store.approvalItems.filter(a => a.tenantId === activeTenant?.id),
+    generatedDocs: store.generatedDocs.filter(g => g.tenantId === activeTenant?.id),
     language: store.language,
     setLanguage: (lang: Language) => store.setLanguage(lang),
     setCurrentTenant: (id: string) => store.setCurrentTenant(id),
@@ -797,5 +1022,12 @@ export function useSamityStore() {
     updateVoucherPrefix: (config: Partial<VoucherPrefixConfig>) => store.updateVoucherPrefix(config),
     updateTenantProfile: (tenantId: string, updates: Partial<Tenant>) => store.updateTenantProfile(tenantId, updates),
     recordBulkBankDeposits: (items: BulkDepositItem[], approvedBy?: string) => store.recordBulkBankDeposits(items, approvedBy),
+    addAuditLog: (entry: Parameters<typeof store.addAuditLog>[0]) => store.addAuditLog(entry),
+    updateApprovalStatus: (id: string, status: ApprovalStatus, approvedBy: string, rejectionReason?: string) => store.updateApprovalStatus(id, status, approvedBy, rejectionReason),
+    addApprovalItem: (item: Parameters<typeof store.addApprovalItem>[0]) => store.addApprovalItem(item),
+    addGeneratedDocument: (doc: Parameters<typeof store.addGeneratedDocument>[0]) => store.addGeneratedDocument(doc),
+    exportFullBackup: () => store.exportFullBackup(),
+    restoreFullBackup: (json: string) => store.restoreFullBackup(json),
+    exportTableToCsv: (table: Parameters<typeof store.exportTableToCsv>[0]) => store.exportTableToCsv(table),
   };
 }

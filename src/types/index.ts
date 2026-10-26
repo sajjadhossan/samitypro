@@ -498,3 +498,54 @@ export interface BulkDepositItem {
   category: string;
 }
 
+export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'EXPORT' | 'RESTORE' | 'LOGIN';
+export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'DOCUMENT' | 'BACKUP';
+
+export interface AuditLog {
+  id: string;
+  tenantId: string;
+  action: AuditAction;
+  entity: AuditEntity;
+  entityId: string;
+  descriptionBn: string;
+  performedBy: string;
+  performedByRole: string;
+  timestamp: string;
+  ipAddress?: string;
+}
+
+export type ApprovalType = 'BANK_DEPOSIT' | 'LOAN_APPLICATION' | 'EXPENSE_VOUCHER';
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface ApprovalItem {
+  id: string;
+  tenantId: string;
+  type: ApprovalType;
+  titleBn: string;
+  requestedBy: string;
+  requestedAt: string;
+  amount: number;
+  status: ApprovalStatus;
+  approvedBy?: string;
+  actionDate?: string;
+  rejectionReason?: string;
+  referenceId: string;
+  details?: Record<string, any>;
+}
+
+export type GeneratedDocType = 'MEMBERSHIP_CERTIFICATE' | 'LOAN_AGREEMENT' | 'RESOLUTION' | 'CLEARANCE_NOC';
+
+export interface GeneratedDocument {
+  id: string;
+  tenantId: string;
+  docType: GeneratedDocType;
+  titleBn: string;
+  referenceNo: string;
+  recipientNameBn: string;
+  recipientCode?: string;
+  contentBn: string;
+  issueDate: string;
+  issuedBy: string;
+  status: 'ACTIVE' | 'REVOKED';
+}
+

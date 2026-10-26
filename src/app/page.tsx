@@ -23,6 +23,10 @@ import { BankDepositsView } from '@/components/samity/BankDepositsView';
 import { NoticesView } from '@/components/samity/NoticesView';
 import { DocumentsView } from '@/components/samity/DocumentsView';
 import { SettingsView } from '@/components/settings/SettingsView';
+import { DocumentGeneratorView } from '@/components/documents/DocumentGeneratorView';
+import { ApprovalWorkflowView } from '@/components/approvals/ApprovalWorkflowView';
+import { AuditTrailView } from '@/components/audit/AuditTrailView';
+import { BackupRestoreView } from '@/components/backup/BackupRestoreView';
 
 import { useSamityStore } from '@/lib/store';
 import { 
@@ -112,11 +116,15 @@ export default function Home() {
           <LoansView onOpenCollectInstallment={handleOpenCollectLoan} />
         )}
         {activeTab === 'accounts' && <AccountsView />}
+        {activeTab === 'approvals' && <ApprovalWorkflowView />}
+        {activeTab === 'doc-generator' && <DocumentGeneratorView />}
         {activeTab === 'notices' && <NoticesView />}
         {activeTab === 'documents' && <DocumentsView />}
         {activeTab === 'meetings' && <MeetingsView />}
         {activeTab === 'elections' && <ElectionsView />}
         {activeTab === 'reports' && <ReportsView />}
+        {activeTab === 'audit-trail' && <AuditTrailView />}
+        {activeTab === 'backup-restore' && <BackupRestoreView />}
         {activeTab === 'settings' && <SettingsView />}
       </>
     );

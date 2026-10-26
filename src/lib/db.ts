@@ -2,7 +2,7 @@ import {
   Tenant, User, Member, SavingsAccount, SavingsTransaction, 
   Loan, Voucher, Meeting, Election, RealtimeEvent,
   MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder,
-  SignatureSealConfig, VoucherPrefixConfig
+  SignatureSealConfig, VoucherPrefixConfig, AuditLog, ApprovalItem, GeneratedDocument
 } from '@/types';
 
 // Pre-seeded multi-tenant data
@@ -1040,5 +1040,152 @@ export const INITIAL_VOUCHER_PREFIX_CONFIG: VoucherPrefixConfig = {
   watermarkTextBn: 'একতা বহুমুখী সমবায় সমিতি লিঃ',
   footerNoteBn: 'এটি একটি কম্পিউটার জেনারেটেড ডিজিটাল রসিদ। কোনো স্বাক্ষরের ত্রুটি থাকলে অবিলম্বে অফিসে যোগাযোগ করুন।',
 };
+
+export const INITIAL_AUDIT_LOGS: AuditLog[] = [
+  {
+    id: 'audit-001',
+    tenantId: 'samity-ekota',
+    action: 'CREATE',
+    entity: 'DEPOSIT',
+    entityId: 'bd-004',
+    descriptionBn: 'অগ্রণী ব্যাংক বনশ্রী শাখায় ৳২৫,০০০ জমা রেকর্ড করা হয়েছে',
+    performedBy: 'মো: রফিকুল ইসলাম',
+    performedByRole: 'TREASURER',
+    timestamp: '2026-10-25 14:32:10',
+    ipAddress: '103.230.104.42'
+  },
+  {
+    id: 'audit-002',
+    tenantId: 'samity-ekota',
+    action: 'APPROVE',
+    entity: 'LOAN',
+    entityId: 'loan-002',
+    descriptionBn: 'সদস্য আনোয়ারুল হক এর ৳৫০,০০০ ক্ষুদ্র ব্যবসা ঋণ আবেদন অনুমোদন করা হয়েছে',
+    performedBy: 'ইঞ্জিঃ সাজ্জাদ হোসাইন',
+    performedByRole: 'OWNER',
+    timestamp: '2026-10-24 11:15:00',
+    ipAddress: '103.230.104.42'
+  },
+  {
+    id: 'audit-003',
+    tenantId: 'samity-ekota',
+    action: 'UPDATE',
+    entity: 'SETTING',
+    entityId: 'setting-prefix',
+    descriptionBn: 'ভাউচার প্রিফিক্স ও ডিজিটাল স্বাক্ষর কনফিগারেশন আপডেট করা হয়েছে',
+    performedBy: 'এডমিন ইউজার',
+    performedByRole: 'ADMIN',
+    timestamp: '2026-10-26 07:45:22',
+    ipAddress: '192.168.1.3'
+  },
+  {
+    id: 'audit-004',
+    tenantId: 'samity-ekota',
+    action: 'CREATE',
+    entity: 'MEMBER',
+    entityId: 'mem-005',
+    descriptionBn: 'নতুন সদস্য মো: তরিকুল ইসলাম (MEM-005) নিবন্ধন সম্পন্ন হয়েছে',
+    performedBy: 'মো: আব্দুল করিম',
+    performedByRole: 'SECRETARY',
+    timestamp: '2026-10-23 16:20:15',
+    ipAddress: '103.230.104.42'
+  },
+  {
+    id: 'audit-005',
+    tenantId: 'samity-ekota',
+    action: 'EXPORT',
+    entity: 'BACKUP',
+    entityId: 'backup-oct2026',
+    descriptionBn: 'সমিতির পূর্ণাঙ্গ ডাটাবেজ ব্যাকআপ (JSON) ডাউনলোড করা হয়েছে',
+    performedBy: 'ইঞ্জিঃ সাজ্জাদ হোসাইন',
+    performedByRole: 'OWNER',
+    timestamp: '2026-10-26 08:00:00',
+    ipAddress: '192.168.1.3'
+  }
+];
+
+export const INITIAL_APPROVAL_ITEMS: ApprovalItem[] = [
+  {
+    id: 'appr-001',
+    tenantId: 'samity-ekota',
+    type: 'BANK_DEPOSIT',
+    titleBn: 'ব্যাংক ডিপোজিট যাচাইকরণ: অগ্রণী ব্যাংক',
+    requestedBy: 'মো: রফিকুল ইসলাম (ট্রেজারার)',
+    requestedAt: '2026-10-25 14:32:10',
+    amount: 25000,
+    status: 'PENDING',
+    referenceId: 'bd-004',
+    details: {
+      bankName: 'Agrani Bank PLC',
+      accountNumber: '0200018945231',
+      branch: 'বনশ্রী শাখা',
+      slipNo: 'AGR-984210'
+    }
+  },
+  {
+    id: 'appr-002',
+    tenantId: 'samity-ekota',
+    type: 'LOAN_APPLICATION',
+    titleBn: 'নতুন ক্ষুদ্র ব্যবসা ঋণ আবেদন: কামরুল হাসান',
+    requestedBy: 'কামরুল হাসান (MEM-004)',
+    requestedAt: '2026-10-25 16:45:00',
+    amount: 40000,
+    status: 'PENDING',
+    referenceId: 'loan-req-002',
+    details: {
+      purpose: 'দোকান সম্প্রসারণ',
+      durationMonths: 12,
+      interestRate: '10%',
+      guarantor: 'আনোয়ারুল হক (MEM-002)'
+    }
+  },
+  {
+    id: 'appr-003',
+    tenantId: 'samity-ekota',
+    type: 'EXPENSE_VOUCHER',
+    titleBn: 'অফিস সংস্কার ও বার্ষিক রিপোর্ট প্রিন্টিং ব্যয়',
+    requestedBy: 'মো: আব্দুল করিম (সাধারণ সম্পাদক)',
+    requestedAt: '2026-10-24 10:00:00',
+    amount: 12500,
+    status: 'APPROVED',
+    approvedBy: 'ইঞ্জিঃ সাজ্জাদ হোসাইন (সভাপতি)',
+    actionDate: '2026-10-24 12:30:00',
+    referenceId: 'exp-009',
+    details: {
+      category: 'অফিস খরচ',
+      vendor: 'গ্রাফিক আর্ট প্রেস',
+      memoNo: 'MEMO-4412'
+    }
+  }
+];
+
+export const INITIAL_GENERATED_DOCUMENTS: GeneratedDocument[] = [
+  {
+    id: 'gdoc-001',
+    tenantId: 'samity-ekota',
+    docType: 'MEMBERSHIP_CERTIFICATE',
+    titleBn: 'সদস্য প্রত্যয়নপত্র',
+    referenceNo: 'CERT-EKOTA-2026-001',
+    recipientNameBn: 'মো: রফিকুল ইসলাম',
+    recipientCode: 'MEM-001',
+    contentBn: 'এতদ্বারা প্রত্যয়ন করা যাইতেছে যে, মো: রফিকুল ইসলাম অত্র একতা বহুমুখী সমবায় সমিতি লিঃ এর একজন নিয়মিত ও সম্মানিত সাধারণ সদস্য। তিনি সমিতি প্রতিষ্ঠার শুরু হইতেই সুনামের সাথে সমবায় কার্যক্রমে অবদান রাখিয়া আসিতেছেন।',
+    issueDate: '2026-10-20',
+    issuedBy: 'ইঞ্জিঃ সাজ্জাদ হোসাইন (সভাপতি)',
+    status: 'ACTIVE'
+  },
+  {
+    id: 'gdoc-002',
+    tenantId: 'samity-ekota',
+    docType: 'CLEARANCE_NOC',
+    titleBn: 'ঋণ পরিশোধ ও অনাপত্তি সনদ (NOC)',
+    referenceNo: 'NOC-EKOTA-2026-004',
+    recipientNameBn: 'মো: জাহিদুল হাসান',
+    recipientCode: 'MEM-002',
+    contentBn: 'এতদ্বারা প্রত্যয়ন করা যাইতেছে যে, মো: জাহিদুল হাসান অত্র সমিতি হইতে গৃহীত পূর্ববর্তী ঋণ নং LN-2025-01 সম্পূর্ণ সুদসহ সফলভাবে পরিশোধ করিয়াছেন। অত্র তারিখে সমিতির নিকট তাহার কোনো বকেয়া বা দায়দেনা নাই।',
+    issueDate: '2026-10-18',
+    issuedBy: 'মো: আব্দুল করিম (সাধারণ সম্পাদক)',
+    status: 'ACTIVE'
+  }
+];
 
 

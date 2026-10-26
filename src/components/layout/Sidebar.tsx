@@ -5,7 +5,8 @@ import {
   LayoutDashboard, Users, PiggyBank, HandCoins, ReceiptText, 
   CalendarCheck, Vote, FileBarChart, ShieldAlert,
   CreditCard, MessageSquare, BookOpen, Bell,
-  BadgePercent, Building2, FolderLock, Sliders
+  BadgePercent, Building2, FolderLock, Sliders,
+  ScrollText, ShieldCheck, History, Database
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations } from '@/lib/i18n';
@@ -36,12 +37,16 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'members', labelBn: t.members, labelEn: 'Members & KYC', icon: Users },
     { id: 'savings', labelBn: t.savings, labelEn: 'Savings & DPS', icon: PiggyBank },
     { id: 'loans', labelBn: t.loans, labelEn: 'Loans & EMIs', icon: HandCoins },
+    { id: 'approvals', labelBn: 'অনুমোদন ও ওয়ার্কফ্লো', labelEn: 'Approvals Workflow', icon: ShieldCheck },
+    { id: 'doc-generator', labelBn: 'প্রত্যয়ন ও চুক্তিপত্র', labelEn: 'Doc Generator', icon: ScrollText },
     { id: 'accounts', labelBn: t.accounts, labelEn: 'Accounts & Vouchers', icon: ReceiptText },
-    { id: 'notices', labelBn: 'ডিজিタル নোটিশ বোর্ড', labelEn: 'Notice Board', icon: Bell },
+    { id: 'notices', labelBn: 'ডিজিটাল নোটিশ বোর্ড', labelEn: 'Notice Board', icon: Bell },
     { id: 'documents', labelBn: 'নথি ও দলিল ভল্ট', labelEn: 'Documents Vault', icon: FolderLock },
     { id: 'meetings', labelBn: t.meetings, labelEn: 'Meetings & Minutes', icon: CalendarCheck },
     { id: 'elections', labelBn: t.elections, labelEn: 'Elections & Voting', icon: Vote },
     { id: 'reports', labelBn: t.reports, labelEn: 'Reports & Statements', icon: FileBarChart },
+    { id: 'audit-trail', labelBn: 'অডিট ট্রেইল লগ', labelEn: 'Audit Trail', icon: History },
+    { id: 'backup-restore', labelBn: 'ব্যাকআপ ও রিস্টোর', labelEn: 'Backup & Restore', icon: Database },
     { id: 'settings', labelBn: 'সেটিংস ও কনফিগারেশন', labelEn: 'Settings & Setup', icon: Sliders },
   ];
 
