@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { 
   Tenant, User, Member, MemberStatus, SavingsAccount, SavingsTransaction, 
   Loan, Voucher, Meeting, MeetingType, MeetingStatus, MeetingAgendaItem, MeetingResolution, MeetingAttendee,
-  Election, RealtimeEvent, Language,
+  Election, ElectionStatus, ElectionPost, ElectionPostConfig, ElectionCandidate, ElectionVoter, ElectionCommission, CandidateStatus,
+  RealtimeEvent, Language,
   MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder,
   SignatureSealConfig, VoucherPrefixConfig, BulkDepositItem,
   AuditLog, ApprovalItem, GeneratedDocument, ApprovalStatus,
@@ -303,6 +304,8 @@ class DataStore {
       if (storedVouchers) this.vouchers = JSON.parse(storedVouchers);
       const storedMeetings = localStorage.getItem(STORAGE_KEYS.MEETINGS);
       if (storedMeetings) this.meetings = JSON.parse(storedMeetings);
+      const storedElections = localStorage.getItem(STORAGE_KEYS.ELECTIONS);
+      if (storedElections) this.elections = JSON.parse(storedElections);
       emitChange();
     } catch {}
   }
@@ -1342,29 +1345,6 @@ class DataStore {
       descriptionBn: `ঋণ নং ${loan.loanNumber} এর কিস্তি ${installmentNumber} এর জরিমানা ৳${amount} মওকুফ করা হয়েছে। কারণ: ${reason}`,
       performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'সভাপতি (অ্যাডমিন)',
       performedByRole: 'ADMIN'
-    });
-
-    this.save();
-    return true;
-  }
-
-  castVote(electionId: string, candidateId: string) {
-    const election = this.elections.find(e => e.id === electionId);
-    if (!election) return false;
-
-    const candidate = election.candidates.find(c => c.id === candidateId);
-    if (!candidate) return false;
-
-    candidate.voteCount += 1;
-    election.totalVotesCast += 1;
-
-    this.addEvent({
-      tenantId: election.tenantId,
-      type: 'VOTE_CAST',
-      titleBn: 'নতুন ভোট প্রদান করা হয়েছে',
-      titleEn: 'New Vote Cast',
-      messageBn: `${election.titleBn} নির্বাচনে ১টি নতুন গোপন ভোট সম্পন্ন হয়েছে। মোট ভোট: ${election.totalVotesCast}`,
-      messageEn: `A vote was cast in ${election.titleEn}. Total votes: ${election.totalVotesCast}`,
     });
 
     this.save();
@@ -3133,6 +3113,357 @@ class DataStore {
       this.save();
     }
   }
+
+  // ==========================================
+  // MODULE 8: ELECTIONS & SECRET BALLOT
+  // ==========================================
+
+  createElection(electionData: {
+    tenantId: string;
+    titleBn: string;
+    titleEn?: string;
+    termYears: string;
+    electionDate: string;
+    votingStartTime?: string;
+    votingEndTime?: string;
+    venue?: string;
+    commission?: ElectionCommission;
+    posts?: ElectionPostConfig[];
+  }) {
+    const electionId = `elec-${Date.now()}`;
+    const defaultPosts: ElectionPostConfig[] = electionData.posts || [
+      { id: 'post-1', post: 'PRESIDENT', titleBn: 'সভাপতি', titleEn: 'President', seatsCount: 1 },
+      { id: 'post-2', post: 'SECRETARY', titleBn: 'সাধারণ সম্পাদক', titleEn: 'General Secretary', seatsCount: 1 },
+      { id: 'post-3', post: 'TREASURER', titleBn: 'কোষাধ্যক্ষ', titleEn: 'Treasurer', seatsCount: 1 },
+      { id: 'post-4', post: 'EXECUTIVE_MEMBER', titleBn: 'কার্যনির্বাহী সদস্য', titleEn: 'Executive Member', seatsCount: 3 }
+    ];
+
+    // Seed eligible active members as voters
+    const activeMembers = this.members.filter(m => m.tenantId === electionData.tenantId && m.status === 'ACTIVE');
+    const voters: ElectionVoter[] = activeMembers.map(m => ({
+      memberId: m.id,
+      memberCode: m.memberCode,
+      nameBn: m.nameBn,
+      phone: m.phone,
+      isEligible: true,
+      hasVoted: false
+    }));
+
+    const newElection: Election = {
+      id: electionId,
+      tenantId: electionData.tenantId,
+      electionNo: `ELEC-${new Date().getFullYear()}/${this.elections.filter(e => e.tenantId === electionData.tenantId).length + 1}`,
+      titleBn: electionData.titleBn,
+      titleEn: electionData.titleEn || electionData.titleBn,
+      termYears: electionData.termYears,
+      electionDate: electionData.electionDate,
+      votingStartTime: electionData.votingStartTime || 'সকাল ০৯:০০ ঘটিকা',
+      votingEndTime: electionData.votingEndTime || 'বিকাল ০৪:০০ ঘটিকা',
+      venue: electionData.venue || 'সমিতি প্রধান কার্যালয় অডিটোরিয়াম',
+      status: 'ACTIVE',
+      commission: electionData.commission || {
+        chiefCommissionerNameBn: 'অ্যাডভোকেট এনামুল হক (প্রধান নির্বাচন কমিশনার)',
+        chiefCommissionerTitleBn: 'বাংলাদেশ সুপ্রিম কোর্ট',
+        commissioner2NameBn: 'প্রফেসর গোলাম কিবরিয়া',
+        commissioner3NameBn: 'জনাব হাবিবুর রহমান',
+        officeAddressBn: 'নির্বাচন কমিশন সচিবালয়, ঢাকা'
+      },
+      posts: defaultPosts,
+      totalEligibleVoters: voters.length,
+      totalVotesCast: 0,
+      candidates: [],
+      voters,
+      createdAt: new Date().toISOString(),
+      syncVersion: 1,
+      isSynced: true
+    };
+
+    this.elections.unshift(newElection);
+
+    this.events.unshift({
+      id: `evt-${Date.now()}`,
+      tenantId: electionData.tenantId,
+      type: 'SYSTEM_ANNOUNCEMENT',
+      titleBn: 'নতুন নির্বাচন তফসিল ঘোষিত',
+      titleEn: 'New Election Announced',
+      messageBn: `${newElection.titleBn} (${newElection.termYears}) এর নির্বাচনী তফসিল ঘোষণা করা হয়েছে।`,
+      messageEn: `Election ${newElection.titleEn} announced.`,
+      timestamp: new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })
+    });
+
+    this.addAuditLog({
+      tenantId: electionData.tenantId,
+      action: 'CREATE',
+      entity: 'ELECTION',
+      entityId: electionId,
+      descriptionBn: `নতুন নির্বাচন '${newElection.titleBn}' তফসিল ঘোষণা ও ভোটার খসড়া তালিকা প্রণয়ন করা হয়েছে।`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return newElection;
+  }
+
+  updateElection(electionId: string, updates: Partial<Election>) {
+    const idx = this.elections.findIndex(e => e.id === electionId);
+    if (idx === -1) return null;
+
+    this.elections[idx] = {
+      ...this.elections[idx],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+      updatedBy: this.currentUserId
+    };
+
+    this.addAuditLog({
+      tenantId: this.elections[idx].tenantId,
+      action: 'UPDATE',
+      entity: 'ELECTION',
+      entityId: electionId,
+      descriptionBn: `নির্বাচন '${this.elections[idx].titleBn}' এর তথ্য আপডেট করা হয়েছে।`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return this.elections[idx];
+  }
+
+  updateElectionStatus(electionId: string, newStatus: ElectionStatus) {
+    const election = this.elections.find(e => e.id === electionId);
+    if (!election) return null;
+
+    election.status = newStatus;
+    election.updatedAt = new Date().toISOString();
+
+    this.addAuditLog({
+      tenantId: election.tenantId,
+      action: 'UPDATE',
+      entity: 'ELECTION',
+      entityId: electionId,
+      descriptionBn: `নির্বাচন '${election.titleBn}' এর স্ট্যাটাস '${newStatus}' এ পরিবর্তন করা হয়েছে।`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return election;
+  }
+
+  addCandidate(electionId: string, candidateData: Omit<ElectionCandidate, 'id' | 'voteCount' | 'electionId'>) {
+    const election = this.elections.find(e => e.id === electionId);
+    if (!election) return null;
+
+    const newCandidate: ElectionCandidate = {
+      ...candidateData,
+      id: `cand-${Date.now()}`,
+      electionId,
+      status: candidateData.status || 'VALID',
+      voteCount: 0
+    };
+
+    election.candidates.push(newCandidate);
+    election.updatedAt = new Date().toISOString();
+
+    this.addAuditLog({
+      tenantId: election.tenantId,
+      action: 'CREATE',
+      entity: 'ELECTION',
+      entityId: newCandidate.id,
+      descriptionBn: `নির্বাচনে নতুন প্রার্থী '${newCandidate.nameBn}' (${newCandidate.post} পদ, প্রতীক: ${newCandidate.symbolName}) অন্তর্ভুক্ত হয়েছে।`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return newCandidate;
+  }
+
+  updateCandidateStatus(electionId: string, candidateId: string, status: CandidateStatus) {
+    const election = this.elections.find(e => e.id === electionId);
+    if (!election) return null;
+
+    const cand = election.candidates.find(c => c.id === candidateId);
+    if (cand) {
+      cand.status = status;
+      election.updatedAt = new Date().toISOString();
+      this.save();
+    }
+    return cand;
+  }
+
+  castVote(electionId: string, candidateId: string, voterMemberId?: string) {
+    const election = this.elections.find(e => e.id === electionId);
+    if (!election) return false;
+
+    // Verify voter eligibility & check if already voted
+    const targetMemberId = voterMemberId || this.currentUserId;
+    if (election.voters) {
+      const voter = election.voters.find(v => v.memberId === targetMemberId);
+      if (voter) {
+        if (voter.hasVoted) {
+          return false;
+        }
+        voter.hasVoted = true;
+        voter.votedAt = new Date().toISOString();
+      }
+    }
+
+    // Increment candidate vote
+    const candidate = election.candidates.find(c => c.id === candidateId);
+    if (candidate) {
+      candidate.voteCount = (candidate.voteCount || 0) + 1;
+    }
+
+    election.totalVotesCast = (election.totalVotesCast || 0) + 1;
+    election.updatedAt = new Date().toISOString();
+
+    this.events.unshift({
+      id: `evt-${Date.now()}`,
+      tenantId: election.tenantId,
+      type: 'VOTE_CAST',
+      titleBn: 'নতুন গোপন ভোট গৃহীত হয়েছে',
+      titleEn: 'Secret Ballot Cast',
+      messageBn: `${election.titleBn} এ নতুন একটি গোপন ভোট সফলভাবে সংগৃহীত হয়েছে।`,
+      messageEn: `A vote was cast in ${election.titleEn}.`,
+      timestamp: new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })
+    });
+
+    this.addAuditLog({
+      tenantId: election.tenantId,
+      action: 'UPDATE',
+      entity: 'ELECTION',
+      entityId: electionId,
+      descriptionBn: `ডিজিটাল গোপন ব্যালটে সফলভাবে ভোট কাস্ট সম্পন্ন হয়েছে। (ব্যালট এনক্রিপ্টেড)`,
+      performedBy: 'গোপন ব্যালট ইঞ্জিন',
+      performedByRole: 'MEMBER'
+    });
+
+    this.save();
+    return true;
+  }
+
+  castMultiPostBallot(electionId: string, voterMemberId: string, votes: { post: ElectionPost; candidateId: string }[]) {
+    const election = this.elections.find(e => e.id === electionId);
+    if (!election) return false;
+
+    // Check voter
+    if (election.voters) {
+      const voter = election.voters.find(v => v.memberId === voterMemberId);
+      if (voter) {
+        if (voter.hasVoted) return false;
+        voter.hasVoted = true;
+        voter.votedAt = new Date().toISOString();
+      }
+    }
+
+    // Increment votes
+    votes.forEach(v => {
+      const cand = election.candidates.find(c => c.id === v.candidateId);
+      if (cand) {
+        cand.voteCount = (cand.voteCount || 0) + 1;
+      }
+    });
+
+    election.totalVotesCast = (election.totalVotesCast || 0) + 1;
+    election.updatedAt = new Date().toISOString();
+
+    this.events.unshift({
+      id: `evt-${Date.now()}`,
+      tenantId: election.tenantId,
+      type: 'VOTE_CAST',
+      titleBn: 'নতুন গোপন ব্যালট পেপার জমা হয়েছে',
+      titleEn: 'Ballot Paper Submitted',
+      messageBn: `${election.titleBn} এ সকল পদের জন্য গোপন ব্যালট পেপার জমা হয়েছে।`,
+      messageEn: `Full ballot paper submitted in ${election.titleEn}.`,
+      timestamp: new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })
+    });
+
+    this.save();
+    return true;
+  }
+
+  toggleVoterEligibility(electionId: string, memberId: string, isEligible: boolean, reason?: string) {
+    const election = this.elections.find(e => e.id === electionId);
+    if (!election || !election.voters) return false;
+
+    const voter = election.voters.find(v => v.memberId === memberId);
+    if (voter) {
+      voter.isEligible = isEligible;
+      voter.ineligibilityReason = isEligible ? undefined : (reason || 'চাঁদা বকেয়া');
+      election.totalEligibleVoters = election.voters.filter(v => v.isEligible).length;
+      this.save();
+    }
+    return true;
+  }
+
+  publishElectionResults(electionId: string, certifiedBy: string) {
+    const election = this.elections.find(e => e.id === electionId);
+    if (!election) return null;
+
+    election.status = 'COMPLETED';
+    election.resultPublishedAt = new Date().toISOString();
+    election.resultCertifiedBy = certifiedBy || election.commission?.chiefCommissionerNameBn || 'প্রধান নির্বাচন কমিশনার';
+
+    // Mark winner for each post
+    const posts = election.posts || [];
+    posts.forEach(p => {
+      const postCands = election.candidates.filter(c => c.post === p.post && c.status === 'VALID');
+      if (postCands.length > 0) {
+        postCands.sort((a, b) => b.voteCount - a.voteCount);
+        for (let i = 0; i < Math.min(p.seatsCount, postCands.length); i++) {
+          postCands[i].status = 'ELECTED';
+        }
+      }
+    });
+
+    this.events.unshift({
+      id: `evt-${Date.now()}`,
+      tenantId: election.tenantId,
+      type: 'SYSTEM_ANNOUNCEMENT',
+      titleBn: 'নির্বাচনের চূড়ান্ত ফলাফল প্রকাশিত হয়েছে',
+      titleEn: 'Election Results Gazetted',
+      messageBn: `${election.titleBn} এর আনুষ্ঠানিক ভোট গণনা সমাপ্ত ও ফলাফল গেজেট প্রকাশ করা হয়েছে।`,
+      messageEn: `Election results published and certified.`,
+      timestamp: new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })
+    });
+
+    this.addAuditLog({
+      tenantId: election.tenantId,
+      action: 'APPROVE',
+      entity: 'ELECTION',
+      entityId: electionId,
+      descriptionBn: `নির্বাচন '${election.titleBn}' এর ফলাফল চূড়ান্তভাবে অনুমোদন ও গেজেট প্রকাশ করেছেন: ${election.resultCertifiedBy}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return election;
+  }
+
+  softDeleteElection(electionId: string, reason?: string) {
+    const idx = this.elections.findIndex(e => e.id === electionId);
+    if (idx === -1) return false;
+
+    this.elections[idx].deletedAt = new Date().toISOString();
+    this.elections[idx].deletedBy = this.currentUserId;
+    this.elections[idx].status = 'CANCELLED';
+
+    this.addAuditLog({
+      tenantId: this.elections[idx].tenantId,
+      action: 'DELETE',
+      entity: 'ELECTION',
+      entityId: electionId,
+      descriptionBn: `নির্বাচন '${this.elections[idx].titleBn}' বাতিল/মুছে ফেলা হয়েছে। কারণ: ${reason || 'প্রশাসনিক সিদ্ধান্ত'}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return true;
+  }
 }
 
 export const store = new DataStore();
@@ -3253,5 +3584,15 @@ export function useSamityStore() {
     publishNotice: (noticeData: Parameters<typeof store.publishNotice>[0]) => store.publishNotice(noticeData),
     pinNotice: (noticeId: string, isPinned: boolean) => store.pinNotice(noticeId, isPinned),
     deleteNotice: (noticeId: string) => store.deleteNotice(noticeId),
+    createElection: (electionData: Parameters<typeof store.createElection>[0]) => store.createElection(electionData),
+    updateElection: (electionId: string, updates: Parameters<typeof store.updateElection>[1]) => store.updateElection(electionId, updates),
+    updateElectionStatus: (electionId: string, newStatus: Parameters<typeof store.updateElectionStatus>[1]) => store.updateElectionStatus(electionId, newStatus),
+    addCandidate: (electionId: string, candidateData: Parameters<typeof store.addCandidate>[1]) => store.addCandidate(electionId, candidateData),
+    updateCandidateStatus: (electionId: string, candidateId: string, status: Parameters<typeof store.updateCandidateStatus>[2]) => store.updateCandidateStatus(electionId, candidateId, status),
+    castVote: (electionId: string, candidateId: string, voterMemberId?: string) => store.castVote(electionId, candidateId, voterMemberId),
+    castMultiPostBallot: (electionId: string, voterMemberId: string, votes: Parameters<typeof store.castMultiPostBallot>[2]) => store.castMultiPostBallot(electionId, voterMemberId, votes),
+    toggleVoterEligibility: (electionId: string, memberId: string, isEligible: boolean, reason?: string) => store.toggleVoterEligibility(electionId, memberId, isEligible, reason),
+    publishElectionResults: (electionId: string, certifiedBy: string) => store.publishElectionResults(electionId, certifiedBy),
+    softDeleteElection: (electionId: string, reason?: string) => store.softDeleteElection(electionId, reason),
   };
 }

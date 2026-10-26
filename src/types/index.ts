@@ -525,28 +525,93 @@ export interface Meeting {
   isSynced?: boolean;
 }
 
+export type ElectionStatus = 'SCHEDULED' | 'NOMINATION' | 'SCRUTINY' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+
+export type ElectionPost = 
+  | 'PRESIDENT' 
+  | 'VICE_PRESIDENT' 
+  | 'SECRETARY' 
+  | 'JOINT_SECRETARY' 
+  | 'TREASURER' 
+  | 'ORGANIZING_SECRETARY' 
+  | 'WOMEN_AFFAIRS_SECRETARY' 
+  | 'EXECUTIVE_MEMBER';
+
+export type CandidateStatus = 'NOMINATED' | 'VALID' | 'WITHDRAWN' | 'REJECTED' | 'ELECTED';
+
+export interface ElectionPostConfig {
+  id: string;
+  post: ElectionPost;
+  titleBn: string;
+  titleEn: string;
+  seatsCount: number;
+}
+
 export interface ElectionCandidate {
   id: string;
+  electionId?: string;
   memberId: string;
+  memberCode?: string;
   nameBn: string;
   nameEn: string;
-  post: 'PRESIDENT' | 'SECRETARY' | 'TREASURER' | 'ORGANIZING_SECRETARY' | 'MEMBER_EXECUTIVE';
+  post: ElectionPost;
   symbolName: string;
   symbolEmoji: string;
+  photoUrl?: string;
+  manifestoBn?: string;
+  proposerNameBn?: string;
+  seconderNameBn?: string;
+  status?: CandidateStatus;
   voteCount: number;
+}
+
+export interface ElectionVoter {
+  memberId: string;
+  memberCode: string;
+  nameBn: string;
+  phone: string;
+  isEligible: boolean;
+  ineligibilityReason?: string;
+  hasVoted: boolean;
+  votedAt?: string;
+}
+
+export interface ElectionCommission {
+  chiefCommissionerNameBn: string;
+  chiefCommissionerTitleBn?: string;
+  commissioner2NameBn?: string;
+  commissioner3NameBn?: string;
+  officeAddressBn?: string;
 }
 
 export interface Election {
   id: string;
   tenantId: string;
+  electionNo?: string;
   titleBn: string;
   titleEn: string;
   termYears: string; // e.g. "2026-2028"
   electionDate: string;
-  status: 'UPCOMING' | 'ACTIVE' | 'COMPLETED';
+  votingStartTime?: string;
+  votingEndTime?: string;
+  venue?: string;
+  status: ElectionStatus | 'UPCOMING' | 'ACTIVE' | 'COMPLETED';
+  commission?: ElectionCommission;
+  posts?: ElectionPostConfig[];
   totalEligibleVoters: number;
   totalVotesCast: number;
   candidates: ElectionCandidate[];
+  voters?: ElectionVoter[];
+  resultPublishedAt?: string;
+  resultCertifiedBy?: string;
+  createdAt?: string;
+  createdBy?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
+  syncVersion?: number;
+  isSynced?: boolean;
 }
 
 export interface RealtimeEvent {
@@ -828,7 +893,7 @@ export interface BulkDepositItem {
 }
 
 export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'EXPORT' | 'IMPORT' | 'RESTORE' | 'LOGIN';
-export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'SETTINGS' | 'DOCUMENT' | 'BACKUP' | 'TENANT' | 'SUBSCRIPTION' | 'SAVINGS_ACCOUNT' | 'MEETING' | 'NOTICE' | 'OTHER';
+export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'SETTINGS' | 'DOCUMENT' | 'BACKUP' | 'TENANT' | 'SUBSCRIPTION' | 'SAVINGS_ACCOUNT' | 'MEETING' | 'NOTICE' | 'ELECTION' | 'OTHER';
 
 export interface AuditLog {
   id: string;

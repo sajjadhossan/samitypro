@@ -352,7 +352,7 @@ export function MobileMenuDrawer({
                 >
                   <div className="flex items-center gap-2.5">
                     <Vote className="w-4 h-4 text-indigo-400" />
-                    <span>নির্বাচন ও অনলাইন ভোট (Elections)</span>
+                    <span>নির্বাচন ও ডিজিটাল ভোট (মডিউল ৮)</span>
                   </div>
                 </button>
               </div>
