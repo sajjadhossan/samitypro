@@ -37,7 +37,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'members', labelBn: 'সদস্য ব্যবস্থাপনা (মডিউল ২)', labelEn: 'Members & KYC (Mod 2)', icon: Users },
     { id: 'subscriptions-due', labelBn: 'চাঁদা ও বকেয়া পলিসি (মডিউল ৩)', labelEn: 'Fees & Policy (Mod 3)', icon: BadgePercent },
     { id: 'bank-deposits', labelBn: 'ব্যাংক হিসাব ও জমা', labelEn: 'Bank Deposits', icon: Building2 },
-    { id: 'savings', labelBn: t.savings, labelEn: 'Savings & DPS', icon: PiggyBank },
+    { id: 'savings', labelBn: 'সঞ্চয় ও ডিপিএস (মডিউল ৪)', labelEn: 'Savings & DPS (Mod 4)', icon: PiggyBank },
     { id: 'loans', labelBn: t.loans, labelEn: 'Loans & EMIs', icon: HandCoins },
     { id: 'approvals', labelBn: 'অনুমোদন ও ওয়ার্কফ্লো', labelEn: 'Approvals Workflow', icon: ShieldCheck },
     { id: 'communication-hub', labelBn: 'মেসেজিং ও গেটওয়ে হাব', labelEn: 'Communication Hub', icon: Zap },
@@ -119,7 +119,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-400">
             <span>{language === 'bn' ? 'মোবাইল APK ভার্সন' : 'Mobile APK'}</span>
-            <span className="text-cyan-400 font-mono">v1.0.6 (Capacitor)</span>
+            <span className="text-cyan-400 font-mono">v1.0.7 (Capacitor)</span>
           </div>
           <div className="text-[10px] text-slate-500 text-center pt-1 border-t border-slate-800">
             {language === 'bn' ? 'মাল্টি-ইউজার রিয়েলটাইম সিঙ্ক' : 'Multi-User Real-time Sync'}

@@ -130,7 +130,7 @@ export function ApkDownloadModal({ isOpen, onClose }: ApkDownloadModalProps) {
         {/* Footer actions */}
         <div className="flex items-center justify-between pt-4 border-t border-slate-800">
           <span className="text-xs text-slate-500 font-mono">
-            Version 1.0.6 • Production Ready
+            Version 1.0.7 • Production Ready
           </span>
           <div className="flex items-center gap-2">
             <a

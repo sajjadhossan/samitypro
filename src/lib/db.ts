@@ -4,7 +4,7 @@ import {
   MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder,
   SignatureSealConfig, VoucherPrefixConfig, AuditLog, ApprovalItem, GeneratedDocument,
   CommunicationGatewayConfig, AutoSchedulerConfig, OfflineQueueItem,
-  SubscriptionPolicyConfig, LateFeeWaiverRecord
+  SubscriptionPolicyConfig, LateFeeWaiverRecord, SavingsPolicyConfig
 } from '@/types';
 
 // Pre-seeded multi-tenant data
@@ -384,8 +384,15 @@ export const INITIAL_SAVINGS_ACCOUNTS: SavingsAccount[] = [
     type: 'GENERAL_SAVINGS',
     title: 'দৈনিক সাধারণ সঞ্চয় হিসাব',
     balance: 48500,
+    totalDeposited: 58500,
+    totalWithdrawn: 10000,
     interestRate: 8.5,
     startDate: '2024-02-01',
+    lastDepositDate: '2026-10-24',
+    nomineeName: 'নাজমা আক্তার',
+    nomineeRelation: 'স্ত্রী',
+    nomineePhone: '+8801711223344',
+    nomineeSharePercent: 100,
     status: 'ACTIVE'
   },
   {
@@ -396,12 +403,19 @@ export const INITIAL_SAVINGS_ACCOUNTS: SavingsAccount[] = [
     type: 'DPS',
     title: '৫ বছর মেয়াদী সঞ্চয় স্কিম (ডিপিএস)',
     balance: 36000,
+    totalDeposited: 36000,
+    totalWithdrawn: 0,
     monthlyInstallment: 2000,
     targetAmount: 150000,
     tenureMonths: 60,
     interestRate: 9.5,
     startDate: '2024-03-01',
     maturityDate: '2029-03-01',
+    lastDepositDate: '2026-10-20',
+    nomineeName: 'নাজমা আক্তার',
+    nomineeRelation: 'স্ত্রী',
+    nomineePhone: '+8801711223344',
+    nomineeSharePercent: 100,
     status: 'ACTIVE'
   },
   {
@@ -412,8 +426,38 @@ export const INITIAL_SAVINGS_ACCOUNTS: SavingsAccount[] = [
     type: 'GENERAL_SAVINGS',
     title: 'মহিলা উদ্যোক্তা সঞ্চয় হিসাব',
     balance: 72000,
+    totalDeposited: 75000,
+    totalWithdrawn: 3000,
     interestRate: 8.5,
     startDate: '2024-02-10',
+    lastDepositDate: '2026-10-22',
+    nomineeName: 'কামরুল হাসান',
+    nomineeRelation: 'স্বামী',
+    nomineePhone: '+8801819223344',
+    nomineeSharePercent: 100,
+    status: 'ACTIVE'
+  },
+  {
+    id: 'sav-002-dps',
+    tenantId: 'samity-ekota',
+    memberId: 'mem-002',
+    accountNo: 'DPS-EK-2002',
+    type: 'DPS',
+    title: '৩ বছর মেয়াদী ডিপিএস স্কিম',
+    balance: 24000,
+    totalDeposited: 24000,
+    totalWithdrawn: 0,
+    monthlyInstallment: 1000,
+    targetAmount: 42000,
+    tenureMonths: 36,
+    interestRate: 9.0,
+    startDate: '2024-04-01',
+    maturityDate: '2027-04-01',
+    lastDepositDate: '2026-10-18',
+    nomineeName: 'কামরুল হাসান',
+    nomineeRelation: 'স্বামী',
+    nomineePhone: '+8801819223344',
+    nomineeSharePercent: 100,
     status: 'ACTIVE'
   },
   {
@@ -424,8 +468,60 @@ export const INITIAL_SAVINGS_ACCOUNTS: SavingsAccount[] = [
     type: 'GENERAL_SAVINGS',
     title: 'সাধারণ সঞ্চয় হিসাব',
     balance: 115000,
+    totalDeposited: 125000,
+    totalWithdrawn: 10000,
     interestRate: 8.5,
     startDate: '2024-02-15',
+    lastDepositDate: '2026-10-25',
+    nomineeName: 'সালমা বেগম',
+    nomineeRelation: 'মা',
+    nomineePhone: '+8801911998877',
+    nomineeSharePercent: 100,
+    status: 'ACTIVE'
+  },
+  {
+    id: 'sav-004-dps',
+    tenantId: 'samity-ekota',
+    memberId: 'mem-004',
+    accountNo: 'DPS-EK-2003',
+    type: 'DPS',
+    title: 'ভবিষ্যত সঞ্চয় ডিপিএস (৫ বছর)',
+    balance: 24000,
+    totalDeposited: 24000,
+    totalWithdrawn: 0,
+    monthlyInstallment: 1000,
+    targetAmount: 75000,
+    tenureMonths: 60,
+    interestRate: 9.5,
+    startDate: '2024-03-01',
+    maturityDate: '2029-03-01',
+    lastDepositDate: '2026-10-15',
+    nomineeName: 'ফাহিম কামাল',
+    nomineeRelation: 'পুত্র',
+    nomineePhone: '+8801712000004',
+    nomineeSharePercent: 100,
+    status: 'ACTIVE'
+  },
+  {
+    id: 'sav-005-fdr',
+    tenantId: 'samity-ekota',
+    memberId: 'mem-005',
+    accountNo: 'FDR-EK-3001',
+    type: 'FIXED_DEPOSIT',
+    title: '২ বছর মেয়াদী স্থায়ী আমানত (FDR)',
+    balance: 120000,
+    totalDeposited: 120000,
+    totalWithdrawn: 0,
+    targetAmount: 145200,
+    tenureMonths: 24,
+    interestRate: 10.5,
+    startDate: '2024-03-10',
+    maturityDate: '2026-03-10',
+    lastDepositDate: '2024-03-10',
+    nomineeName: 'নাসরিন রহমান',
+    nomineeRelation: 'স্ত্রী',
+    nomineePhone: '+8801812000006',
+    nomineeSharePercent: 100,
     status: 'ACTIVE'
   }
 ];
@@ -1357,5 +1453,23 @@ export const INITIAL_LATE_FEE_WAIVERS: LateFeeWaiverRecord[] = [
     waivedAt: '2026-09-20'
   }
 ];
+
+export const INITIAL_SAVINGS_POLICY: SavingsPolicyConfig = {
+  tenantId: 'samity-ekota',
+  generalSavingsInterestRate: 8.5,
+  minimumBalanceRequired: 500,
+  allowWithdrawalAnytime: true,
+  dpsDefaultFinePerMissedMonth: 100,
+  dpsGracePeriodDays: 10,
+  dpsEarlyClosureProfitDeductionPercent: 40,
+  fixedDepositRates: {
+    months6: 8.0,
+    months12: 9.5,
+    months24: 10.5,
+    months36: 11.5
+  },
+  lastUpdatedBy: 'আলহাজ্ব রফিকুল ইসলাম (সভাপতি)',
+  lastUpdatedAt: '2026-10-15'
+};
 
 

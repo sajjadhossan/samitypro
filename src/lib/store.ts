@@ -8,7 +8,8 @@ import {
   SignatureSealConfig, VoucherPrefixConfig, BulkDepositItem,
   AuditLog, ApprovalItem, GeneratedDocument, ApprovalStatus,
   CommunicationGatewayConfig, AutoSchedulerConfig, OfflineQueueItem, ReminderChannel,
-  SubscriptionPolicyConfig, LateFeeWaiverRecord, FeePaymentStatus
+  SubscriptionPolicyConfig, LateFeeWaiverRecord, FeePaymentStatus,
+  SavingsPolicyConfig, SavingsType, PaymentMethod
 } from '@/types';
 import { 
   INITIAL_TENANTS, INITIAL_USERS, INITIAL_MEMBERS, 
@@ -20,7 +21,7 @@ import {
   INITIAL_SIGNATURE_SEAL_CONFIG, INITIAL_VOUCHER_PREFIX_CONFIG,
   INITIAL_AUDIT_LOGS, INITIAL_APPROVAL_ITEMS, INITIAL_GENERATED_DOCUMENTS,
   INITIAL_GATEWAY_CONFIG, INITIAL_SCHEDULER_CONFIG, INITIAL_OFFLINE_QUEUE,
-  INITIAL_SUBSCRIPTION_POLICY, INITIAL_LATE_FEE_WAIVERS
+  INITIAL_SUBSCRIPTION_POLICY, INITIAL_LATE_FEE_WAIVERS, INITIAL_SAVINGS_POLICY
 } from './db';
 
 const STORAGE_KEYS = {
@@ -29,6 +30,7 @@ const STORAGE_KEYS = {
   MEMBERS: 'samitypro_members',
   SAVINGS_ACCOUNTS: 'samitypro_savings_accs',
   SAVINGS_TX: 'samitypro_savings_tx',
+  SAVINGS_POLICIES: 'samitypro_savings_policies',
   LOANS: 'samitypro_loans',
   VOUCHERS: 'samitypro_vouchers',
   MEETINGS: 'samitypro_meetings',
@@ -101,6 +103,7 @@ class DataStore {
   offlineQueue: OfflineQueueItem[] = INITIAL_OFFLINE_QUEUE;
   subscriptionPolicies: Record<string, SubscriptionPolicyConfig> = { 'samity-ekota': INITIAL_SUBSCRIPTION_POLICY };
   lateFeeWaivers: LateFeeWaiverRecord[] = INITIAL_LATE_FEE_WAIVERS;
+  savingsPolicies: Record<string, SavingsPolicyConfig> = { 'samity-ekota': INITIAL_SAVINGS_POLICY };
 
   currentTenantId: string = 'samity-ekota';
   currentUserId: string = 'user-rafiq';
@@ -117,6 +120,14 @@ class DataStore {
       const storedMembers = localStorage.getItem(STORAGE_KEYS.MEMBERS);
       if (storedMembers) this.members = JSON.parse(storedMembers);
       else localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(this.members));
+
+      const storedSavingsAccs = localStorage.getItem(STORAGE_KEYS.SAVINGS_ACCOUNTS);
+      if (storedSavingsAccs) this.savingsAccounts = JSON.parse(storedSavingsAccs);
+      else localStorage.setItem(STORAGE_KEYS.SAVINGS_ACCOUNTS, JSON.stringify(this.savingsAccounts));
+
+      const storedSavingsPolicies = localStorage.getItem(STORAGE_KEYS.SAVINGS_POLICIES);
+      if (storedSavingsPolicies) this.savingsPolicies = JSON.parse(storedSavingsPolicies);
+      else localStorage.setItem(STORAGE_KEYS.SAVINGS_POLICIES, JSON.stringify(this.savingsPolicies));
 
       const storedSavingsTx = localStorage.getItem(STORAGE_KEYS.SAVINGS_TX);
       if (storedSavingsTx) this.savingsTransactions = JSON.parse(storedSavingsTx);
@@ -260,6 +271,10 @@ class DataStore {
       if (storedSubPol) this.subscriptionPolicies = JSON.parse(storedSubPol);
       const storedWaivers = localStorage.getItem(STORAGE_KEYS.LATE_FEE_WAIVERS);
       if (storedWaivers) this.lateFeeWaivers = JSON.parse(storedWaivers);
+      const storedSavAccs = localStorage.getItem(STORAGE_KEYS.SAVINGS_ACCOUNTS);
+      if (storedSavAccs) this.savingsAccounts = JSON.parse(storedSavAccs);
+      const storedSavPol = localStorage.getItem(STORAGE_KEYS.SAVINGS_POLICIES);
+      if (storedSavPol) this.savingsPolicies = JSON.parse(storedSavPol);
       emitChange();
     } catch {}
   }
@@ -269,7 +284,9 @@ class DataStore {
     try {
       localStorage.setItem(STORAGE_KEYS.TENANTS, JSON.stringify(this.tenants));
       localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(this.members));
+      localStorage.setItem(STORAGE_KEYS.SAVINGS_ACCOUNTS, JSON.stringify(this.savingsAccounts));
       localStorage.setItem(STORAGE_KEYS.SAVINGS_TX, JSON.stringify(this.savingsTransactions));
+      localStorage.setItem(STORAGE_KEYS.SAVINGS_POLICIES, JSON.stringify(this.savingsPolicies));
       localStorage.setItem(STORAGE_KEYS.LOANS, JSON.stringify(this.loans));
       localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(this.vouchers));
       localStorage.setItem(STORAGE_KEYS.ELECTIONS, JSON.stringify(this.elections));
@@ -489,6 +506,165 @@ class DataStore {
   }
 
 
+  getSavingsPolicy(tenantId: string): SavingsPolicyConfig {
+    if (!this.savingsPolicies[tenantId]) {
+      this.savingsPolicies[tenantId] = {
+        ...INITIAL_SAVINGS_POLICY,
+        tenantId
+      };
+    }
+    return this.savingsPolicies[tenantId];
+  }
+
+  updateSavingsPolicy(tenantId: string, updates: Partial<SavingsPolicyConfig>) {
+    const current = this.getSavingsPolicy(tenantId);
+    this.savingsPolicies[tenantId] = {
+      ...current,
+      ...updates,
+      lastUpdatedAt: new Date().toISOString().split('T')[0],
+      lastUpdatedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'সভাপতি (অ্যাডমিন)'
+    };
+    this.addAuditLog({
+      tenantId,
+      action: 'UPDATE',
+      entity: 'SETTINGS',
+      entityId: `sav-policy-${tenantId}`,
+      descriptionBn: `সঞ্চয় ও ডিপিএস নীতিমালা হালনাগাদ করা হয়েছে (সাধারণ মুনাফা: ${this.savingsPolicies[tenantId].generalSavingsInterestRate}%, ডিপিএস জরিমানা: ৳${this.savingsPolicies[tenantId].dpsDefaultFinePerMissedMonth})`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ADMIN'
+    });
+    this.save();
+    return this.savingsPolicies[tenantId];
+  }
+
+  openSavingsAccount(params: {
+    tenantId: string;
+    memberId: string;
+    type: SavingsType;
+    title: string;
+    monthlyInstallment?: number;
+    targetAmount?: number;
+    tenureMonths?: number;
+    interestRate: number;
+    initialDeposit?: number;
+    paymentMethod?: PaymentMethod;
+    nomineeName?: string;
+    nomineeRelation?: string;
+    nomineePhone?: string;
+    nomineeNid?: string;
+    nomineeSharePercent?: number;
+    notes?: string;
+  }) {
+    const member = this.members.find(m => m.id === params.memberId);
+    if (!member) throw new Error('সদস্য খুঁজে পাওয়া যায়নি');
+
+    const prefix = params.type === 'DPS' ? 'DPS' : params.type === 'FIXED_DEPOSIT' ? 'FDR' : 'SAV';
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const accountNo = `${prefix}-EK-${randomSuffix}`;
+
+    const startDate = new Date().toISOString().split('T')[0];
+    let maturityDate: string | undefined = undefined;
+    if (params.tenureMonths && params.tenureMonths > 0) {
+      const mat = new Date();
+      mat.setMonth(mat.getMonth() + params.tenureMonths);
+      maturityDate = mat.toISOString().split('T')[0];
+    }
+
+    const initialAmount = params.initialDeposit || 0;
+
+    const newAccount: SavingsAccount = {
+      id: `acc-${Date.now()}`,
+      tenantId: params.tenantId,
+      memberId: params.memberId,
+      accountNo,
+      type: params.type,
+      title: params.title,
+      balance: initialAmount,
+      totalDeposited: initialAmount,
+      totalWithdrawn: 0,
+      targetAmount: params.targetAmount,
+      monthlyInstallment: params.monthlyInstallment,
+      tenureMonths: params.tenureMonths,
+      interestRate: params.interestRate,
+      startDate,
+      maturityDate,
+      lastDepositDate: initialAmount > 0 ? startDate : undefined,
+      nomineeName: params.nomineeName || member.nominee?.name,
+      nomineeRelation: params.nomineeRelation || member.nominee?.relation,
+      nomineePhone: params.nomineePhone || member.nominee?.phone,
+      nomineeNid: params.nomineeNid || member.nominee?.nidOrBirthCert,
+      nomineeSharePercent: params.nomineeSharePercent || 100,
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString()
+    };
+
+    this.savingsAccounts.unshift(newAccount);
+
+    if (params.type === 'DPS') {
+      member.dpsBalance = (member.dpsBalance || 0) + initialAmount;
+    } else {
+      member.savingsBalance = (member.savingsBalance || 0) + initialAmount;
+    }
+
+    if (initialAmount > 0) {
+      const receiptNo = `RCT-${Date.now().toString().slice(-6)}`;
+      const tx: SavingsTransaction = {
+        id: `stx-${Date.now()}`,
+        tenantId: params.tenantId,
+        accountId: newAccount.id,
+        memberId: params.memberId,
+        type: 'DEPOSIT',
+        amount: initialAmount,
+        balanceAfter: newAccount.balance,
+        paymentMethod: params.paymentMethod || 'CASH',
+        collectorId: this.currentUserId,
+        receiptNo,
+        date: startDate,
+        notes: params.notes || 'নতুন হিসাব খোলার প্রারম্ভিক জমা'
+      };
+      this.savingsTransactions.unshift(tx);
+
+      this.vouchers.unshift({
+        id: `vch-${Date.now()}`,
+        tenantId: params.tenantId,
+        voucherNo: `VR-${Date.now().toString().slice(-4)}`,
+        type: 'CREDIT',
+        category: 'সদস্য সঞ্চয় জমা',
+        amount: initialAmount,
+        descriptionBn: `${member.nameBn} (${member.memberCode}) এর নতুন হিসাব ${accountNo} খোলার প্রারম্ভিক জমা`,
+        descriptionEn: `Initial deposit for new account ${accountNo} from ${member.nameEn}`,
+        paidToOrReceivedFrom: member.nameBn,
+        paymentMethod: params.paymentMethod || 'CASH',
+        date: startDate,
+        createdBy: this.currentUserId
+      });
+    }
+
+    this.addAuditLog({
+      tenantId: params.tenantId,
+      action: 'CREATE',
+      entity: 'SAVINGS_ACCOUNT',
+      entityId: newAccount.id,
+      descriptionBn: `সদস্য ${member.nameBn} (${member.memberCode}) এর জন্য নতুন হিসাব ${accountNo} (${params.title}) খোলা হয়েছে`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ADMIN'
+    });
+
+    this.addEvent({
+      tenantId: params.tenantId,
+      type: 'NEW_SAVINGS_DEPOSIT',
+      titleBn: 'নতুন সঞ্চয়/ডিপিএস হিসাব খোলা হয়েছে',
+      titleEn: 'New Savings/DPS Account Opened',
+      messageBn: `${member.nameBn} এর জন্য হিসাব নম্বর ${accountNo} সফলভাবে খোলা হয়েছে।`,
+      messageEn: `Account ${accountNo} successfully opened for ${member.nameEn}.`,
+      memberId: member.id,
+      memberName: member.nameBn
+    });
+
+    this.save();
+    return newAccount;
+  }
+
   recordSavingsDeposit(params: {
     tenantId: string;
     memberId: string;
@@ -498,24 +674,39 @@ class DataStore {
     notes?: string;
   }) {
     const member = this.members.find(m => m.id === params.memberId);
-    if (!member) return;
+    if (!member) throw new Error('সদস্য খুঁজে পাওয়া যায়নি');
 
-    member.savingsBalance += params.amount;
+    let account = this.savingsAccounts.find(a => a.id === params.accountId);
+    if (!account) {
+      account = this.savingsAccounts.find(a => a.memberId === params.memberId && a.type === 'GENERAL_SAVINGS');
+    }
+
+    if (account) {
+      account.balance += params.amount;
+      account.totalDeposited = (account.totalDeposited || 0) + params.amount;
+      account.lastDepositDate = new Date().toISOString().split('T')[0];
+    }
+
+    if (account?.type === 'DPS') {
+      member.dpsBalance = (member.dpsBalance || 0) + params.amount;
+    } else {
+      member.savingsBalance = (member.savingsBalance || 0) + params.amount;
+    }
 
     const receiptNo = `RCT-${Date.now().toString().slice(-6)}`;
     const tx: SavingsTransaction = {
       id: `stx-${Date.now()}`,
       tenantId: params.tenantId,
-      accountId: params.accountId || 'sav-gen',
+      accountId: account?.id || 'sav-gen',
       memberId: params.memberId,
       type: 'DEPOSIT',
       amount: params.amount,
-      balanceAfter: member.savingsBalance,
+      balanceAfter: account ? account.balance : member.savingsBalance,
       paymentMethod: params.paymentMethod,
       collectorId: this.currentUserId,
       receiptNo,
       date: new Date().toISOString().split('T')[0],
-      notes: params.notes || 'নিয়মিত সঞ্চয় জমা'
+      notes: params.notes || (account?.type === 'DPS' ? 'ডিপিএস মাসিক কিস্তি জমা' : 'নিয়মিত সঞ্চয় জমা')
     };
     this.savingsTransactions.unshift(tx);
 
@@ -525,9 +716,9 @@ class DataStore {
       tenantId: params.tenantId,
       voucherNo: `VR-${Date.now().toString().slice(-4)}`,
       type: 'CREDIT',
-      category: 'সদস্য সঞ্চয় জমা',
+      category: account?.type === 'DPS' ? 'ডিপিএস কিস্তি জমা' : 'সদস্য সঞ্চয় জমা',
       amount: params.amount,
-      descriptionBn: `${member.nameBn} (${member.memberCode}) এর সঞ্চয় হিসাব জমা। রসিদ: ${receiptNo}`,
+      descriptionBn: `${member.nameBn} (${member.memberCode}) এর ${account ? account.title + ' (' + account.accountNo + ')' : 'সঞ্চয় হিসাব'} জমা। রসিদ: ${receiptNo}`,
       descriptionEn: `Savings deposit from ${member.nameEn}. Receipt: ${receiptNo}`,
       paidToOrReceivedFrom: member.nameBn,
       paymentMethod: params.paymentMethod,
@@ -539,17 +730,160 @@ class DataStore {
     this.addEvent({
       tenantId: params.tenantId,
       type: 'NEW_SAVINGS_DEPOSIT',
-      titleBn: 'সঞ্চয় জমা গ্রহণ সম্পন্ন',
-      titleEn: 'Savings Deposit Received',
-      messageBn: `${member.nameBn} জমা দিয়েছেন ৳ ${params.amount.toLocaleString()}। নতুন ব্যালান্স ৳ ${member.savingsBalance.toLocaleString()}`,
-      messageEn: `${member.nameEn} deposited ৳ ${params.amount.toLocaleString()}. Balance: ৳ ${member.savingsBalance.toLocaleString()}`,
+      titleBn: account?.type === 'DPS' ? 'ডিপিএস কিস্তি আদায় সম্পন্ন' : 'সঞ্চয় জমা গ্রহণ সম্পন্ন',
+      titleEn: account?.type === 'DPS' ? 'DPS Installment Received' : 'Savings Deposit Received',
+      messageBn: `${member.nameBn} জমা দিয়েছেন ৳ ${params.amount.toLocaleString()}। নতুন ব্যালান্স ৳ ${(account?.balance || member.savingsBalance).toLocaleString()}`,
+      messageEn: `${member.nameEn} deposited ৳ ${params.amount.toLocaleString()}. Balance: ৳ ${(account?.balance || member.savingsBalance).toLocaleString()}`,
       amount: params.amount,
       memberId: member.id,
       memberName: member.nameBn
     });
 
+    this.addAuditLog({
+      tenantId: params.tenantId,
+      action: 'UPDATE',
+      entity: 'SAVINGS_ACCOUNT',
+      entityId: account?.id || member.id,
+      descriptionBn: `সদস্য ${member.nameBn} (${member.memberCode}) এর ${account ? account.accountNo : 'সঞ্চয়'} হিসেবে ৳${params.amount.toLocaleString()} জমা গ্রহণ (রসিদ: ${receiptNo})`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ADMIN'
+    });
+
     this.save();
     return tx;
+  }
+
+  recordSavingsWithdrawal(params: {
+    tenantId: string;
+    accountId: string;
+    memberId: string;
+    amount: number;
+    paymentMethod: PaymentMethod;
+    notes?: string;
+  }) {
+    const member = this.members.find(m => m.id === params.memberId);
+    if (!member) throw new Error('সদস্য খুঁজে পাওয়া যায়নি');
+
+    const account = this.savingsAccounts.find(a => a.id === params.accountId);
+    if (!account) throw new Error('সঞ্চয় হিসাব পাওয়া যায়নি');
+
+    const policy = this.getSavingsPolicy(params.tenantId);
+    const minReserve = account.type === 'GENERAL_SAVINGS' ? policy.minimumBalanceRequired : 0;
+    if (account.balance - params.amount < minReserve) {
+      throw new Error(`উত্তোলনের পর অ্যাকাউন্টে ন্যূনতম ৳${minReserve.toLocaleString()} স্থিতি থাকতে হবে। বর্তমান স্থিতি ৳${account.balance.toLocaleString()}।`);
+    }
+
+    account.balance -= params.amount;
+    account.totalWithdrawn = (account.totalWithdrawn || 0) + params.amount;
+
+    if (account.type === 'DPS') {
+      member.dpsBalance = Math.max(0, (member.dpsBalance || 0) - params.amount);
+    } else {
+      member.savingsBalance = Math.max(0, (member.savingsBalance || 0) - params.amount);
+    }
+
+    const receiptNo = `WD-${Date.now().toString().slice(-6)}`;
+    const tx: SavingsTransaction = {
+      id: `stx-${Date.now()}`,
+      tenantId: params.tenantId,
+      accountId: account.id,
+      memberId: params.memberId,
+      type: 'WITHDRAWAL',
+      amount: params.amount,
+      balanceAfter: account.balance,
+      paymentMethod: params.paymentMethod,
+      collectorId: this.currentUserId,
+      receiptNo,
+      date: new Date().toISOString().split('T')[0],
+      notes: params.notes || 'সঞ্চয় তহবিল থেকে উত্তোলন'
+    };
+    this.savingsTransactions.unshift(tx);
+
+    this.vouchers.unshift({
+      id: `vch-${Date.now()}`,
+      tenantId: params.tenantId,
+      voucherNo: `VR-${Date.now().toString().slice(-4)}`,
+      type: 'DEBIT',
+      category: 'সদস্য সঞ্চয় উত্তোলন',
+      amount: params.amount,
+      descriptionBn: `${member.nameBn} (${member.memberCode}) এর সঞ্চয় হিসাব ${account.accountNo} হইতে উত্তোলন। ভাউচার: ${receiptNo}`,
+      descriptionEn: `Savings withdrawal for ${member.nameEn} from account ${account.accountNo}`,
+      paidToOrReceivedFrom: member.nameBn,
+      paymentMethod: params.paymentMethod,
+      date: new Date().toISOString().split('T')[0],
+      createdBy: this.currentUserId
+    });
+
+    this.addAuditLog({
+      tenantId: params.tenantId,
+      action: 'UPDATE',
+      entity: 'SAVINGS_ACCOUNT',
+      entityId: account.id,
+      descriptionBn: `সদস্য ${member.nameBn} (${member.memberCode}) এর হিসাব ${account.accountNo} হইতে ৳${params.amount.toLocaleString()} উত্তোলন সম্পন্ন। অবশিষ্টাংশ: ৳${account.balance.toLocaleString()}`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return tx;
+  }
+
+  closeOrSettleSavingsAccount(params: {
+    tenantId: string;
+    accountId: string;
+    memberId: string;
+    principalPaid: number;
+    accruedProfit: number;
+    penaltyDeduction: number;
+    netPayable: number;
+    paymentMethod: PaymentMethod;
+    reason?: string;
+  }) {
+    const member = this.members.find(m => m.id === params.memberId);
+    if (!member) throw new Error('সদস্য খুঁজে পাওয়া যায়নি');
+    const account = this.savingsAccounts.find(a => a.id === params.accountId);
+    if (!account) throw new Error('হিসাব খুঁজে পাওয়া যায়নি');
+
+    const previousBalance = account.balance;
+    account.status = 'CLOSED';
+    account.balance = 0;
+    account.closedDate = new Date().toISOString().split('T')[0];
+    account.closedReason = params.reason || 'মেয়াদপূর্তি বা স্বেচ্ছায় হিসাব নিষ্পত্তি';
+
+    if (account.type === 'DPS') {
+      member.dpsBalance = Math.max(0, (member.dpsBalance || 0) - previousBalance);
+    } else {
+      member.savingsBalance = Math.max(0, (member.savingsBalance || 0) - previousBalance);
+    }
+
+    const voucherNo = `VR-SETTLE-${Date.now().toString().slice(-4)}`;
+    this.vouchers.unshift({
+      id: `vch-${Date.now()}`,
+      tenantId: params.tenantId,
+      voucherNo,
+      type: 'DEBIT',
+      category: account.type === 'DPS' ? 'ডিপিএস মেয়াদপূর্তি ও নিষ্পত্তি' : 'সঞ্চয় হিসাব চূড়ান্ত নিষ্পত্তি',
+      amount: params.netPayable,
+      descriptionBn: `${member.nameBn} (${member.memberCode}) এর ${account.title} (${account.accountNo}) চূড়ান্ত নিষ্পত্তি (আমানত: ৳${params.principalPaid.toLocaleString()}, লভ্যাংশ: ৳${params.accruedProfit.toLocaleString()}, কর্তন: ৳${params.penaltyDeduction.toLocaleString()}, মোট প্রদেয়: ৳${params.netPayable.toLocaleString()})`,
+      descriptionEn: `Settlement for ${account.accountNo}. Net paid: ৳${params.netPayable.toLocaleString()}`,
+      paidToOrReceivedFrom: member.nameBn,
+      paymentMethod: params.paymentMethod,
+      date: new Date().toISOString().split('T')[0],
+      createdBy: this.currentUserId
+    });
+
+    this.addAuditLog({
+      tenantId: params.tenantId,
+      action: 'UPDATE',
+      entity: 'SAVINGS_ACCOUNT',
+      entityId: account.id,
+      descriptionBn: `হিসাব ${account.accountNo} (${account.title}) চূড়ান্ত নিষ্পত্তি সম্পন্ন। সদস্যকে পরিশোধ: ৳${params.netPayable.toLocaleString()}`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return account;
   }
 
   collectLoanInstallment(params: {
@@ -1316,11 +1650,13 @@ class DataStore {
 
   exportFullBackup(): string {
     const backupData = {
-      version: '1.0.6',
+      version: '1.0.7',
       exportedAt: new Date().toISOString(),
       tenantId: this.currentTenantId,
       tenants: this.tenants.filter(t => t.id === this.currentTenantId),
       members: this.members.filter(m => m.tenantId === this.currentTenantId),
+      savingsAccounts: this.savingsAccounts.filter(s => s.tenantId === this.currentTenantId),
+      savingsPolicies: this.savingsPolicies,
       savingsTransactions: this.savingsTransactions.filter(t => t.tenantId === this.currentTenantId),
       loans: this.loans.filter(l => l.tenantId === this.currentTenantId),
       vouchers: this.vouchers.filter(v => v.tenantId === this.currentTenantId),
@@ -1357,6 +1693,8 @@ class DataStore {
       }
 
       if (data.members) this.members = data.members;
+      if (data.savingsAccounts) this.savingsAccounts = data.savingsAccounts;
+      if (data.savingsPolicies) this.savingsPolicies = data.savingsPolicies;
       if (data.savingsTransactions) this.savingsTransactions = data.savingsTransactions;
       if (data.loans) this.loans = data.loans;
       if (data.vouchers) this.vouchers = data.vouchers;
@@ -1657,5 +1995,12 @@ export function useSamityStore() {
     generateMonthlyDues: (monthYear: string, monthNameBn: string) => store.generateMonthlyDues(activeTenant?.id || 'samity-ekota', monthYear, monthNameBn),
     waiveLateFee: (subscriptionId: string, waivedAmount: number, reason: string) => store.waiveLateFee(subscriptionId, waivedAmount, reason),
     applyOverdueLateFees: () => store.applyOverdueLateFees(activeTenant?.id || 'samity-ekota'),
+    savingsAccounts: store.savingsAccounts.filter(a => a.tenantId === activeTenant?.id),
+    savingsPolicy: store.getSavingsPolicy(activeTenant?.id || 'samity-ekota'),
+    openSavingsAccount: (params: Parameters<typeof store.openSavingsAccount>[0]) => store.openSavingsAccount(params),
+    recordSavingsDeposit: (params: Parameters<typeof store.recordSavingsDeposit>[0]) => store.recordSavingsDeposit(params),
+    recordSavingsWithdrawal: (params: Parameters<typeof store.recordSavingsWithdrawal>[0]) => store.recordSavingsWithdrawal(params),
+    closeOrSettleSavingsAccount: (params: Parameters<typeof store.closeOrSettleSavingsAccount>[0]) => store.closeOrSettleSavingsAccount(params),
+    updateSavingsPolicy: (updates: Partial<SavingsPolicyConfig>) => store.updateSavingsPolicy(activeTenant?.id || 'samity-ekota', updates),
   };
 }

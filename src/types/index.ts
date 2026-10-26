@@ -231,13 +231,42 @@ export interface SavingsAccount {
   type: SavingsType;
   title: string;
   balance: number;
+  totalDeposited?: number;
+  totalWithdrawn?: number;
   targetAmount?: number;
   monthlyInstallment?: number;
   tenureMonths?: number;
   interestRate: number;
   startDate: string;
   maturityDate?: string;
+  lastDepositDate?: string;
+  nomineeName?: string;
+  nomineeRelation?: string;
+  nomineePhone?: string;
+  nomineeNid?: string;
+  nomineeSharePercent?: number;
   status: 'ACTIVE' | 'MATURED' | 'CLOSED';
+  closedDate?: string;
+  closedReason?: string;
+  createdAt?: string;
+}
+
+export interface SavingsPolicyConfig {
+  tenantId: string;
+  generalSavingsInterestRate: number;
+  minimumBalanceRequired: number;
+  allowWithdrawalAnytime: boolean;
+  dpsDefaultFinePerMissedMonth: number;
+  dpsGracePeriodDays: number;
+  dpsEarlyClosureProfitDeductionPercent: number;
+  fixedDepositRates: {
+    months6: number;
+    months12: number;
+    months24: number;
+    months36: number;
+  };
+  lastUpdatedBy: string;
+  lastUpdatedAt: string;
 }
 
 export type PaymentMethod = 'CASH' | 'BANK' | 'BKASH' | 'NAGAD';
@@ -646,7 +675,7 @@ export interface BulkDepositItem {
 }
 
 export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'EXPORT' | 'IMPORT' | 'RESTORE' | 'LOGIN';
-export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'DOCUMENT' | 'BACKUP' | 'TENANT' | 'SUBSCRIPTION';
+export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'SETTINGS' | 'DOCUMENT' | 'BACKUP' | 'TENANT' | 'SUBSCRIPTION' | 'SAVINGS_ACCOUNT';
 
 export interface AuditLog {
   id: string;

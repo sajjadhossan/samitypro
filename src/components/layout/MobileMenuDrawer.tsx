@@ -80,7 +80,7 @@ export function MobileMenuDrawer({
                      currentUser.role === 'MANAGER' ? 'ম্যানেজার' :
                      currentUser.role === 'FIELD_COLLECTOR' ? 'কালেক্টর' : 'সদস্য'}
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">v1.0.6</span>
+                  <span className="text-[10px] text-slate-400 font-mono">v1.0.7</span>
                 </div>
               </div>
             </div>
@@ -217,7 +217,7 @@ export function MobileMenuDrawer({
                     <PiggyBank className="w-4 h-4 text-emerald-400" />
                     <span>সঞ্চয় ও ডিপিএস হিসাব (Savings & DPS)</span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">সঞ্চয়</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">মডিউল ৪</span>
                 </button>
 
                 <button
