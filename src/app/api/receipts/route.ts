@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { INITIAL_PAID_RECEIPTS } from '@/lib/db';
 
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
   try {
     const tenantId = request.nextUrl.searchParams.get('tenantId') || 'samity-ekota';
     const receiptNo = request.nextUrl.searchParams.get('receiptNo');

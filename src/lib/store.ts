@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Tenant, User, Member, MemberStatus, SavingsAccount, SavingsTransaction, 
-  Loan, Voucher, Meeting, MeetingType, MeetingStatus, MeetingAgendaItem, MeetingResolution, MeetingAttendee,
+  Loan, Voucher, Meeting, MeetingType, MeetingAgendaItem, MeetingResolution, MeetingAttendee,
   Election, ElectionStatus, ElectionPost, ElectionPostConfig, ElectionCandidate, ElectionVoter, ElectionCommission, CandidateStatus,
   RealtimeEvent, Language,
   MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder,
@@ -13,7 +13,7 @@ import {
   SubscriptionPolicyConfig, LateFeeWaiverRecord, FeePaymentStatus,
   SavingsPolicyConfig, SavingsType, PaymentMethod,
   LoanPolicyConfig, LoanInterestMethod, LoanFrequency, LoanGuarantor, LoanInstallment,
-  AccountHead, AccountHeadGroup, GeneralLedgerEntry, TrialBalanceItem
+  AccountHead, GeneralLedgerEntry, TrialBalanceItem
 } from '@/types';
 import { 
   INITIAL_TENANTS, INITIAL_USERS, INITIAL_MEMBERS, 
@@ -362,7 +362,7 @@ class DataStore {
   setCurrentUser(userId: string) {
     this.currentUserId = userId;
     const user = this.users.find(u => u.id === userId);
-    if (user && user.tenantId) {
+    if (user?.tenantId) {
       this.currentTenantId = user.tenantId;
     }
     this.save();
@@ -711,9 +711,7 @@ class DataStore {
     if (!member) throw new Error('সদস্য খুঁজে পাওয়া যায়নি');
 
     let account = this.savingsAccounts.find(a => a.id === params.accountId);
-    if (!account) {
-      account = this.savingsAccounts.find(a => a.memberId === params.memberId && a.type === 'GENERAL_SAVINGS');
-    }
+    account ??= this.savingsAccounts.find(a => a.memberId === params.memberId && a.type === 'GENERAL_SAVINGS');
 
     if (account) {
       account.balance += params.amount;
@@ -1523,8 +1521,8 @@ class DataStore {
 
     activeMembers.forEach(member => {
       // Check if already billed for this month
-      const existing = this.subscriptions.find(s => s.tenantId === tenantId && s.memberId === member.id && s.monthYear === monthYear);
-      if (existing) {
+      const isAlreadyBilled = this.subscriptions.some(s => s.tenantId === tenantId && s.memberId === member.id && s.monthYear === monthYear);
+      if (isAlreadyBilled) {
         skippedCount++;
         return;
       }
@@ -1993,7 +1991,7 @@ class DataStore {
       totalReceipts,
       totalPayments,
       closingCash,
-      entries: entries.reverse()
+      entries: [...entries].reverse()
     };
   }
 
@@ -2048,7 +2046,7 @@ class DataStore {
       totalDeposits,
       totalWithdraws,
       closingBank,
-      entries: entries.reverse()
+      entries: [...entries].reverse()
     };
   }
 
@@ -2088,7 +2086,7 @@ class DataStore {
       head,
       openingBalance: head ? head.openingBalance : 0,
       closingBalance: running,
-      entries: entries.reverse()
+      entries: [...entries].reverse()
     };
   }
 
@@ -2518,8 +2516,9 @@ class DataStore {
 
       this.save();
       return { success: true, message: 'সফলভাবে ব্যাকআপ থেকে ডাটা রিস্টোর করা হয়েছে।' };
-    } catch (err: any) {
-      return { success: false, message: `রিস্টোর ব্যর্থ: ${err.message}` };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, message: `রিস্টোর ব্যর্থ: ${message}` };
     }
   }
 
@@ -2630,7 +2629,7 @@ class DataStore {
     let deliveryNote = 'সফলভাবে প্রেরিত';
 
     if (params.channel === 'WHATSAPP') {
-      const cleanPhone = member.phone.replace(/[^0-9]/g, '');
+      const cleanPhone = member.phone.replace(/\D/g, '');
       const fullPhone = cleanPhone.startsWith('88') ? cleanPhone : `88${cleanPhone}`;
       externalUrl = `https://wa.me/${fullPhone}?text=${encodeURIComponent(messageText)}`;
       deliveryNote = this.gatewayConfig.whatsappMode === 'OPEN_WA' 
@@ -2717,6 +2716,7 @@ class DataStore {
   }
 
   async syncOfflineQueue(): Promise<{ syncedCount: number; failedCount: number }> {
+    await Promise.resolve();
     const pendingItems = this.offlineQueue.filter(i => i.status === 'PENDING' || i.status === 'FAILED');
     let synced = 0;
 
@@ -2728,7 +2728,6 @@ class DataStore {
     }
 
     // Mark all as synced and empty queue
-    const count = this.offlineQueue.length;
     this.offlineQueue = [];
 
     this.addAuditLog({
@@ -2736,13 +2735,13 @@ class DataStore {
       action: 'UPDATE',
       entity: 'BACKUP',
       entityId: `sync-${Date.now()}`,
-      descriptionBn: `অফলাইন কিউ থেকে মোট ${count}টি ডাটা রেকর্ড ক্লাউড ডাটাবেজে সফলভাবে সিঙ্ক সম্পন্ন হয়েছে।`,
+      descriptionBn: `অফলাইন কিউ থেকে মোট ${synced}টি ডাটা রেকর্ড ক্লাউড ডাটাবেজে সফলভাবে সিঙ্ক সম্পন্ন হয়েছে।`,
       performedBy: 'মোবাইল সিঙ্ক ইঞ্জিন',
       performedByRole: 'SYSTEM'
     });
 
     this.save();
-    return { syncedCount: count, failedCount: 0 };
+    return { syncedCount: synced, failedCount: 0 };
   }
 
   clearOfflineQueue() {
@@ -3428,7 +3427,7 @@ class DataStore {
 
   toggleVoterEligibility(electionId: string, memberId: string, isEligible: boolean, reason?: string) {
     const election = this.elections.find(e => e.id === electionId);
-    if (!election || !election.voters) return false;
+    if (!election?.voters) return false;
 
     const voter = election.voters.find(v => v.memberId === memberId);
     if (voter) {
@@ -3512,7 +3511,7 @@ export const store = new DataStore();
 
 // React Hook to subscribe to store changes
 export function useSamityStore() {
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     store.init();
