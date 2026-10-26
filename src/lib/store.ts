@@ -9,7 +9,8 @@ import {
   AuditLog, ApprovalItem, GeneratedDocument, ApprovalStatus,
   CommunicationGatewayConfig, AutoSchedulerConfig, OfflineQueueItem, ReminderChannel,
   SubscriptionPolicyConfig, LateFeeWaiverRecord, FeePaymentStatus,
-  SavingsPolicyConfig, SavingsType, PaymentMethod
+  SavingsPolicyConfig, SavingsType, PaymentMethod,
+  LoanPolicyConfig, LoanInterestMethod, LoanFrequency, LoanGuarantor, LoanInstallment
 } from '@/types';
 import { 
   INITIAL_TENANTS, INITIAL_USERS, INITIAL_MEMBERS, 
@@ -21,7 +22,8 @@ import {
   INITIAL_SIGNATURE_SEAL_CONFIG, INITIAL_VOUCHER_PREFIX_CONFIG,
   INITIAL_AUDIT_LOGS, INITIAL_APPROVAL_ITEMS, INITIAL_GENERATED_DOCUMENTS,
   INITIAL_GATEWAY_CONFIG, INITIAL_SCHEDULER_CONFIG, INITIAL_OFFLINE_QUEUE,
-  INITIAL_SUBSCRIPTION_POLICY, INITIAL_LATE_FEE_WAIVERS, INITIAL_SAVINGS_POLICY
+  INITIAL_SUBSCRIPTION_POLICY, INITIAL_LATE_FEE_WAIVERS, INITIAL_SAVINGS_POLICY,
+  INITIAL_LOAN_POLICY
 } from './db';
 
 const STORAGE_KEYS = {
@@ -53,6 +55,7 @@ const STORAGE_KEYS = {
   OFFLINE_QUEUE: 'samitypro_offline_queue',
   SUBSCRIPTION_POLICIES: 'samitypro_sub_policies',
   LATE_FEE_WAIVERS: 'samitypro_late_waivers',
+  LOAN_POLICIES: 'samitypro_loan_policies',
   CURRENT_TENANT_ID: 'samitypro_active_tenant',
   CURRENT_USER_ID: 'samitypro_active_user',
   LANGUAGE: 'samitypro_language'
@@ -104,6 +107,7 @@ class DataStore {
   subscriptionPolicies: Record<string, SubscriptionPolicyConfig> = { 'samity-ekota': INITIAL_SUBSCRIPTION_POLICY };
   lateFeeWaivers: LateFeeWaiverRecord[] = INITIAL_LATE_FEE_WAIVERS;
   savingsPolicies: Record<string, SavingsPolicyConfig> = { 'samity-ekota': INITIAL_SAVINGS_POLICY };
+  loanPolicies: Record<string, LoanPolicyConfig> = { 'samity-ekota': INITIAL_LOAN_POLICY };
 
   currentTenantId: string = 'samity-ekota';
   currentUserId: string = 'user-rafiq';
@@ -128,6 +132,10 @@ class DataStore {
       const storedSavingsPolicies = localStorage.getItem(STORAGE_KEYS.SAVINGS_POLICIES);
       if (storedSavingsPolicies) this.savingsPolicies = JSON.parse(storedSavingsPolicies);
       else localStorage.setItem(STORAGE_KEYS.SAVINGS_POLICIES, JSON.stringify(this.savingsPolicies));
+
+      const storedLoanPolicies = localStorage.getItem(STORAGE_KEYS.LOAN_POLICIES);
+      if (storedLoanPolicies) this.loanPolicies = JSON.parse(storedLoanPolicies);
+      else localStorage.setItem(STORAGE_KEYS.LOAN_POLICIES, JSON.stringify(this.loanPolicies));
 
       const storedSavingsTx = localStorage.getItem(STORAGE_KEYS.SAVINGS_TX);
       if (storedSavingsTx) this.savingsTransactions = JSON.parse(storedSavingsTx);
@@ -275,6 +283,8 @@ class DataStore {
       if (storedSavAccs) this.savingsAccounts = JSON.parse(storedSavAccs);
       const storedSavPol = localStorage.getItem(STORAGE_KEYS.SAVINGS_POLICIES);
       if (storedSavPol) this.savingsPolicies = JSON.parse(storedSavPol);
+      const storedLoanPol = localStorage.getItem(STORAGE_KEYS.LOAN_POLICIES);
+      if (storedLoanPol) this.loanPolicies = JSON.parse(storedLoanPol);
       emitChange();
     } catch {}
   }
@@ -288,6 +298,7 @@ class DataStore {
       localStorage.setItem(STORAGE_KEYS.SAVINGS_TX, JSON.stringify(this.savingsTransactions));
       localStorage.setItem(STORAGE_KEYS.SAVINGS_POLICIES, JSON.stringify(this.savingsPolicies));
       localStorage.setItem(STORAGE_KEYS.LOANS, JSON.stringify(this.loans));
+      localStorage.setItem(STORAGE_KEYS.LOAN_POLICIES, JSON.stringify(this.loanPolicies));
       localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(this.vouchers));
       localStorage.setItem(STORAGE_KEYS.ELECTIONS, JSON.stringify(this.elections));
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(this.events));
@@ -886,59 +897,435 @@ class DataStore {
     return account;
   }
 
+  getLoanPolicy(tenantId: string): LoanPolicyConfig {
+    if (!this.loanPolicies[tenantId]) {
+      this.loanPolicies[tenantId] = {
+        ...INITIAL_LOAN_POLICY,
+        tenantId
+      };
+    }
+    return this.loanPolicies[tenantId];
+  }
+
+  updateLoanPolicy(tenantId: string, updates: Partial<LoanPolicyConfig>) {
+    const current = this.getLoanPolicy(tenantId);
+    this.loanPolicies[tenantId] = {
+      ...current,
+      ...updates,
+      lastUpdatedAt: new Date().toISOString().split('T')[0],
+      lastUpdatedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'সভাপতি (অ্যাডমিন)'
+    };
+    this.addAuditLog({
+      tenantId,
+      action: 'UPDATE',
+      entity: 'SETTINGS',
+      entityId: `loan-policy-${tenantId}`,
+      descriptionBn: `ঋণ ও কিস্তি নীতিমালা হালনাগাদ করা হয়েছে (সুদের হার: ${this.loanPolicies[tenantId].defaultInterestRate}%, সঞ্চয় অনুপাত: ${this.loanPolicies[tenantId].maxLoanToSavingsRatio}x)`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ADMIN'
+    });
+    this.save();
+    return this.loanPolicies[tenantId];
+  }
+
+  applyLoan(params: {
+    tenantId: string;
+    memberId: string;
+    loanScheme: string;
+    principalAmount: number;
+    interestRatePercent: number;
+    interestMethod?: LoanInterestMethod;
+    durationMonths: number;
+    installmentFrequency?: LoanFrequency;
+    purpose: string;
+    processingFee?: number;
+    guarantor1?: LoanGuarantor;
+    guarantor2?: LoanGuarantor;
+    collateralDetails?: string;
+    autoApprove?: boolean;
+    approvalNotes?: string;
+  }): Loan {
+    const member = this.members.find(m => m.id === params.memberId);
+    const today = new Date().toISOString().split('T')[0];
+    const interestMethod = params.interestMethod || 'FLAT';
+    const frequency = params.installmentFrequency || 'MONTHLY';
+    
+    // Calculate total interest and schedule
+    const durationYears = params.durationMonths / 12;
+    const totalInterest = Math.round(params.principalAmount * (params.interestRatePercent / 100) * durationYears);
+    const totalPayable = params.principalAmount + totalInterest;
+
+    let totalInstallments = params.durationMonths;
+    if (frequency === 'WEEKLY') totalInstallments = params.durationMonths * 4;
+    else if (frequency === 'DAILY') totalInstallments = params.durationMonths * 30;
+
+    const installmentAmount = Math.round(totalPayable / totalInstallments);
+    const perPrincipal = Math.round(params.principalAmount / totalInstallments);
+    const perInterest = installmentAmount - perPrincipal;
+
+    // Generate schedule
+    const installments: LoanInstallment[] = [];
+    const baseDate = new Date();
+    for (let i = 1; i <= totalInstallments; i++) {
+      const dueDateObj = new Date(baseDate);
+      if (frequency === 'MONTHLY') dueDateObj.setMonth(baseDate.getMonth() + i);
+      else if (frequency === 'WEEKLY') dueDateObj.setDate(baseDate.getDate() + (i * 7));
+      else dueDateObj.setDate(baseDate.getDate() + i);
+
+      installments.push({
+        installmentNumber: i,
+        dueDate: dueDateObj.toISOString().split('T')[0],
+        principalAmount: perPrincipal,
+        interestAmount: perInterest,
+        totalDue: installmentAmount,
+        paidAmount: 0,
+        status: 'PENDING'
+      });
+    }
+
+    const loanCount = this.loans.filter(l => l.tenantId === params.tenantId).length + 1;
+    const loanNumber = `LN-EK-${new Date().getFullYear()}-${loanCount.toString().padStart(2, '0')}`;
+    const newId = `loan-${Date.now()}`;
+    const isApproved = !!params.autoApprove;
+
+    const newLoan: Loan = {
+      id: newId,
+      tenantId: params.tenantId,
+      memberId: params.memberId,
+      loanNumber,
+      loanScheme: params.loanScheme,
+      principalAmount: params.principalAmount,
+      interestRatePercent: params.interestRatePercent,
+      interestMethod,
+      durationMonths: params.durationMonths,
+      totalPayable,
+      totalPaid: 0,
+      outstandingBalance: totalPayable,
+      installmentFrequency: frequency,
+      installmentAmount,
+      totalInstallments,
+      paidInstallments: 0,
+      processingFee: params.processingFee ?? Math.round(params.principalAmount * 0.01),
+      guarantor1: params.guarantor1,
+      guarantor2: params.guarantor2,
+      collateralDetails: params.collateralDetails,
+      purpose: params.purpose,
+      status: isApproved ? 'APPROVED' : 'PENDING',
+      approvalDate: isApproved ? today : undefined,
+      approvedBy: isApproved ? (this.users.find(u => u.id === this.currentUserId)?.nameBn || 'সভাপতি (অ্যাডমিন)') : undefined,
+      approvalNotes: isApproved ? (params.approvalNotes || 'অ্যাডমিন কর্তৃক তাৎক্ষণিক অনুমোদিত') : undefined,
+      installments,
+      createdAt: today
+    };
+
+    this.loans.unshift(newLoan);
+
+    this.addEvent({
+      tenantId: params.tenantId,
+      type: 'LOAN_APPLICATION_SUBMITTED',
+      titleBn: isApproved ? 'নতুন ঋণ অনুমোদিত হয়েছে' : 'নতুন ঋণ আবেদন জমা হয়েছে',
+      titleEn: isApproved ? 'New Loan Approved' : 'New Loan Application Submitted',
+      messageBn: `${member?.nameBn || 'সদস্য'} এর জন্য ৳${params.principalAmount.toLocaleString()} টাকার ${params.loanScheme} আবেদন সম্পন্ন হয়েছে।`,
+      messageEn: `Loan application for ৳${params.principalAmount.toLocaleString()} submitted for ${member?.nameEn || 'Member'}.`,
+      amount: params.principalAmount,
+      memberId: member?.id,
+      memberName: member?.nameBn
+    });
+
+    this.addAuditLog({
+      tenantId: params.tenantId,
+      action: 'CREATE',
+      entity: 'LOAN',
+      entityId: newId,
+      descriptionBn: `নতুন ঋণ আবেদন: ${loanNumber} (${params.loanScheme}), সদস্য: ${member?.nameBn} (${member?.memberCode}), পরিমাণ: ৳${params.principalAmount.toLocaleString()}, মেয়াদ: ${params.durationMonths} মাস`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return newLoan;
+  }
+
+  approveOrRejectLoan(params: {
+    tenantId: string;
+    loanId: string;
+    status: 'APPROVED' | 'REJECTED';
+    notes?: string;
+    rejectionReason?: string;
+  }): Loan | null {
+    const loan = this.loans.find(l => l.id === params.loanId);
+    if (!loan) return null;
+
+    const today = new Date().toISOString().split('T')[0];
+    const member = this.members.find(m => m.id === loan.memberId);
+    const approverName = this.users.find(u => u.id === this.currentUserId)?.nameBn || 'আলহাজ্ব রফিকুল ইসলাম (সভাপতি)';
+
+    loan.status = params.status;
+    if (params.status === 'APPROVED') {
+      loan.approvalDate = today;
+      loan.approvedBy = approverName;
+      loan.approvalNotes = params.notes || 'ঋণ কমিটি কর্তৃক যাচাই ও অনুমোদিত';
+    } else {
+      loan.rejectionReason = params.rejectionReason || params.notes || 'যথাযথ জামিনদার বা নথির ঘাটতি থাকায় আবেদন বাতিল';
+    }
+
+    this.addAuditLog({
+      tenantId: params.tenantId,
+      action: params.status === 'APPROVED' ? 'APPROVE' : 'REJECT',
+      entity: 'LOAN',
+      entityId: loan.id,
+      descriptionBn: `ঋণ হিসাব ${loan.loanNumber} (${member?.nameBn}) ${params.status === 'APPROVED' ? 'অনুমোদন করা হয়েছে' : 'প্রত্যাখ্যান করা হয়েছে'}। মন্তব্য: ${params.notes || params.rejectionReason || ''}`,
+      performedBy: approverName,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return loan;
+  }
+
+  disburseLoan(params: {
+    tenantId: string;
+    loanId: string;
+    disbursementDate?: string;
+    paymentMethod: PaymentMethod;
+    notes?: string;
+  }): Loan | null {
+    const loan = this.loans.find(l => l.id === params.loanId);
+    if (!loan) return null;
+
+    const today = params.disbursementDate || new Date().toISOString().split('T')[0];
+    const member = this.members.find(m => m.id === loan.memberId);
+    const officerName = this.users.find(u => u.id === this.currentUserId)?.nameBn || 'মো: তারেক হাসান (ম্যানেজার)';
+
+    loan.status = 'ACTIVE';
+    loan.disbursementDate = today;
+    loan.disbursedBy = officerName;
+    loan.disbursementMethod = params.paymentMethod;
+
+    const voucherNo = `VR-DB-${Date.now().toString().slice(-4)}`;
+    loan.disbursementVoucherNo = voucherNo;
+
+    // Recalculate schedule dates starting from disbursement date
+    const baseDate = new Date(today);
+    loan.installments.forEach((inst, idx) => {
+      const d = new Date(baseDate);
+      if (loan.installmentFrequency === 'WEEKLY') d.setDate(baseDate.getDate() + ((idx + 1) * 7));
+      else if (loan.installmentFrequency === 'DAILY') d.setDate(baseDate.getDate() + (idx + 1));
+      else d.setMonth(baseDate.getMonth() + (idx + 1));
+      inst.dueDate = d.toISOString().split('T')[0];
+    });
+
+    // Update member's loanOutstanding
+    if (member) {
+      member.loanOutstanding = (member.loanOutstanding || 0) + loan.totalPayable;
+    }
+
+    // Create Cash/Bank Debit Voucher for Loan Disbursement
+    const debitVoucher: Voucher = {
+      id: `vch-${Date.now()}`,
+      tenantId: params.tenantId,
+      voucherNo,
+      type: 'DEBIT',
+      category: 'ঋণ বিতরণ (Disbursement)',
+      amount: loan.principalAmount,
+      descriptionBn: `সদস্য ${member?.nameBn} (${member?.memberCode}) কে ${loan.loanScheme} বাবদ ঋণ প্রদান। ঋণ নং: ${loan.loanNumber}`,
+      descriptionEn: `Loan disbursed to ${member?.nameEn} for ${loan.loanScheme}. Loan No: ${loan.loanNumber}`,
+      paidToOrReceivedFrom: member?.nameBn || 'ঋণগ্রহীতা সদস্য',
+      paymentMethod: params.paymentMethod,
+      date: today,
+      createdBy: this.currentUserId
+    };
+    this.vouchers.unshift(debitVoucher);
+
+    // If processing fee exists, record income Credit voucher
+    if (loan.processingFee && loan.processingFee > 0) {
+      const feeVoucher: Voucher = {
+        id: `vch-fee-${Date.now()}`,
+        tenantId: params.tenantId,
+        voucherNo: `VR-CR-${Date.now().toString().slice(-4)}`,
+        type: 'CREDIT',
+        category: 'ঋণ প্রসেসিং ফি আয়',
+        amount: loan.processingFee,
+        descriptionBn: `ঋণ নং: ${loan.loanNumber} এর প্রসেসিং ও ডকুমেন্টেশন ফি বাবদ আয়`,
+        descriptionEn: `Loan processing fee for ${loan.loanNumber}`,
+        paidToOrReceivedFrom: member?.nameBn || 'ঋণগ্রহীতা সদস্য',
+        paymentMethod: params.paymentMethod,
+        date: today,
+        createdBy: this.currentUserId
+      };
+      this.vouchers.unshift(feeVoucher);
+    }
+
+    this.addEvent({
+      tenantId: params.tenantId,
+      type: 'LOAN_DISBURSED',
+      titleBn: 'ঋণ তহবিল বিতরণ সফল',
+      titleEn: 'Loan Disbursed Successfully',
+      messageBn: `${member?.nameBn} কে ৳${loan.principalAmount.toLocaleString()} ঋণ তহবিল প্রদান করা হয়েছে। ঋণ নং: ${loan.loanNumber}`,
+      messageEn: `৳${loan.principalAmount.toLocaleString()} disbursed to ${member?.nameEn}. Loan No: ${loan.loanNumber}`,
+      amount: loan.principalAmount,
+      memberId: member?.id,
+      memberName: member?.nameBn
+    });
+
+    this.addAuditLog({
+      tenantId: params.tenantId,
+      action: 'UPDATE',
+      entity: 'LOAN',
+      entityId: loan.id,
+      descriptionBn: `ঋণ বিতরণ সম্পন্ন: ${loan.loanNumber}, সদস্য: ${member?.nameBn}, বিতরণকৃত আসল: ৳${loan.principalAmount.toLocaleString()}, মোট প্রদেয়: ৳${loan.totalPayable.toLocaleString()}, ভাউচার: ${voucherNo}`,
+      performedBy: officerName,
+      performedByRole: 'MANAGER'
+    });
+
+    this.save();
+    return loan;
+  }
+
   collectLoanInstallment(params: {
     tenantId: string;
     loanId: string;
     amount: number;
-    paymentMethod: 'CASH' | 'BKASH' | 'NAGAD' | 'BANK';
+    paymentMethod: PaymentMethod;
+    penaltyPaid?: number;
     notes?: string;
-  }) {
+  }): { loan: Loan; receipt: PaidReceipt } | null {
     const loan = this.loans.find(l => l.id === params.loanId);
-    if (!loan) return;
+    if (!loan) return null;
 
     const member = this.members.find(m => m.id === loan.memberId);
+    const today = new Date().toISOString().split('T')[0];
+    const receiptNo = `RCT-LN-${Date.now().toString().slice(-5)}`;
+    const collectorName = this.users.find(u => u.id === this.currentUserId)?.nameBn || 'মো: তারেক হাসান (ম্যানেজার)';
+
     loan.totalPaid += params.amount;
     loan.outstandingBalance = Math.max(0, loan.outstandingBalance - params.amount);
-    loan.paidInstallments += 1;
+    loan.lastPaymentDate = today;
+
+    // Allocate payment into installments
+    let remainingAmountToAllocate = params.amount;
+    for (const inst of loan.installments) {
+      if (remainingAmountToAllocate <= 0) break;
+      if (inst.status !== 'PAID') {
+        const needed = inst.totalDue - (inst.paidAmount || 0);
+        if (remainingAmountToAllocate >= needed) {
+          inst.paidAmount = inst.totalDue;
+          inst.status = 'PAID';
+          inst.paidDate = today;
+          inst.receiptNo = receiptNo;
+          remainingAmountToAllocate -= needed;
+          loan.paidInstallments = Math.min(loan.totalInstallments, loan.paidInstallments + 1);
+        } else {
+          inst.paidAmount = (inst.paidAmount || 0) + remainingAmountToAllocate;
+          inst.status = 'PARTIAL';
+          inst.paidDate = today;
+          inst.receiptNo = receiptNo;
+          remainingAmountToAllocate = 0;
+        }
+      }
+    }
 
     if (member) {
-      member.loanOutstanding = Math.max(0, member.loanOutstanding - params.amount);
+      member.loanOutstanding = Math.max(0, (member.loanOutstanding || 0) - params.amount);
     }
 
     if (loan.outstandingBalance === 0) {
       loan.status = 'COMPLETED';
+      loan.closedDate = today;
+      loan.closedReason = 'সকল কিস্তি সম্পূর্ণভাবে পরিশোধিত হয়েছে।';
     }
 
-    // Add Credit voucher
+    // Add Credit voucher into Accounts
+    const voucherNo = `VR-CR-${Date.now().toString().slice(-4)}`;
     const voucher: Voucher = {
       id: `vch-${Date.now()}`,
       tenantId: params.tenantId,
-      voucherNo: `VR-${Date.now().toString().slice(-4)}`,
+      voucherNo,
       type: 'CREDIT',
-      category: 'ঋণ কিস্তি আদায়',
+      category: 'ঋণ কিস্তি আদায় (Loan Repayment)',
       amount: params.amount,
-      descriptionBn: `${member?.nameBn || 'সদস্য'} এর ঋণ নম্বর ${loan.loanNumber} এর কিস্তি আদায়`,
-      descriptionEn: `Loan repayment collected for ${loan.loanNumber}`,
-      paidToOrReceivedFrom: member?.nameBn || 'সদস্য',
+      descriptionBn: `${member?.nameBn || 'সদস্য'} এর ঋণ নম্বর ${loan.loanNumber} এর কিস্তি আদায়। রসিদ নং: ${receiptNo}`,
+      descriptionEn: `Loan repayment collected for ${loan.loanNumber}. Receipt: ${receiptNo}`,
+      paidToOrReceivedFrom: member?.nameBn || 'ঋণগ্রহীতা সদস্য',
       paymentMethod: params.paymentMethod,
-      date: new Date().toISOString().split('T')[0],
+      date: today,
       createdBy: this.currentUserId
     };
     this.vouchers.unshift(voucher);
+
+    // Create official PaidReceipt
+    const receipt: PaidReceipt = {
+      id: `rct-${Date.now()}`,
+      tenantId: params.tenantId,
+      receiptNo,
+      receiptType: 'LOAN_EMI',
+      titleBn: 'ঋণের কিস্তি আদায় মানি রসিদ',
+      titleEn: 'Loan Installment Money Receipt',
+      memberId: loan.memberId,
+      memberCode: member?.memberCode || 'MEM-001',
+      memberNameBn: member?.nameBn || 'সদস্য',
+      memberNameEn: member?.nameEn || 'Member',
+      phone: member?.phone || '',
+      amount: params.amount,
+      amountInWordsBn: `${params.amount.toLocaleString()} টাকা মাত্র`,
+      amountInWordsEn: `${params.amount} Taka Only`,
+      date: today,
+      paymentMethod: params.paymentMethod,
+      notes: params.notes || `ঋণ নং: ${loan.loanNumber} এর কিস্তি পরিশোধ (বকেয়া: ৳${loan.outstandingBalance.toLocaleString()})`,
+      collectedBy: this.currentUserId,
+      collectorNameBn: collectorName,
+      qrCodeData: `SAMITYPRO|LOAN|${receiptNo}|${loan.loanNumber}|${params.amount}|${today}`,
+      isVerified: true,
+      createdAt: today
+    };
+    this.receipts.unshift(receipt);
 
     this.addEvent({
       tenantId: params.tenantId,
       type: 'LOAN_INSTALLMENT_PAID',
       titleBn: 'ঋণের কিস্তি আদায় সম্পন্ন',
       titleEn: 'Loan Installment Collected',
-      messageBn: `${member?.nameBn || 'সদস্য'} কিস্তি পরিশোধ করেছেন ৳ ${params.amount.toLocaleString()}। বকেয়া: ৳ ${loan.outstandingBalance.toLocaleString()}`,
-      messageEn: `${member?.nameEn || 'Member'} paid ৳ ${params.amount.toLocaleString()}. Dues: ৳ ${loan.outstandingBalance.toLocaleString()}`,
+      messageBn: `${member?.nameBn || 'সদস্য'} কিস্তি পরিশোধ করেছেন ৳ ${params.amount.toLocaleString()}। বর্তমান অবশিষ্ট বকেয়া: ৳ ${loan.outstandingBalance.toLocaleString()}`,
+      messageEn: `${member?.nameEn || 'Member'} paid ৳ ${params.amount.toLocaleString()}. Outstanding: ৳ ${loan.outstandingBalance.toLocaleString()}`,
       amount: params.amount,
       memberId: member?.id,
       memberName: member?.nameBn
     });
 
+    this.addAuditLog({
+      tenantId: params.tenantId,
+      action: 'UPDATE',
+      entity: 'LOAN',
+      entityId: loan.id,
+      descriptionBn: `ঋণের কিস্তি আদায়: ${loan.loanNumber}, সদস্য: ${member?.nameBn}, আদায়কৃত টাকা: ৳${params.amount.toLocaleString()}, অবশিষ্ট ঋণ: ৳${loan.outstandingBalance.toLocaleString()}, রসিদ নং: ${receiptNo}`,
+      performedBy: collectorName,
+      performedByRole: 'MANAGER'
+    });
+
     this.save();
+    return { loan, receipt };
+  }
+
+  waiveLoanPenalty(loanId: string, installmentNumber: number, amount: number, reason: string): boolean {
+    const loan = this.loans.find(l => l.id === loanId);
+    if (!loan) return false;
+
+    const inst = loan.installments.find(i => i.installmentNumber === installmentNumber);
+    if (!inst) return false;
+
+    inst.penalty = Math.max(0, (inst.penalty || 0) - amount);
+    this.addAuditLog({
+      tenantId: loan.tenantId,
+      action: 'UPDATE',
+      entity: 'LOAN',
+      entityId: loan.id,
+      descriptionBn: `ঋণ নং ${loan.loanNumber} এর কিস্তি ${installmentNumber} এর জরিমানা ৳${amount} মওকুফ করা হয়েছে। কারণ: ${reason}`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'সভাপতি (অ্যাডমিন)',
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return true;
   }
 
   castVote(electionId: string, candidateId: string) {
@@ -1650,7 +2037,7 @@ class DataStore {
 
   exportFullBackup(): string {
     const backupData = {
-      version: '1.0.7',
+      version: '1.0.8',
       exportedAt: new Date().toISOString(),
       tenantId: this.currentTenantId,
       tenants: this.tenants.filter(t => t.id === this.currentTenantId),
@@ -1659,6 +2046,7 @@ class DataStore {
       savingsPolicies: this.savingsPolicies,
       savingsTransactions: this.savingsTransactions.filter(t => t.tenantId === this.currentTenantId),
       loans: this.loans.filter(l => l.tenantId === this.currentTenantId),
+      loanPolicies: this.loanPolicies,
       vouchers: this.vouchers.filter(v => v.tenantId === this.currentTenantId),
       subscriptions: this.subscriptions.filter(s => s.tenantId === this.currentTenantId),
       bankDeposits: this.bankDeposits.filter(b => b.tenantId === this.currentTenantId),
@@ -1697,6 +2085,7 @@ class DataStore {
       if (data.savingsPolicies) this.savingsPolicies = data.savingsPolicies;
       if (data.savingsTransactions) this.savingsTransactions = data.savingsTransactions;
       if (data.loans) this.loans = data.loans;
+      if (data.loanPolicies) this.loanPolicies = data.loanPolicies;
       if (data.vouchers) this.vouchers = data.vouchers;
       if (data.subscriptions) this.subscriptions = data.subscriptions;
       if (data.bankDeposits) this.bankDeposits = data.bankDeposits;
@@ -2002,5 +2391,12 @@ export function useSamityStore() {
     recordSavingsWithdrawal: (params: Parameters<typeof store.recordSavingsWithdrawal>[0]) => store.recordSavingsWithdrawal(params),
     closeOrSettleSavingsAccount: (params: Parameters<typeof store.closeOrSettleSavingsAccount>[0]) => store.closeOrSettleSavingsAccount(params),
     updateSavingsPolicy: (updates: Partial<SavingsPolicyConfig>) => store.updateSavingsPolicy(activeTenant?.id || 'samity-ekota', updates),
+    loanPolicy: store.getLoanPolicy(activeTenant?.id || 'samity-ekota'),
+    applyLoan: (params: Parameters<typeof store.applyLoan>[0]) => store.applyLoan(params),
+    approveOrRejectLoan: (params: Parameters<typeof store.approveOrRejectLoan>[0]) => store.approveOrRejectLoan(params),
+    disburseLoan: (params: Parameters<typeof store.disburseLoan>[0]) => store.disburseLoan(params),
+    collectLoanInstallment: (params: Parameters<typeof store.collectLoanInstallment>[0]) => store.collectLoanInstallment(params),
+    waiveLoanPenalty: (loanId: string, installmentNumber: number, amount: number, reason: string) => store.waiveLoanPenalty(loanId, installmentNumber, amount, reason),
+    updateLoanPolicy: (updates: Partial<LoanPolicyConfig>) => store.updateLoanPolicy(activeTenant?.id || 'samity-ekota', updates),
   };
 }

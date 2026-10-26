@@ -288,6 +288,17 @@ export interface SavingsTransaction {
 }
 
 export type LoanStatus = 'PENDING' | 'APPROVED' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED';
+export type LoanInterestMethod = 'FLAT' | 'REDUCING';
+export type LoanFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY';
+
+export interface LoanGuarantor {
+  name: string;
+  relation?: string;
+  phone: string;
+  nid?: string;
+  memberId?: string;
+  address?: string;
+}
 
 export interface LoanInstallment {
   installmentNumber: number;
@@ -298,6 +309,26 @@ export interface LoanInstallment {
   paidAmount: number;
   paidDate?: string;
   status: 'PENDING' | 'PAID' | 'PARTIAL' | 'OVERDUE';
+  penalty?: number;
+  voucherNo?: string;
+  receiptNo?: string;
+}
+
+export interface LoanPolicyConfig {
+  tenantId: string;
+  minLoanAmount: number;
+  maxLoanAmount: number;
+  defaultInterestRate: number;
+  defaultInterestMethod: LoanInterestMethod;
+  defaultDurationMonths: number;
+  maxLoanToSavingsRatio: number; // e.g. 3.0 (up to 3x savings)
+  processingFeePercent: number; // e.g. 1.0%
+  lateFinePerInstallment: number; // e.g. 100 BDT
+  gracePeriodDays: number;
+  requireGuarantor: boolean;
+  requireSecurityCheque: boolean;
+  lastUpdatedBy: string;
+  lastUpdatedAt: string;
 }
 
 export interface Loan {
@@ -305,24 +336,39 @@ export interface Loan {
   tenantId: string;
   memberId: string;
   loanNumber: string;
-  loanScheme: string;
+  loanScheme: string; // e.g. 'ক্ষুদ্র ব্যবসা সম্প্রসারণ ঋণ', 'সাধারণ সমবায় ঋণ', 'জরুরি ঋণ', 'কৃষি বিনিয়োগ ঋণ'
   principalAmount: number;
-  interestRatePercent: number; // e.g., 10%
+  interestRatePercent: number; // e.g. 10%
+  interestMethod?: LoanInterestMethod; // FLAT or REDUCING
   durationMonths: number;
   totalPayable: number;
   totalPaid: number;
   outstandingBalance: number;
-  installmentFrequency: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+  installmentFrequency: LoanFrequency;
   installmentAmount: number;
   totalInstallments: number;
   paidInstallments: number;
+  processingFee?: number;
+  guarantor1?: LoanGuarantor;
+  guarantor2?: LoanGuarantor;
   guarantor1MemberId?: string;
   guarantor2MemberId?: string;
   guarantorNotes?: string;
+  collateralDetails?: string;
   disbursementDate?: string;
+  disbursedBy?: string;
+  disbursementMethod?: PaymentMethod;
+  disbursementVoucherNo?: string;
+  approvalDate?: string;
+  approvedBy?: string;
+  approvalNotes?: string;
+  rejectionReason?: string;
   purpose: string;
   status: LoanStatus;
   installments: LoanInstallment[];
+  lastPaymentDate?: string;
+  closedDate?: string;
+  closedReason?: string;
   createdAt: string;
 }
 
@@ -411,6 +457,8 @@ export interface RealtimeEvent {
     | 'NEW_MEMBER_JOINED' 
     | 'NEW_VOUCHER_CREATED'
     | 'LOAN_APPROVED'
+    | 'LOAN_APPLICATION_SUBMITTED'
+    | 'LOAN_DISBURSED'
     | 'VOTE_CAST'
     | 'SYSTEM_ANNOUNCEMENT'
     | 'BANK_DEPOSIT_ADDED'

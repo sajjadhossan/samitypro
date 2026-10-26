@@ -80,7 +80,7 @@ export function MobileMenuDrawer({
                      currentUser.role === 'MANAGER' ? 'ম্যানেজার' :
                      currentUser.role === 'FIELD_COLLECTOR' ? 'কালেক্টর' : 'সদস্য'}
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">v1.0.7</span>
+                  <span className="text-[10px] text-slate-400 font-mono">v1.0.8</span>
                 </div>
               </div>
             </div>
@@ -232,7 +232,7 @@ export function MobileMenuDrawer({
                     <HandCoins className="w-4 h-4 text-rose-400" />
                     <span>ঋণ ও কিস্তি আদায় (Loans & EMIs)</span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold">ঋণ</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold">মডিউল ৫</span>
                 </button>
 
                 <button

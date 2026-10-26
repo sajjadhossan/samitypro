@@ -362,7 +362,7 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
                   {/* App Version Info */}
                   <div className="pt-3 mt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
                     <span>SamityPro Mobile</span>
-                    <span className="font-mono text-cyan-400 font-bold">v1.0.7</span>
+                    <span className="font-mono text-cyan-400 font-bold">v1.0.8</span>
                   </div>
                 </div>
               </>
