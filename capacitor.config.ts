@@ -8,7 +8,10 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     cleartext: true,
     // In production or mobile APK, if configured, can load live cloud Vercel URL or local web assets
-    url: process.env.CAPACITOR_SERVER_URL || undefined
+    url: process.env.CAPACITOR_SERVER_URL || undefined,
+    allowNavigation: [
+      '*'
+    ]
   },
   plugins: {
     SplashScreen: {

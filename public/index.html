@@ -224,13 +224,13 @@
       const savedUrl = localStorage.getItem('samitypro_server_url');
       const candidates = [];
       if (savedUrl) candidates.push(savedUrl);
-      candidates.push(DEFAULT_LOCAL);
       candidates.push(DEFAULT_VERCEL);
+      candidates.push(DEFAULT_LOCAL);
       candidates.push(DEFAULT_LOCALHOST);
 
       for (const url of candidates) {
         document.getElementById('loading-msg').textContent = url + ' যাচাই করা হচ্ছে...';
-        const isUp = await checkServerHealth(url, 2000);
+        const isUp = await checkServerHealth(url, 1500);
         if (isUp) {
           redirectTo(url);
           return;
