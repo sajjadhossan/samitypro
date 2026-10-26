@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+    env:
+      ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION: "node24"
 
     steps:
       - name: Checkout Repository
@@ -54,8 +56,18 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: warn
 
+      - name: Extract Release Tag
+        id: release_meta
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${{ github.ref_name }}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+            TAG="v$VERSION"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
       - name: Publish Official GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         continue-on-error: true
         env:
@@ -64,8 +76,8 @@ jobs:
           files: |
             apk/*
             android/app/build/outputs/apk/debug/app-debug.apk
-          name: SamityPro App Release ${{ github.ref_name }}
-          tag_name: ${{ github.ref_name }}
+          name: SamityPro Release ${{ steps.release_meta.outputs.tag }}
+          tag_name: ${{ steps.release_meta.outputs.tag }}
           draft: false
           prerelease: false
           generate_release_notes: true
