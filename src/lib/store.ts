@@ -760,6 +760,64 @@ class DataStore {
     this.save();
   }
 
+  createSamity(samity: Tenant) {
+    this.tenants.unshift(samity);
+    
+    this.addAuditLog({
+      tenantId: samity.id,
+      action: 'CREATE',
+      entity: 'TENANT',
+      entityId: samity.id,
+      descriptionBn: `নতুন সমিতি তৈরি হয়েছে: ${samity.nameBn} (${samity.samityId || samity.id})`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'সুপার অ্যাডমিন'
+    });
+
+    this.addEvent({
+      tenantId: samity.id,
+      type: 'SYSTEM_ANNOUNCEMENT',
+      titleBn: 'নতুন সমিতি সফলভাবে নিবন্ধিত হয়েছে',
+      titleEn: 'New Samity Registered',
+      messageBn: `${samity.nameBn} সফলভাবে ক্লাউডে নিবন্ধিত হয়েছে।`,
+      messageEn: `${samity.nameEn} registered in the cloud.`
+    });
+
+    this.save();
+    return samity;
+  }
+
+  updateSamity(samityId: string, updates: Partial<Tenant>) {
+    const prev = this.tenants.find(t => t.id === samityId);
+    const updatedBy = this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন';
+    const timestamp = new Date().toISOString().split('T')[0];
+
+    this.tenants = this.tenants.map(t => {
+      if (t.id === samityId) {
+        return { 
+          ...t, 
+          ...updates, 
+          updatedAt: timestamp,
+          updatedBy: updatedBy
+        };
+      }
+      return t;
+    });
+
+    this.addAuditLog({
+      tenantId: samityId,
+      action: 'UPDATE',
+      entity: 'TENANT',
+      entityId: samityId,
+      descriptionBn: `সমিতির তথ্য হালনাগাদ করা হয়েছে: ${updates.nameBn || prev?.nameBn || samityId}`,
+      performedBy: updatedBy
+    });
+
+    this.save();
+  }
+
+  archiveSamity(samityId: string) {
+    this.updateSamity(samityId, { samityStatus: 'ARCHIVED', status: 'SUSPENDED' });
+  }
+
   recordBulkBankDeposits(items: BulkDepositItem[], approvedBy?: string) {
     const createdDeposits: BankDeposit[] = [];
     const timestamp = new Date().toISOString().split('T')[0];

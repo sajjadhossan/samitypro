@@ -10,20 +10,61 @@ import {
 export const INITIAL_TENANTS: Tenant[] = [
   {
     id: 'samity-ekota',
+    samityId: 'SAMITY-2018-001',
     nameBn: 'একতা বহুমুখী সমবায় সমিতি লিমিটেড',
     nameEn: 'Ekota Multipurpose Co-operative Society Ltd.',
     slug: 'ekota',
     type: 'SAMITY',
     registrationNo: 'REG-DHAKA-2018-9842',
+    establishedDate: '2018-03-12',
     establishedYear: 2018,
+    sloganBn: 'একতাই বল, সঞ্চয়েই উজ্জ্বল ভবিষ্যৎ',
+    sloganEn: 'Unity is Strength, Savings for a Brighter Future',
     phone: '+8801711223344',
+    phoneNumber: '02-9823456',
+    mobileNumber: '+8801711223344',
+    whatsappNumber: '+8801711223344',
     email: 'info@ekotasamity.org',
+    website: 'https://ekotasamity.org',
+    facebookPageUrl: 'https://facebook.com/ekotasamity',
+    youtubeChannelUrl: 'https://youtube.com/@ekotasamity',
     address: 'বাড়ি ১২, রোড ৪, ব্লক সি, বনশ্রী, ঢাকা-১২১৯',
+    division: 'ঢাকা',
+    district: 'ঢাকা',
+    upazila: 'রামপুরা',
+    postOffice: 'বনশ্রী - ১২১৯',
+    villageArea: 'ব্লক সি, আবাসিক এলাকা',
+    
+    // Banking & Mobile Wallets
+    bankAccountName: 'একতা বহুমুখী সমবায় সমিতি লিমিটেড',
+    bankName: 'ইসলামী ব্যাংক বাংলাদেশ পিএলসি',
+    bankBranchName: 'বনশ্রী শাখা, ঢাকা',
+    bankAccountNumber: '২০৫০১২৩৪৫৬৭৮৯০১',
+    bankRoutingNumber: '১২৫২৬০৮৯৪',
+    mobileBanking: [
+      { id: 'mb-1', provider: 'BKASH', number: '01711223344', accountType: 'MERCHANT' },
+      { id: 'mb-2', provider: 'NAGAD', number: '01711223344', accountType: 'PERSONAL' },
+      { id: 'mb-3', provider: 'ROCKET', number: '017112233448', accountType: 'MERCHANT' },
+      { id: 'mb-4', provider: 'UPAY', number: '01711223344', accountType: 'PERSONAL' }
+    ],
+
+    // Financial & Subscription Policy
+    currency: 'BDT',
+    monthlySubscriptionAmount: 1500,
+    subscriptionDueDay: 10,
+    lateFeeSettings: {
+      enabled: true,
+      amount: 100,
+      gracePeriodDays: 5
+    },
+    financialYearStart: '2026-07-01',
+    financialYearEnd: '2027-06-30',
+
     plan: 'ENTERPRISE',
     status: 'ACTIVE',
+    samityStatus: 'ACTIVE',
     validUntil: '2027-12-31',
     smsBalance: 1250,
-    currency: 'BDT',
     settings: {
       enableDps: true,
       enableLoans: true,
@@ -35,7 +76,10 @@ export const INITIAL_TENANTS: Tenant[] = [
       defaultLoanInterestRate: 12.0,
       penaltyPerMissedInstallment: 100,
     },
-    createdAt: '2024-01-01'
+    createdBy: 'সুপার অ্যাডমিন (Super Admin)',
+    createdAt: '2024-01-01',
+    updatedBy: 'মো: রফিকুল ইসলাম (সভাপতি)',
+    updatedAt: '2026-10-26'
   },
   {
     id: 'club-uttara',

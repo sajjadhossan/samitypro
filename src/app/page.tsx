@@ -20,6 +20,7 @@ import { CollectInstallmentModal } from '@/components/samity/CollectInstallmentM
 import { ApkDownloadModal } from '@/components/common/ApkDownloadModal';
 import { SubscriptionsDueView } from '@/components/samity/SubscriptionsDueView';
 import { BankDepositsView } from '@/components/samity/BankDepositsView';
+import { SamitySetupView } from '@/components/samity/SamitySetupView';
 import { NoticesView } from '@/components/samity/NoticesView';
 import { DocumentsView } from '@/components/samity/DocumentsView';
 import { SettingsView } from '@/components/settings/SettingsView';
@@ -89,6 +90,9 @@ export default function Home() {
 
   const renderMainContent = () => {
     if (currentUser.role === 'SUPER_ADMIN') {
+      if (activeTab === 'samity-setup') {
+        return <SamitySetupView />;
+      }
       return <SuperAdminView />;
     }
     if (currentUser.role === 'MEMBER') {
@@ -104,6 +108,7 @@ export default function Home() {
             onNavigateTab={tab => setActiveTab(tab)}
           />
         )}
+        {activeTab === 'samity-setup' && <SamitySetupView />}
         {activeTab === 'subscriptions-due' && <SubscriptionsDueView />}
         {activeTab === 'bank-deposits' && <BankDepositsView />}
         {activeTab === 'members' && (

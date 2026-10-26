@@ -23,6 +23,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   // Super Admin Navigation Items
   const superAdminNav = [
     { id: 'saas-overview', labelBn: 'এসএএএস ওভারভিউ', labelEn: 'SaaS Overview', icon: LayoutDashboard },
+    { id: 'samity-setup', labelBn: 'সমিতি সেটআপ ও পরিচালনা', labelEn: 'Samity Directory', icon: Building2 },
     { id: 'tenants', labelBn: 'সমিতি ও সংগঠনসমূহ', labelEn: 'Samity & Tenants', icon: Users },
     { id: 'subscriptions', labelBn: 'সাবস্ক্রিপশন ও বিলিং', labelEn: 'Billing & Plans', icon: CreditCard },
     { id: 'gateways', labelBn: 'পেমেন্ট ও এসএমএস গেটওয়ে', labelEn: 'SMS & Gateways', icon: MessageSquare },
@@ -32,6 +33,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   // Samity Admin & Manager Navigation Items
   const samityAdminNav = [
     { id: 'dashboard', labelBn: t.dashboard, labelEn: 'Dashboard', icon: LayoutDashboard },
+    { id: 'samity-setup', labelBn: 'সমিতি সেটআপ ও প্রোফাইল', labelEn: 'Samity Setup', icon: Building2 },
     { id: 'subscriptions-due', labelBn: 'মাসিক চাঁদা ও বকেয়া', labelEn: 'Fees & Dues', icon: BadgePercent },
     { id: 'bank-deposits', labelBn: 'ব্যাংক হিসাব ও জমা', labelEn: 'Bank Deposits', icon: Building2 },
     { id: 'members', labelBn: t.members, labelEn: 'Members & KYC', icon: Users },

@@ -132,6 +132,21 @@ export function MobileMenuDrawer({
                 </button>
 
                 <button
+                  onClick={() => handleNavigate('samity-setup')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'samity-setup'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Building2 className="w-4 h-4 text-cyan-400" />
+                    <span>সমিতি সেটআপ ও প্রোফাইল (Setup)</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-semibold">মডিউল ১</span>
+                </button>
+
+                <button
                   onClick={() => handleNavigate('subscriptions-due')}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
                     activeTab === 'subscriptions-due'

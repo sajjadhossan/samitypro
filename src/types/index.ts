@@ -1,34 +1,87 @@
 export type Language = 'bn' | 'en';
 
 export type TenantType = 
-  | 'SAMITY'          // সমবায় সমিতি
-  | 'CLUB'            // ক্লাব ও ক্রীড়া সংগঠন
-  | 'ASSOCIATION'     // পেশাজীবী ও ব্যবসায়ী সমিতি
-  | 'SAVINGS_GROUP'   // ক্ষুদ্র ঋণ ও সঞ্চয় দল
-  | 'COMMITTEE'       // মসজিদ/মাদ্রাসা/মন্দির/স্কুল পরিচালনা কমিটি
-  | 'CHARITY';        // দাতব্য ও কল্যাণ সংস্থা
+  | 'SAMITY'              // সমবায় সমিতি / General Samity
+  | 'CLUB'                // ক্লাব ও ক্রীড়া সংগঠন
+  | 'ASSOCIATION'         // পেশাজীবী ও ব্যবসায়ী সমিতি
+  | 'SAVINGS_GROUP'       // ক্ষুদ্র ঋণ ও সঞ্চয় দল
+  | 'COMMITTEE'           // মসজিদ/মাদ্রাসা/মন্দির/স্কুল পরিচালনা কমিটি
+  | 'CHARITY'             // দাতব্য ও কল্যাণ সংস্থা
+  | 'SOCIAL'              // সামাজিক সংগঠন
+  | 'BUSINESS'            // ব্যবসায়ী সমিতি
+  | 'RELIGIOUS'           // ধর্মীয় কমিটি
+  | 'SCHOOL'              // বিদ্যালয় পরিচালনা কমিটি
+  | 'OTHER';              // অন্যান্য
 
 export type SubscriptionPlan = 'STARTER' | 'STANDARD' | 'ENTERPRISE' | 'FREE_TRIAL';
 export type SubscriptionStatus = 'ACTIVE' | 'TRIAL' | 'EXPIRED' | 'SUSPENDED';
+export type SamityLifecycleStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+
+export interface MobileBankingConfig {
+  id?: string;
+  provider: 'BKASH' | 'NAGAD' | 'ROCKET' | 'UPAY';
+  number: string;
+  accountType: 'PERSONAL' | 'MERCHANT';
+}
+
+export interface LateFeeConfig {
+  enabled: boolean;
+  amount: number;
+  gracePeriodDays: number;
+}
 
 export interface Tenant {
   id: string;
+  samityId?: string;
   nameBn: string;
   nameEn: string;
   slug: string;
   type: TenantType;
   registrationNo: string;
+  establishedDate?: string;
   establishedYear: number;
   phone: string;
+  phoneNumber?: string;
+  mobileNumber?: string;
+  whatsappNumber?: string;
   email: string;
   address: string;
+  division?: string;
+  district?: string;
+  upazila?: string;
+  postOffice?: string;
+  villageArea?: string;
+  website?: string;
+  facebookPageUrl?: string;
+  youtubeChannelUrl?: string;
+  sloganBn?: string;
+  sloganEn?: string;
   logoUrl?: string;
   bannerUrl?: string;
+  
+  // Banking & Mobile Banking
+  bankAccountName?: string;
+  bankName?: string;
+  bankBranchName?: string;
+  bankAccountNumber?: string;
+  bankRoutingNumber?: string;
+  mobileBanking?: MobileBankingConfig[];
+
+  // Financial & Subscription Policy
+  currency: string;
+  monthlySubscriptionAmount?: number;
+  subscriptionDueDay?: number;
+  lateFeeSettings?: LateFeeConfig;
+  financialYearStart?: string;
+  financialYearEnd?: string;
+
+  // Plan & Status
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
+  samityStatus?: SamityLifecycleStatus;
   validUntil: string;
   smsBalance: number;
-  currency: string;
+  
   settings: {
     enableDps: boolean;
     enableLoans: boolean;
@@ -40,7 +93,11 @@ export interface Tenant {
     defaultLoanInterestRate: number;
     penaltyPerMissedInstallment: number;
   };
+  
+  createdBy?: string;
   createdAt: string;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 export type UserRole = 
@@ -502,7 +559,7 @@ export interface BulkDepositItem {
 }
 
 export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'EXPORT' | 'RESTORE' | 'LOGIN';
-export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'DOCUMENT' | 'BACKUP';
+export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'DOCUMENT' | 'BACKUP' | 'TENANT';
 
 export interface AuditLog {
   id: string;
