@@ -217,11 +217,12 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
           {/* 3-Dot All Modules & Boards Menu Button */}
           <button
             onClick={onOpenMenu}
-            className="p-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 flex items-center justify-center transition active:scale-95 cursor-pointer shadow-sm shadow-amber-500/10"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 transition active:scale-95 cursor-pointer shadow-sm shadow-amber-500/10 shrink-0"
             title="সকল মডিউল ও বোর্ড মেনু (৩-ডট)"
             aria-label="Open 3-dot menu"
           >
-            <MoreVertical className="w-5 h-5 text-amber-400" />
+            <MoreVertical className="w-4 h-4 text-amber-400" />
+            <span className="hidden md:inline text-xs font-bold text-amber-300">মেনু</span>
           </button>
 
           {/* Notification Bell */}

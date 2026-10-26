@@ -79,25 +79,35 @@ export default function Home() {
         return <NoticesView />;
       case 'documents':
         return <DocumentsView />;
+      case 'meetings':
+      case 'member-meetings':
+        return <MeetingsView />;
+      case 'elections':
       case 'member-elections':
         return <ElectionsView />;
+      case 'loans':
       case 'member-loans':
         return <LoansView onOpenCollectInstallment={handleOpenCollectLoan} />;
+      case 'savings':
+      case 'member-savings':
+      case 'member-passbook':
       default:
         return <MemberPortalView />;
     }
   };
 
   const renderMainContent = () => {
-    if (currentUser.role === 'SUPER_ADMIN') {
-      if (activeTab === 'samity-setup') {
-        return <SamitySetupView />;
-      }
+    // If activeTab is one of the Super Admin specific tabs
+    if (activeTab === 'saas-overview' || activeTab === 'tenants' || activeTab === 'subscriptions' || activeTab === 'gateways' || activeTab === 'audit-logs') {
       return <SuperAdminView />;
     }
+
+    // If Member Portal specific view
     if (currentUser.role === 'MEMBER') {
       return renderMemberPortal();
     }
+
+    // Default Samity Management Views (Accessible to Super Admin, Samity Admin, Manager, Field Collector)
     return (
       <>
         {activeTab === 'dashboard' && (
@@ -164,13 +174,13 @@ export default function Home() {
       </div>
 
       {/* Mobile Bottom Navigation Bar (Tailored for Android APK / Mobile Web with 3-Dot Menu) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-800 bg-slate-950/95 px-2 py-1.5 flex items-center justify-around text-[10px]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-800/90 bg-slate-950/95 backdrop-blur-md px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center justify-around text-[10px]">
         {currentUser.role === 'MEMBER' ? (
           <>
             <button
               onClick={() => setActiveTab('member-passbook')}
-              className={`flex flex-col items-center gap-0.5 p-1 ${
-                activeTab === 'member-passbook' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+              className={`flex flex-col items-center gap-1 p-1 transition ${
+                activeTab === 'member-passbook' ? 'text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <BookOpen className="w-5 h-5" />
@@ -178,8 +188,8 @@ export default function Home() {
             </button>
             <button
               onClick={() => setActiveTab('subscriptions-due')}
-              className={`flex flex-col items-center gap-0.5 p-1 ${
-                activeTab === 'subscriptions-due' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+              className={`flex flex-col items-center gap-1 p-1 transition ${
+                activeTab === 'subscriptions-due' ? 'text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <BadgePercent className="w-5 h-5" />
@@ -187,8 +197,8 @@ export default function Home() {
             </button>
             <button
               onClick={() => setActiveTab('member-loans')}
-              className={`flex flex-col items-center gap-0.5 p-1 ${
-                activeTab === 'member-loans' ? 'text-cyan-400 font-bold' : 'text-slate-400'
+              className={`flex flex-col items-center gap-1 p-1 transition ${
+                activeTab === 'member-loans' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <HandCoins className="w-5 h-5" />
@@ -196,8 +206,8 @@ export default function Home() {
             </button>
             <button
               onClick={() => setActiveTab('member-elections')}
-              className={`flex flex-col items-center gap-0.5 p-1 ${
-                activeTab === 'member-elections' ? 'text-indigo-400 font-bold' : 'text-slate-400'
+              className={`flex flex-col items-center gap-1 p-1 transition ${
+                activeTab === 'member-elections' ? 'text-indigo-400 font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <Users className="w-5 h-5" />
@@ -205,9 +215,11 @@ export default function Home() {
             </button>
             <button
               onClick={() => setIsMenuDrawerOpen(true)}
-              className="flex flex-col items-center gap-0.5 p-1 text-amber-400 font-bold hover:text-amber-300 transition"
+              className="flex flex-col items-center gap-1 p-1 text-amber-400 font-bold hover:text-amber-300 transition active:scale-95 cursor-pointer"
             >
-              <MoreVertical className="w-5 h-5 text-amber-400 animate-pulse" />
+              <div className="w-6 h-6 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+                <MoreVertical className="w-4 h-4 text-amber-400" />
+              </div>
               <span>৩-ডট মেনু</span>
             </button>
           </>
@@ -215,35 +227,35 @@ export default function Home() {
           <>
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`flex flex-col items-center gap-0.5 p-1 ${
-                activeTab === 'dashboard' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+              className={`flex flex-col items-center gap-1 p-1 transition ${
+                activeTab === 'dashboard' ? 'text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <LayoutDashboard className="w-5 h-5" />
               <span>ড্যাশবোর্ড</span>
             </button>
             <button
+              onClick={() => setActiveTab('members')}
+              className={`flex flex-col items-center gap-1 p-1 transition ${
+                activeTab === 'members' ? 'text-indigo-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Users className="w-5 h-5" />
+              <span>সদস্য</span>
+            </button>
+            <button
               onClick={() => setActiveTab('subscriptions-due')}
-              className={`flex flex-col items-center gap-0.5 p-1 ${
-                activeTab === 'subscriptions-due' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+              className={`flex flex-col items-center gap-1 p-1 transition ${
+                activeTab === 'subscriptions-due' ? 'text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <BadgePercent className="w-5 h-5" />
-              <span>চাঁদা/বকেয়া</span>
-            </button>
-            <button
-              onClick={() => handleOpenDeposit()}
-              className="flex flex-col items-center gap-0.5 p-1 text-emerald-400"
-            >
-              <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center -mt-3 shadow-lg shadow-emerald-500/30">
-                <PiggyBank className="w-4 h-4" />
-              </div>
-              <span className="font-semibold">জমা</span>
+              <span>চাঁদা ও বকেয়া</span>
             </button>
             <button
               onClick={() => setActiveTab('bank-deposits')}
-              className={`flex flex-col items-center gap-0.5 p-1 ${
-                activeTab === 'bank-deposits' ? 'text-cyan-400 font-bold' : 'text-slate-400'
+              className={`flex flex-col items-center gap-1 p-1 transition ${
+                activeTab === 'bank-deposits' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <Building2 className="w-5 h-5" />
@@ -251,9 +263,11 @@ export default function Home() {
             </button>
             <button
               onClick={() => setIsMenuDrawerOpen(true)}
-              className="flex flex-col items-center gap-0.5 p-1 text-amber-400 font-bold hover:text-amber-300 transition"
+              className="flex flex-col items-center gap-1 p-1 text-amber-400 font-bold hover:text-amber-300 transition active:scale-95 cursor-pointer"
             >
-              <MoreVertical className="w-5 h-5 text-amber-400 animate-pulse" />
+              <div className="w-6 h-6 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+                <MoreVertical className="w-4 h-4 text-amber-400" />
+              </div>
               <span>৩-ডট মেনু</span>
             </button>
           </>

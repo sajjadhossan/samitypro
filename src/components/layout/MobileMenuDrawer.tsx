@@ -50,13 +50,13 @@ export function MobileMenuDrawer({
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity animate-in fade-in"
+        className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity animate-in fade-in cursor-pointer"
         onClick={onClose}
       />
 
       {/* Slide-over Drawer */}
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-sm bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pointer-events-auto">
+        <div className="relative w-screen max-w-xs sm:max-w-sm bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300 z-10">
           
           {/* Drawer Header */}
           <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
@@ -77,14 +77,14 @@ export function MobileMenuDrawer({
                      currentUser.role === 'MANAGER' ? 'ম্যানেজার' :
                      currentUser.role === 'FIELD_COLLECTOR' ? 'কালেক্টর' : 'সদস্য'}
                   </span>
-                  <span className="text-[10px] text-slate-400">সমিতিপ্রো v2.5</span>
+                  <span className="text-[10px] text-slate-400 font-mono">v1.0.4</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700 transition"
+              className="p-2 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700 transition cursor-pointer"
               aria-label="Close menu"
             >
               <X className="w-5 h-5" />
@@ -431,9 +431,11 @@ export function MobileMenuDrawer({
                     key={opt.role}
                     onClick={() => {
                       setCurrentUser(opt.userId);
+                      const newTab = opt.role === 'SUPER_ADMIN' ? 'saas-overview' : opt.role === 'MEMBER' ? 'member-passbook' : 'dashboard';
+                      onTabChange(newTab);
                       onClose();
                     }}
-                    className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs transition ${
+                    className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs transition cursor-pointer ${
                       currentUser.role === opt.role 
                         ? 'bg-indigo-600 text-white font-bold' 
                         : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800'

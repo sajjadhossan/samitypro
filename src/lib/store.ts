@@ -1316,7 +1316,7 @@ class DataStore {
 
   exportFullBackup(): string {
     const backupData = {
-      version: '1.0.2',
+      version: '1.0.4',
       exportedAt: new Date().toISOString(),
       tenantId: this.currentTenantId,
       tenants: this.tenants.filter(t => t.id === this.currentTenantId),
