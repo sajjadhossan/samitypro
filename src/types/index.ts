@@ -451,20 +451,78 @@ export interface TrialBalanceItem {
   credit: number;
 }
 
+export type MeetingType = 'AGM' | 'EGM' | 'MONTHLY' | 'EMERGENCY' | 'COMMITTEE' | 'REQUISITION';
+export type MeetingStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'POSTPONED';
+
+export interface MeetingAgendaItem {
+  id: string;
+  serial: number;
+  titleBn: string;
+  discussionBn?: string;
+  resolutionBn?: string;
+  proposerNameBn?: string;
+  seconderNameBn?: string;
+  status?: 'PENDING' | 'DISCUSSED' | 'PASSED' | 'DROPPED';
+}
+
+export interface MeetingResolution {
+  id: string;
+  resolutionNo: string; // e.g. "রেজোলিউশন ০১/২০২৬"
+  agendaSerial?: number;
+  subjectBn: string;
+  detailsBn: string;
+  proposerBn?: string;
+  seconderBn?: string;
+  votingResult?: 'UNANIMOUS' | 'MAJORITY' | 'VETO';
+  effectiveDate?: string;
+}
+
+export interface MeetingAttendee {
+  memberId: string;
+  memberCode: string;
+  nameBn: string;
+  roleBn?: string;
+  phone?: string;
+  isPresent: boolean;
+  remarks?: string;
+  signedAt?: string;
+}
+
 export interface Meeting {
   id: string;
   tenantId: string;
+  meetingNo?: string;
   titleBn: string;
   titleEn: string;
-  type: 'AGM' | 'EGM' | 'MONTHLY' | 'EMERGENCY' | 'COMMITTEE';
+  type: MeetingType;
   date: string;
   time: string;
   venue: string;
-  agenda: string[];
-  resolutions: string[];
+  chairpersonNameBn?: string;
+  recordingSecretaryNameBn?: string;
+  targetAudience?: 'ALL_MEMBERS' | 'EXECUTIVE_COMMITTEE' | 'GENERAL_BODY';
+  quorumRequired?: number;
+  quorumPresent?: number;
+  isQuorumMet?: boolean;
+  attendees?: MeetingAttendee[];
+  agenda: (string | MeetingAgendaItem)[];
+  resolutions: (string | MeetingResolution)[];
+  minutesTextBn?: string;
+  minutesApprovedBy?: string;
+  minutesApprovedDate?: string;
   totalAttendees: number;
-  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+  status: MeetingStatus;
+  noticePublished?: boolean;
+  noticeId?: string;
   minutesDocumentUrl?: string;
+  createdAt?: string;
+  createdBy?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
+  syncVersion?: number;
+  isSynced?: boolean;
 }
 
 export interface ElectionCandidate {
@@ -509,6 +567,9 @@ export interface RealtimeEvent {
     | 'SUBSCRIPTION_PAID'
     | 'RECEIPT_GENERATED'
     | 'NOTICE_PUBLISHED'
+    | 'MEETING_SCHEDULED'
+    | 'MEETING_COMPLETED'
+    | 'RESOLUTION_PASSED'
     | 'REMINDER_SENT';
   titleBn: string;
   titleEn: string;
@@ -767,7 +828,7 @@ export interface BulkDepositItem {
 }
 
 export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'EXPORT' | 'IMPORT' | 'RESTORE' | 'LOGIN';
-export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'SETTINGS' | 'DOCUMENT' | 'BACKUP' | 'TENANT' | 'SUBSCRIPTION' | 'SAVINGS_ACCOUNT';
+export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'SETTINGS' | 'DOCUMENT' | 'BACKUP' | 'TENANT' | 'SUBSCRIPTION' | 'SAVINGS_ACCOUNT' | 'MEETING' | 'NOTICE' | 'OTHER';
 
 export interface AuditLog {
   id: string;

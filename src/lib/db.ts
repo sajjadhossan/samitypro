@@ -1236,45 +1236,165 @@ export const INITIAL_MEETINGS: Meeting[] = [
   {
     id: 'mtg-001',
     tenantId: 'samity-ekota',
+    meetingNo: 'AGM-2026/01',
     titleBn: '৮ম বার্ষিক সাধারণ সভা (AGM - 2026)',
     titleEn: '8th Annual General Meeting (AGM - 2026)',
     type: 'AGM',
     date: '2026-11-15',
     time: 'সকাল ১০:০০ ঘটিকা',
     venue: 'বনশ্রী কমিউনিটি সেন্টার অডিটোরিয়াম, ঢাকা',
+    chairpersonNameBn: 'আলহাজ্ব রফিকুল ইসলাম (সভাপতি)',
+    recordingSecretaryNameBn: 'জনাব শফিকুল আলম (সাধারণ সম্পাদক)',
+    targetAudience: 'ALL_MEMBERS',
+    quorumRequired: 50,
+    quorumPresent: 68,
+    isQuorumMet: true,
+    totalAttendees: 142,
+    status: 'SCHEDULED',
+    noticePublished: true,
+    noticeId: 'not-agm-2026',
     agenda: [
-      'বিগত এজিএম-এর কার্যবিবরণী পাঠ ও অনুমোদন',
-      '২০২৫-২০২৬ অর্থবছরের নিরীক্ষিত অডিট রিপোর্ট ও ব্যালান্স শিট পেশ',
-      'সদস্যদের মাঝে বার্ষিক লভ্যাংশ (১২%) বণ্টন সংক্রান্ত সিদ্ধান্ত',
-      '২০২৬-২০২৮ মেয়াদের নতুন কার্যনির্বাহী কমিটি গঠন'
+      {
+        id: 'ag-01',
+        serial: 1,
+        titleBn: 'বিগত ৭ম এজিএম-এর কার্যবিবরণী পাঠ ও অনুমোদন',
+        discussionBn: 'সাধারণ সম্পাদক মহোদয় বিগত সভার কার্যবিবরণী পাঠ করবেন এবং সদস্যদের পর্যালোচনা গ্রহণ করবেন।',
+        status: 'PENDING'
+      },
+      {
+        id: 'ag-02',
+        serial: 2,
+        titleBn: '২০২৫-২০২৬ অর্থবছরের নিরীক্ষিত অডিট রিপোর্ট ও ব্যালান্স শিট পেশ',
+        discussionBn: 'অডিটর কর্তৃক পেশকৃত আয়-ব্যয় খতিয়ান ও সম্পদ দায় বিবরণী অনুমোদন।',
+        status: 'PENDING'
+      },
+      {
+        id: 'ag-03',
+        serial: 3,
+        titleBn: 'সদস্যদের মাঝে বার্ষিক শেয়ার লভ্যাংশ (১২%) বণ্টন সংক্রান্ত সিদ্ধান্ত',
+        discussionBn: 'নিট মুনাফার ৫০% সদস্যদের শেয়ার অনুপাতে লভ্যাংশ হিসেবে বণ্টন এবং অবশিষ্ট রিজার্ভ ফান্ডে স্থানান্তর।',
+        status: 'PENDING'
+      },
+      {
+        id: 'ag-04',
+        serial: 4,
+        titleBn: '২০২৬-২০২৮ মেয়াদের নতুন কার্যনির্বাহী পরিষদ নির্বাচন প্রস্তুতি',
+        discussionBn: 'নির্বাচন কমিশন গঠন ও নির্বাচনী আচরণবিধি চূড়ান্তকরণ।',
+        status: 'PENDING'
+      }
     ],
     resolutions: [
-      'অডিট রিপোর্ট সর্বসম্মতিক্রমে অনুমোদিত হয়েছে',
-      'প্রতি শেয়ারে ১২০ টাকা হারে বার্ষিক মুনাফা প্রদানের সিদ্ধান্ত গৃহীত'
+      {
+        id: 'res-01',
+        resolutionNo: 'সিদ্ধান্ত ০১/২০২৬',
+        agendaSerial: 1,
+        subjectBn: 'বিগত সভার কার্যবিবরণী অনুমোদন',
+        detailsBn: 'বিগত ৭ম বার্ষিক সাধারণ সভার কার্যবিবরণী সভায় পাঠান্তে সর্বসম্মতিক্রমে অনুমোদিত ও গৃহীত হলো।',
+        proposerBn: 'মো: কবির আহমেদ (সদস্য নং MEM-001)',
+        seconderBn: 'মোসা: তানজিলা আক্তার (সদস্য নং MEM-002)',
+        votingResult: 'UNANIMOUS',
+        effectiveDate: '2026-11-15'
+      },
+      {
+        id: 'res-02',
+        resolutionNo: 'সিদ্ধান্ত ০২/২০২৬',
+        agendaSerial: 3,
+        subjectBn: '১২% বার্ষিক শেয়ার মুনাফা প্রদান',
+        detailsBn: '২০২৫-২৬ অর্থবছরে জমাকৃত শেয়ার মূলধনের উপর ১২% হারে মোট ৪,৮০,০০০/- টাকা লভ্যাংশ বিতরণ করা হবে।',
+        proposerBn: 'জনাব তারেক মাহমুদ (সদস্য নং MEM-003)',
+        seconderBn: 'ইঞ্জি: সাহেদ ইকবাল (সদস্য নং MEM-005)',
+        votingResult: 'MAJORITY',
+        effectiveDate: '2026-11-15'
+      }
     ],
-    totalAttendees: 142,
-    status: 'SCHEDULED'
+    attendees: [
+      { memberId: 'mem-001', memberCode: 'MEM-001', nameBn: 'মো: কবির আহমেদ', roleBn: 'সাধারণ সদস্য', phone: '+8801712000001', isPresent: true, signedAt: '2026-11-15 09:45' },
+      { memberId: 'mem-002', memberCode: 'MEM-002', nameBn: 'মোসা: তানজিলা আক্তার', roleBn: 'মহিলা বিষয়ক সম্পাদক', phone: '+8801712000002', isPresent: true, signedAt: '2026-11-15 09:50' },
+      { memberId: 'mem-003', memberCode: 'MEM-003', nameBn: 'জনাব তারেক মাহমুদ', roleBn: 'কোষাধ্যক্ষ', phone: '+8801712000003', isPresent: true, signedAt: '2026-11-15 09:52' },
+      { memberId: 'mem-004', memberCode: 'MEM-004', nameBn: 'আলহাজ্ব জসিম উদ্দিন', roleBn: 'উপদেষ্টা', phone: '+8801712000004', isPresent: false },
+      { memberId: 'mem-005', memberCode: 'MEM-005', nameBn: 'ইঞ্জি: সাহেদ ইকবাল', roleBn: 'নির্বাহী সদস্য', phone: '+8801712000005', isPresent: true, signedAt: '2026-11-15 09:58' }
+    ],
+    minutesTextBn: 'আজ ১৫ই নভেম্বর ২০২৬ তারিখ রোজ রবিবার সকাল ১০:০০ ঘটিকায় একতা বহুমুখী সমবায় সমিতি লিমিটেডের ৮ম বার্ষিক সাধারণ সভা বনশ্রী কমিউনিটি সেন্টার অডিটোরিয়ামে অনুষ্ঠিত হয়। সভায় সভাপতিত্ব করেন সমিতির সম্মানিত সভাপতি আলহাজ্ব রফিকুল ইসলাম। উপস্থিত সকল সদস্যের উপস্থিতিতে কোরাম পূর্ণ হওয়ায় সভা যথারীতি শুরু হয় এবং এজেন্ডাভিত্তিক আলোচনার পর উপরোক্ত সিদ্ধান্তসমূহ সর্বসম্মতভাবে পাস হয়।',
+    createdAt: '2026-10-01'
   },
   {
     id: 'mtg-002',
     tenantId: 'samity-ekota',
+    meetingNo: 'EC-2026/10',
     titleBn: 'অক্টোবর মাসিক পরিচালনা পর্ষদ সভা',
     titleEn: 'October Executive Committee Meeting',
     type: 'COMMITTEE',
     date: '2026-10-10',
     time: 'সন্ধ্যা ৭:৩০ ঘটিকা',
     venue: 'সমিতি প্রধান কার্যালয় বোর্ডরুম',
+    chairpersonNameBn: 'আলহাজ্ব রফিকুল ইসলাম (সভাপতি)',
+    recordingSecretaryNameBn: 'জনাব শফিকুল আলম (সাধারণ সম্পাদক)',
+    targetAudience: 'EXECUTIVE_COMMITTEE',
+    quorumRequired: 6,
+    quorumPresent: 9,
+    isQuorumMet: true,
+    totalAttendees: 9,
+    status: 'COMPLETED',
+    noticePublished: true,
     agenda: [
-      'নতুন ক্ষুদ্র ঋণ আবেদনসমূহ যাচাই ও অনুমোদন',
-      'খেলাপি কিস্তি আদায়ে তাগিদপত্র প্রদান',
-      'সমিতিপ্রো অ্যান্ড্রয়েড অ্যাপে সকল সদস্যের ডাটা এন্ট্রি সমাপ্তি'
+      {
+        id: 'ag-11',
+        serial: 1,
+        titleBn: 'নতুন ক্ষুদ্র ঋণ আবেদনসমূহ যাচাই ও অনুমোদন',
+        discussionBn: 'ঋণ উপ-কমিটির সুপারিশকৃত ৫টি ঋণ আবেদন ফাইল পুঙ্খানুপুঙ্খভাবে পর্যালোচনা করা হয়।',
+        resolutionBn: '৫টি আবেদন সর্বসম্মতভাবে মঞ্জুর করা হলো।',
+        status: 'PASSED'
+      },
+      {
+        id: 'ag-12',
+        serial: 2,
+        titleBn: 'খেলাপি কিস্তি আদায়ে তাগিদপত্র প্রদান ও মাঠ তদারকি জোরদার',
+        discussionBn: 'দীর্ঘমেয়াদী অপরিশোধিত কিস্তির বিপরীতে ৩ কর্মদিবসের মধ্যে তাগিদপত্র প্রেরণের নির্দেশ।',
+        resolutionBn: 'মাঠ কর্মীদের বিশেষ মনিটরিং দল গঠনের সিদ্ধান্ত।',
+        status: 'PASSED'
+      },
+      {
+        id: 'ag-13',
+        serial: 3,
+        titleBn: 'সমিতিপ্রো ক্লাউড ও অ্যান্ড্রয়েড মোবাইল অ্যাপ বাস্তবায়ন অগ্রগতি',
+        discussionBn: 'সদস্যদের জন্য ডিজিটাল পাসবই ও এসএমএস অ্যালার্ট সফলভাবে চালুকরণ।',
+        status: 'PASSED'
+      }
     ],
     resolutions: [
-      '৫ জন সদস্যের মোট ৪,৫০,০০০ টাকার ঋণ অনুমোদন',
-      'সকল সদস্যের জন্য মোবাইল অ্যাপে পাসবই দেখার সুবিধা চালু'
+      {
+        id: 'res-11',
+        resolutionNo: 'সিদ্ধান্ত ০৫/২০২৬',
+        agendaSerial: 1,
+        subjectBn: '৫ জন সদস্যের মোট ৪,৫০,০০০ টাকার ঋণ মঞ্জুর',
+        detailsBn: 'শর্তসাপেক্ষে আগামী ১২ মাসের মেয়াদে সমান মাসিক কিস্তিতে পরিশোধের অঙ্গীকারে ঋণ বিতরণের অনুমোদন দেওয়া হলো।',
+        proposerBn: 'জনাব শফিকুল আলম',
+        seconderBn: 'জনাব তারেক মাহমুদ',
+        votingResult: 'UNANIMOUS',
+        effectiveDate: '2026-10-11'
+      },
+      {
+        id: 'res-12',
+        resolutionNo: 'সিদ্ধান্ত ০৬/২০২৬',
+        agendaSerial: 3,
+        subjectBn: 'ডিজিটাল সদস্য পোর্টাল ও অ্যাপ উন্মুক্তকরণ',
+        detailsBn: 'সকল সদস্যকে সমিতিপ্রো অ্যান্ড্রয়েড অ্যাপ ব্যবহারের নির্দেশ ও লগইন ক্রেডেনশিয়াল প্রদানের সিদ্ধান্ত গৃহীত।',
+        proposerBn: 'ইঞ্জি: সাহেদ ইকবাল',
+        seconderBn: 'মো: কবির আহমেদ',
+        votingResult: 'UNANIMOUS',
+        effectiveDate: '2026-10-10'
+      }
     ],
-    totalAttendees: 9,
-    status: 'COMPLETED'
+    attendees: [
+      { memberId: 'mem-001', memberCode: 'MEM-001', nameBn: 'মো: কবির আহমেদ', roleBn: 'সাধারণ সদস্য', phone: '+8801712000001', isPresent: true },
+      { memberId: 'mem-002', memberCode: 'MEM-002', nameBn: 'মোসা: তানজিলা আক্তার', roleBn: 'মহিলা বিষয়ক সম্পাদক', phone: '+8801712000002', isPresent: true },
+      { memberId: 'mem-003', memberCode: 'MEM-003', nameBn: 'জনাব তারেক মাহমুদ', roleBn: 'কোষাধ্যক্ষ', phone: '+8801712000003', isPresent: true },
+      { memberId: 'mem-005', memberCode: 'MEM-005', nameBn: 'ইঞ্জি: সাহেদ ইকবাল', roleBn: 'নির্বাহী সদস্য', phone: '+8801712000005', isPresent: true }
+    ],
+    minutesTextBn: 'গত ১০ই অক্টোবর ২০২৬ তারিখ রোজ শনিবার সন্ধ্যা ৭:৩০ ঘটিকায় সমিতির বোর্ডরুমে কার্যনির্বাহী পরিষদের মাসিক সভা অনুষ্ঠিত হয়। এতে সর্বসম্মতিক্রমে ৪,৫০,০০০ টাকার ক্ষুদ্র ঋণ অনুমোদন এবং সকল সদস্যের জন্য ডিজিটাল পাসবই সেবা উন্মুক্তের যুগান্তকারী সিদ্ধান্ত গৃহীত হয়।',
+    minutesApprovedBy: 'আলহাজ্ব রফিকুল ইসলাম (সভাপতি)',
+    minutesApprovedDate: '2026-10-12',
+    createdAt: '2026-10-05'
   }
 ];
 

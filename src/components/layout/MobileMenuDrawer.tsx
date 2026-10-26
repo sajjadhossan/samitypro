@@ -338,7 +338,7 @@ export function MobileMenuDrawer({
                 >
                   <div className="flex items-center gap-2.5">
                     <CalendarCheck className="w-4 h-4 text-green-400" />
-                    <span>সাধারণ সভা ও রেজোলিউশন (Meetings)</span>
+                    <span>সভা ও রেজোলিউশন (মডিউল ৭)</span>
                   </div>
                 </button>
 

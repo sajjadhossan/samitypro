@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { 
   Tenant, User, Member, MemberStatus, SavingsAccount, SavingsTransaction, 
-  Loan, Voucher, Meeting, Election, RealtimeEvent, Language,
+  Loan, Voucher, Meeting, MeetingType, MeetingStatus, MeetingAgendaItem, MeetingResolution, MeetingAttendee,
+  Election, RealtimeEvent, Language,
   MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder,
   SignatureSealConfig, VoucherPrefixConfig, BulkDepositItem,
   AuditLog, ApprovalItem, GeneratedDocument, ApprovalStatus,
@@ -156,6 +157,10 @@ class DataStore {
       if (storedCoa) this.chartOfAccounts = JSON.parse(storedCoa);
       else localStorage.setItem(STORAGE_KEYS.CHART_OF_ACCOUNTS, JSON.stringify(this.chartOfAccounts));
 
+      const storedMeetings = localStorage.getItem(STORAGE_KEYS.MEETINGS);
+      if (storedMeetings) this.meetings = JSON.parse(storedMeetings);
+      else localStorage.setItem(STORAGE_KEYS.MEETINGS, JSON.stringify(this.meetings));
+
       const storedElections = localStorage.getItem(STORAGE_KEYS.ELECTIONS);
       if (storedElections) this.elections = JSON.parse(storedElections);
       else localStorage.setItem(STORAGE_KEYS.ELECTIONS, JSON.stringify(this.elections));
@@ -296,6 +301,8 @@ class DataStore {
       if (storedCoa) this.chartOfAccounts = JSON.parse(storedCoa);
       const storedVouchers = localStorage.getItem(STORAGE_KEYS.VOUCHERS);
       if (storedVouchers) this.vouchers = JSON.parse(storedVouchers);
+      const storedMeetings = localStorage.getItem(STORAGE_KEYS.MEETINGS);
+      if (storedMeetings) this.meetings = JSON.parse(storedMeetings);
       emitChange();
     } catch {}
   }
@@ -312,6 +319,7 @@ class DataStore {
       localStorage.setItem(STORAGE_KEYS.LOAN_POLICIES, JSON.stringify(this.loanPolicies));
       localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(this.vouchers));
       localStorage.setItem(STORAGE_KEYS.CHART_OF_ACCOUNTS, JSON.stringify(this.chartOfAccounts));
+      localStorage.setItem(STORAGE_KEYS.MEETINGS, JSON.stringify(this.meetings));
       localStorage.setItem(STORAGE_KEYS.ELECTIONS, JSON.stringify(this.elections));
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(this.events));
       localStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
@@ -2724,6 +2732,407 @@ class DataStore {
     this.tenants.push(tenant);
     this.save();
   }
+
+  // ==========================================
+  // MODULE 7: MEETINGS, MINUTES & NOTICES
+  // ==========================================
+
+  createMeeting(meetingData: {
+    tenantId: string;
+    meetingNo?: string;
+    titleBn: string;
+    titleEn?: string;
+    type: MeetingType;
+    date: string;
+    time: string;
+    venue: string;
+    chairpersonNameBn?: string;
+    recordingSecretaryNameBn?: string;
+    targetAudience?: 'ALL_MEMBERS' | 'EXECUTIVE_COMMITTEE' | 'GENERAL_BODY';
+    quorumRequired?: number;
+    agenda?: (string | MeetingAgendaItem)[];
+    publishNoticeImmediately?: boolean;
+  }) {
+    const meetingId = `mtg-${Date.now()}`;
+    const tenantMeetings = this.meetings.filter(m => m.tenantId === meetingData.tenantId);
+    const meetingNo = meetingData.meetingNo || `${meetingData.type}-${new Date().getFullYear()}/${tenantMeetings.length + 1}`;
+
+    const initialAgenda: (string | MeetingAgendaItem)[] = (meetingData.agenda && meetingData.agenda.length > 0)
+      ? meetingData.agenda.map((ag, idx) => {
+          if (typeof ag === 'string') {
+            return {
+              id: `ag-${Date.now()}-${idx + 1}`,
+              serial: idx + 1,
+              titleBn: ag,
+              status: 'PENDING' as const
+            };
+          }
+          return ag;
+        })
+      : [
+          { id: `ag-${Date.now()}-1`, serial: 1, titleBn: 'বিগত সভার কার্যবিবরণী পাঠ ও অনুমোদন', status: 'PENDING' },
+          { id: `ag-${Date.now()}-2`, serial: 2, titleBn: 'সমিতির চলমান আর্থিক কার্যক্রম পর্যালোচনা', status: 'PENDING' },
+          { id: `ag-${Date.now()}-3`, serial: 3, titleBn: 'বিবিধ ও সমাপনী বক্তব্য', status: 'PENDING' }
+        ];
+
+    // Seed default attendees from members of this tenant
+    const tenantMembers = this.members.filter(m => m.tenantId === meetingData.tenantId && m.status === 'ACTIVE');
+    const attendees: MeetingAttendee[] = tenantMembers.slice(0, 20).map(m => ({
+      memberId: m.id,
+      memberCode: m.memberCode,
+      nameBn: m.nameBn,
+      roleBn: m.category === 'ADVISORY' ? 'উপদেষ্টা' : m.category === 'EXECUTIVE' ? 'কার্যনির্বাহী সদস্য' : 'সাধারণ সদস্য',
+      phone: m.phone,
+      isPresent: false
+    }));
+
+    const newMeeting: Meeting = {
+      id: meetingId,
+      tenantId: meetingData.tenantId,
+      meetingNo,
+      titleBn: meetingData.titleBn,
+      titleEn: meetingData.titleEn || meetingData.titleBn,
+      type: meetingData.type,
+      date: meetingData.date,
+      time: meetingData.time,
+      venue: meetingData.venue,
+      chairpersonNameBn: meetingData.chairpersonNameBn || 'সভাপতি',
+      recordingSecretaryNameBn: meetingData.recordingSecretaryNameBn || 'সাধারণ সম্পাদক',
+      targetAudience: meetingData.targetAudience || 'ALL_MEMBERS',
+      quorumRequired: meetingData.quorumRequired || 10,
+      quorumPresent: 0,
+      isQuorumMet: false,
+      attendees,
+      agenda: initialAgenda,
+      resolutions: [],
+      totalAttendees: 0,
+      status: 'SCHEDULED',
+      noticePublished: false,
+      createdAt: new Date().toISOString(),
+      syncVersion: 1,
+      isSynced: true
+    };
+
+    if (meetingData.publishNoticeImmediately) {
+      const noticeId = `not-mtg-${Date.now()}`;
+      newMeeting.noticePublished = true;
+      newMeeting.noticeId = noticeId;
+      
+      const agendasText = initialAgenda.map((a, i) => `${i + 1}. ${typeof a === 'string' ? a : a.titleBn}`).join('\n');
+      this.notices.unshift({
+        id: noticeId,
+        tenantId: meetingData.tenantId,
+        titleBn: `সভার নোটিশ: ${meetingData.titleBn}`,
+        titleEn: `Meeting Notice: ${meetingData.titleEn || meetingData.titleBn}`,
+        contentBn: `এতদ্বারা সমিতির সম্মানিত সদস্যদের জানানো যাচ্ছে যে, আগামী ${meetingData.date} তারিখ ${meetingData.time} এ ${meetingData.venue} স্থানে সমিতির ${meetingData.titleBn} অনুষ্ঠিত হবে। যথাসময়ে উপস্থিত থাকার জন্য অনুরোধ করা হলো।\n\nআলোচ্যসূচি:\n${agendasText}`,
+        contentEn: `Notice is hereby given that the ${meetingData.titleEn || meetingData.titleBn} will be held on ${meetingData.date} at ${meetingData.time} in ${meetingData.venue}.`,
+        category: meetingData.type === 'AGM' ? 'AGM' : 'MEETING',
+        priority: 'HIGH',
+        publishedDate: new Date().toISOString().split('T')[0],
+        publishedBy: this.currentUserId,
+        publisherNameBn: 'অফিস প্রশাসন',
+        isPinned: true,
+        viewCount: 1
+      });
+    }
+
+    this.meetings.unshift(newMeeting);
+
+    this.events.unshift({
+      id: `evt-${Date.now()}`,
+      tenantId: meetingData.tenantId,
+      type: 'MEETING_SCHEDULED',
+      titleBn: 'নতুন সভা আহ্বান করা হয়েছে',
+      titleEn: 'New Meeting Scheduled',
+      messageBn: `${newMeeting.titleBn} আগামী ${newMeeting.date} তারিখের জন্য নির্ধারিত হয়েছে।`,
+      messageEn: `${newMeeting.titleEn} scheduled on ${newMeeting.date}.`,
+      timestamp: new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })
+    });
+
+    this.addAuditLog({
+      tenantId: meetingData.tenantId,
+      action: 'CREATE',
+      entity: 'MEETING',
+      entityId: meetingId,
+      descriptionBn: `নতুন সভা '${newMeeting.titleBn}' (${meetingNo}) সফলভাবে সিস্টেমে যুক্ত করা হয়েছে।`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return newMeeting;
+  }
+
+  updateMeeting(meetingId: string, updates: Partial<Meeting>) {
+    const idx = this.meetings.findIndex(m => m.id === meetingId);
+    if (idx === -1) return null;
+
+    this.meetings[idx] = {
+      ...this.meetings[idx],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+      updatedBy: this.currentUserId
+    };
+
+    this.addAuditLog({
+      tenantId: this.meetings[idx].tenantId,
+      action: 'UPDATE',
+      entity: 'MEETING',
+      entityId: meetingId,
+      descriptionBn: `সভা '${this.meetings[idx].titleBn}' এর তথ্য আপডেট করা হয়েছে।`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return this.meetings[idx];
+  }
+
+  softDeleteMeeting(meetingId: string, reason?: string) {
+    const idx = this.meetings.findIndex(m => m.id === meetingId);
+    if (idx === -1) return false;
+
+    this.meetings[idx].deletedAt = new Date().toISOString();
+    this.meetings[idx].deletedBy = this.currentUserId;
+    this.meetings[idx].status = 'CANCELLED';
+
+    this.addAuditLog({
+      tenantId: this.meetings[idx].tenantId,
+      action: 'DELETE',
+      entity: 'MEETING',
+      entityId: meetingId,
+      descriptionBn: `সভা '${this.meetings[idx].titleBn}' বাতিল/মুছে ফেলা হয়েছে। কারণ: ${reason || 'প্রশাসনিক সিদ্ধান্ত'}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return true;
+  }
+
+  startMeeting(meetingId: string) {
+    const meeting = this.meetings.find(m => m.id === meetingId);
+    if (!meeting) return null;
+
+    meeting.status = 'IN_PROGRESS';
+    meeting.updatedAt = new Date().toISOString();
+
+    this.events.unshift({
+      id: `evt-${Date.now()}`,
+      tenantId: meeting.tenantId,
+      type: 'SYSTEM_ANNOUNCEMENT',
+      titleBn: 'সভা শুরু হয়েছে',
+      titleEn: 'Meeting Started',
+      messageBn: `'${meeting.titleBn}' এর কার্যক্রম শুরু হয়েছে।`,
+      messageEn: `${meeting.titleEn} is now in progress.`,
+      timestamp: new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })
+    });
+
+    this.save();
+    return meeting;
+  }
+
+  completeMeeting(meetingId: string, data: { minutesTextBn?: string; resolutions?: MeetingResolution[]; minutesApprovedBy?: string }) {
+    const meeting = this.meetings.find(m => m.id === meetingId);
+    if (!meeting) return null;
+
+    meeting.status = 'COMPLETED';
+    if (data.minutesTextBn) meeting.minutesTextBn = data.minutesTextBn;
+    if (data.resolutions && data.resolutions.length > 0) meeting.resolutions = data.resolutions;
+    meeting.minutesApprovedBy = data.minutesApprovedBy || meeting.chairpersonNameBn || 'সভাপতি';
+    meeting.minutesApprovedDate = new Date().toISOString().split('T')[0];
+    meeting.updatedAt = new Date().toISOString();
+
+    this.events.unshift({
+      id: `evt-${Date.now()}`,
+      tenantId: meeting.tenantId,
+      type: 'MEETING_COMPLETED',
+      titleBn: 'সভা সফলভাবে সম্পন্ন হয়েছে',
+      titleEn: 'Meeting Completed',
+      messageBn: `'${meeting.titleBn}' এর কার্যবিবরণী ও রেজোলিউশন অনুমোদিত হয়েছে।`,
+      messageEn: `${meeting.titleEn} minutes and resolutions finalized.`,
+      timestamp: new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })
+    });
+
+    this.addAuditLog({
+      tenantId: meeting.tenantId,
+      action: 'UPDATE',
+      entity: 'MEETING',
+      entityId: meetingId,
+      descriptionBn: `সভা '${meeting.titleBn}' সমাপ্ত ঘোষণা ও রেজোলিউশন রেজিস্টার সম্পন্ন হয়েছে।`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return meeting;
+  }
+
+  recordAttendance(meetingId: string, updatedAttendees: MeetingAttendee[]) {
+    const meeting = this.meetings.find(m => m.id === meetingId);
+    if (!meeting) return null;
+
+    meeting.attendees = updatedAttendees;
+    const presentCount = updatedAttendees.filter(a => a.isPresent).length;
+    meeting.totalAttendees = presentCount;
+    meeting.quorumPresent = presentCount;
+    meeting.isQuorumMet = meeting.quorumRequired ? presentCount >= meeting.quorumRequired : true;
+    meeting.updatedAt = new Date().toISOString();
+
+    this.save();
+    return meeting;
+  }
+
+  addAgendaItem(meetingId: string, item: { titleBn: string; discussionBn?: string; proposerNameBn?: string; seconderNameBn?: string }) {
+    const meeting = this.meetings.find(m => m.id === meetingId);
+    if (!meeting) return null;
+
+    const existingCount = meeting.agenda.length;
+    const newItem: MeetingAgendaItem = {
+      id: `ag-${Date.now()}`,
+      serial: existingCount + 1,
+      titleBn: item.titleBn,
+      discussionBn: item.discussionBn || '',
+      proposerNameBn: item.proposerNameBn || '',
+      seconderNameBn: item.seconderNameBn || '',
+      status: 'PENDING'
+    };
+
+    meeting.agenda.push(newItem);
+    meeting.updatedAt = new Date().toISOString();
+
+    this.save();
+    return newItem;
+  }
+
+  updateAgendaItem(meetingId: string, agendaId: string, updates: Partial<MeetingAgendaItem>) {
+    const meeting = this.meetings.find(m => m.id === meetingId);
+    if (!meeting) return null;
+
+    const idx = meeting.agenda.findIndex(a => typeof a !== 'string' && a.id === agendaId);
+    if (idx !== -1 && typeof meeting.agenda[idx] !== 'string') {
+      meeting.agenda[idx] = {
+        ...(meeting.agenda[idx] as MeetingAgendaItem),
+        ...updates
+      };
+      meeting.updatedAt = new Date().toISOString();
+      this.save();
+    }
+    return meeting;
+  }
+
+  addResolution(meetingId: string, resolutionData: {
+    agendaSerial?: number;
+    subjectBn: string;
+    detailsBn: string;
+    proposerBn?: string;
+    seconderBn?: string;
+    votingResult?: 'UNANIMOUS' | 'MAJORITY' | 'VETO';
+    effectiveDate?: string;
+  }) {
+    const meeting = this.meetings.find(m => m.id === meetingId);
+    if (!meeting) return null;
+
+    const resCount = meeting.resolutions.length + 1;
+    const resolutionNo = `সিদ্ধান্ত ${resCount < 10 ? '০' : ''}${resCount}/${new Date().getFullYear()}`;
+
+    const newRes: MeetingResolution = {
+      id: `res-${Date.now()}`,
+      resolutionNo,
+      agendaSerial: resolutionData.agendaSerial || 1,
+      subjectBn: resolutionData.subjectBn,
+      detailsBn: resolutionData.detailsBn,
+      proposerBn: resolutionData.proposerBn || '',
+      seconderBn: resolutionData.seconderBn || '',
+      votingResult: resolutionData.votingResult || 'UNANIMOUS',
+      effectiveDate: resolutionData.effectiveDate || new Date().toISOString().split('T')[0]
+    };
+
+    meeting.resolutions.push(newRes);
+    meeting.updatedAt = new Date().toISOString();
+
+    this.events.unshift({
+      id: `evt-${Date.now()}`,
+      tenantId: meeting.tenantId,
+      type: 'RESOLUTION_PASSED',
+      titleBn: `নতুন সিদ্ধান্ত গৃহীত: ${resolutionNo}`,
+      titleEn: `Resolution Passed: ${resolutionNo}`,
+      messageBn: `${newRes.subjectBn} সংক্রান্ত প্রস্তাব সর্বসম্মতিক্রমে পাস হয়েছে।`,
+      messageEn: `Resolution ${resolutionNo} on ${newRes.subjectBn} approved.`,
+      timestamp: new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })
+    });
+
+    this.addAuditLog({
+      tenantId: meeting.tenantId,
+      action: 'CREATE',
+      entity: 'MEETING',
+      entityId: newRes.id,
+      descriptionBn: `সভা '${meeting.titleBn}' এ নতুন ${resolutionNo} গৃহীত হয়েছে: ${newRes.subjectBn}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return newRes;
+  }
+
+  publishMeetingNotice(meetingId: string) {
+    const meeting = this.meetings.find(m => m.id === meetingId);
+    if (!meeting) return null;
+
+    const noticeId = `not-mtg-${Date.now()}`;
+    meeting.noticePublished = true;
+    meeting.noticeId = noticeId;
+
+    const agendasText = meeting.agenda.map((a, i) => `${i + 1}. ${typeof a === 'string' ? a : a.titleBn}`).join('\n');
+    const newNotice: Notice = {
+      id: noticeId,
+      tenantId: meeting.tenantId,
+      titleBn: `সভার জরুরি নোটিশ: ${meeting.titleBn}`,
+      titleEn: `Notice: ${meeting.titleEn}`,
+      contentBn: `এতদ্বারা সমিতির সম্মানিত সদস্যগণের অবগতির জন্য জানানো যাচ্ছে যে, আগামী ${meeting.date} তারিখ ${meeting.time} এ সমিতির ${meeting.venue} স্থানে ${meeting.titleBn} অনুষ্ঠিত হবে।\n\nসভার আলোচ্যসূচি:\n${agendasText}\n\nউক্ত সভায় আপনার উপস্থিতি ঐকান্তিকভাবে কামনা করছি।`,
+      contentEn: `Meeting notice for ${meeting.titleEn} scheduled on ${meeting.date} at ${meeting.time}.`,
+      category: meeting.type === 'AGM' ? 'AGM' : 'MEETING',
+      priority: 'HIGH',
+      publishedDate: new Date().toISOString().split('T')[0],
+      publishedBy: this.currentUserId,
+      publisherNameBn: 'সমিতি প্রশাসন',
+      isPinned: true,
+      viewCount: 1
+    };
+
+    this.notices.unshift(newNotice);
+
+    this.events.unshift({
+      id: `evt-${Date.now()}`,
+      tenantId: meeting.tenantId,
+      type: 'NOTICE_PUBLISHED',
+      titleBn: 'নতুন নোটিশ জারি হয়েছে',
+      titleEn: 'Notice Published',
+      messageBn: `${newNotice.titleBn} নোটিশ বোর্ডে প্রকাশ করা হয়েছে।`,
+      messageEn: `Notice published on notice board.`,
+      timestamp: new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })
+    });
+
+    this.save();
+    return newNotice;
+  }
+
+  pinNotice(noticeId: string, isPinned: boolean) {
+    const notice = this.notices.find(n => n.id === noticeId);
+    if (notice) {
+      notice.isPinned = isPinned;
+      this.save();
+    }
+  }
+
+  deleteNotice(noticeId: string) {
+    const idx = this.notices.findIndex(n => n.id === noticeId);
+    if (idx !== -1) {
+      this.notices.splice(idx, 1);
+      this.save();
+    }
+  }
 }
 
 export const store = new DataStore();
@@ -2831,5 +3240,18 @@ export function useSamityStore() {
     getTrialBalance: () => store.getTrialBalance(activeTenant?.id || 'samity-ekota'),
     getIncomeStatement: () => store.getIncomeStatement(activeTenant?.id || 'samity-ekota'),
     getBalanceSheet: () => store.getBalanceSheet(activeTenant?.id || 'samity-ekota'),
+    createMeeting: (meetingData: Parameters<typeof store.createMeeting>[0]) => store.createMeeting(meetingData),
+    updateMeeting: (meetingId: string, updates: Parameters<typeof store.updateMeeting>[1]) => store.updateMeeting(meetingId, updates),
+    softDeleteMeeting: (meetingId: string, reason?: string) => store.softDeleteMeeting(meetingId, reason),
+    startMeeting: (meetingId: string) => store.startMeeting(meetingId),
+    completeMeeting: (meetingId: string, data: Parameters<typeof store.completeMeeting>[1]) => store.completeMeeting(meetingId, data),
+    recordAttendance: (meetingId: string, attendees: Parameters<typeof store.recordAttendance>[1]) => store.recordAttendance(meetingId, attendees),
+    addAgendaItem: (meetingId: string, item: Parameters<typeof store.addAgendaItem>[1]) => store.addAgendaItem(meetingId, item),
+    updateAgendaItem: (meetingId: string, agendaId: string, updates: Parameters<typeof store.updateAgendaItem>[2]) => store.updateAgendaItem(meetingId, agendaId, updates),
+    addResolution: (meetingId: string, resData: Parameters<typeof store.addResolution>[1]) => store.addResolution(meetingId, resData),
+    publishMeetingNotice: (meetingId: string) => store.publishMeetingNotice(meetingId),
+    publishNotice: (noticeData: Parameters<typeof store.publishNotice>[0]) => store.publishNotice(noticeData),
+    pinNotice: (noticeId: string, isPinned: boolean) => store.pinNotice(noticeId, isPinned),
+    deleteNotice: (noticeId: string) => store.deleteNotice(noticeId),
   };
 }
