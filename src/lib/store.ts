@@ -165,9 +165,9 @@ class DataStore {
     try {
       const stored = localStorage.getItem(key);
       if (stored) {
-        (this as Record<string, any>)[prop] = JSON.parse(stored);
+        (this as unknown as Record<StoreCollectionKey, unknown>)[prop] = JSON.parse(stored);
       } else {
-        localStorage.setItem(key, JSON.stringify((this as Record<string, any>)[prop]));
+        localStorage.setItem(key, JSON.stringify(this[prop]));
       }
     } catch {}
   }
@@ -176,7 +176,7 @@ class DataStore {
     try {
       const stored = localStorage.getItem(key);
       if (stored) {
-        (this as Record<string, any>)[prop] = JSON.parse(stored);
+        (this as unknown as Record<StoreCollectionKey, unknown>)[prop] = JSON.parse(stored);
       }
     } catch {}
   }
@@ -221,7 +221,7 @@ class DataStore {
     if (typeof window === 'undefined') return;
     try {
       for (const [key, prop] of STORE_STORAGE_MAPPINGS) {
-        localStorage.setItem(key, JSON.stringify((this as Record<string, any>)[prop]));
+        localStorage.setItem(key, JSON.stringify(this[prop]));
       }
       localStorage.setItem(STORAGE_KEYS.CURRENT_TENANT_ID, this.currentTenantId);
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, this.currentUserId);
@@ -1687,6 +1687,41 @@ class DataStore {
     return true;
   }
 
+  private updateHeadBalance(
+    targetHead: AccountHead,
+    type: 'DEBIT' | 'CREDIT' | 'JOURNAL',
+    amount: number
+  ) {
+    if (type === 'DEBIT') {
+      const isDebitNormal = targetHead.group === 'EXPENSE' || targetHead.group === 'ASSET';
+      targetHead.currentBalance += isDebitNormal ? amount : -amount;
+    } else if (type === 'CREDIT') {
+      const isCreditNormal = targetHead.group === 'INCOME' || targetHead.group === 'LIABILITY';
+      targetHead.currentBalance += isCreditNormal ? amount : -amount;
+    }
+  }
+
+  private updatePaymentHeadBalance(
+    tenantId: string,
+    paymentMethod: PaymentMethod,
+    type: 'DEBIT' | 'CREDIT' | 'JOURNAL',
+    amount: number
+  ) {
+    if (paymentMethod !== 'CASH' && paymentMethod !== 'BANK') return;
+
+    const head = paymentMethod === 'CASH'
+      ? this.chartOfAccounts.find(c => c.tenantId === tenantId && c.code === '1010')
+      : this.chartOfAccounts.find(c => c.tenantId === tenantId && (c.code === '1020' || c.code === '1021'));
+
+    if (!head) return;
+
+    if (type === 'CREDIT') {
+      head.currentBalance += amount;
+    } else if (type === 'DEBIT') {
+      head.currentBalance = Math.max(0, head.currentBalance - amount);
+    }
+  }
+
   private updateVoucherAccountBalances(
     tenantId: string,
     type: 'DEBIT' | 'CREDIT' | 'JOURNAL',
@@ -1696,28 +1731,9 @@ class DataStore {
   ) {
     const targetHead = this.chartOfAccounts.find(c => c.tenantId === tenantId && c.code === accountHeadCode);
     if (targetHead) {
-      if (type === 'DEBIT') {
-        const isDebitNormal = targetHead.group === 'EXPENSE' || targetHead.group === 'ASSET';
-        targetHead.currentBalance += isDebitNormal ? amount : -amount;
-      } else if (type === 'CREDIT') {
-        const isCreditNormal = targetHead.group === 'INCOME' || targetHead.group === 'LIABILITY';
-        targetHead.currentBalance += isCreditNormal ? amount : -amount;
-      }
+      this.updateHeadBalance(targetHead, type, amount);
     }
-
-    if (paymentMethod === 'CASH') {
-      const cashHead = this.chartOfAccounts.find(c => c.tenantId === tenantId && c.code === '1010');
-      if (cashHead) {
-        if (type === 'CREDIT') cashHead.currentBalance += amount;
-        else if (type === 'DEBIT') cashHead.currentBalance = Math.max(0, cashHead.currentBalance - amount);
-      }
-    } else if (paymentMethod === 'BANK') {
-      const bankHead = this.chartOfAccounts.find(c => c.tenantId === tenantId && (c.code === '1020' || c.code === '1021'));
-      if (bankHead) {
-        if (type === 'CREDIT') bankHead.currentBalance += amount;
-        else if (type === 'DEBIT') bankHead.currentBalance = Math.max(0, bankHead.currentBalance - amount);
-      }
-    }
+    this.updatePaymentHeadBalance(tenantId, paymentMethod, type, amount);
   }
 
   createVoucher(params: {
@@ -2411,7 +2427,7 @@ class DataStore {
 
     for (const key of backupKeys) {
       if (data[key] !== undefined) {
-        (this as Record<string, any>)[key] = data[key];
+        (this as unknown as Record<StoreCollectionKey, unknown>)[key] = data[key];
       }
     }
   }
@@ -3439,11 +3455,11 @@ export const store = new DataStore();
 
 // React Hook to subscribe to store changes
 export function useSamityStore() {
-  const [, setTick] = useState(0);
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     store.init();
-    const handleUpdate = () => setTick(t => t + 1);
+    const handleUpdate = () => setVersion(v => v + 1);
     listeners.add(handleUpdate);
     return () => {
       listeners.delete(handleUpdate);
@@ -3455,6 +3471,7 @@ export function useSamityStore() {
 
   return {
     store,
+    version,
     tenants: store.tenants,
     activeTenant,
     currentUser,
