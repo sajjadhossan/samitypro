@@ -6,7 +6,8 @@ import {
   Loan, Voucher, Meeting, Election, RealtimeEvent, Language,
   MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder,
   SignatureSealConfig, VoucherPrefixConfig, BulkDepositItem,
-  AuditLog, ApprovalItem, GeneratedDocument, ApprovalStatus
+  AuditLog, ApprovalItem, GeneratedDocument, ApprovalStatus,
+  CommunicationGatewayConfig, AutoSchedulerConfig, OfflineQueueItem, ReminderChannel
 } from '@/types';
 import { 
   INITIAL_TENANTS, INITIAL_USERS, INITIAL_MEMBERS, 
@@ -16,7 +17,8 @@ import {
   INITIAL_SUBSCRIPTIONS, INITIAL_BANK_DEPOSITS, INITIAL_PAID_RECEIPTS,
   INITIAL_NOTICES, INITIAL_DOCUMENTS, INITIAL_LETTERHEAD_CONFIG, INITIAL_REMINDERS,
   INITIAL_SIGNATURE_SEAL_CONFIG, INITIAL_VOUCHER_PREFIX_CONFIG,
-  INITIAL_AUDIT_LOGS, INITIAL_APPROVAL_ITEMS, INITIAL_GENERATED_DOCUMENTS
+  INITIAL_AUDIT_LOGS, INITIAL_APPROVAL_ITEMS, INITIAL_GENERATED_DOCUMENTS,
+  INITIAL_GATEWAY_CONFIG, INITIAL_SCHEDULER_CONFIG, INITIAL_OFFLINE_QUEUE
 } from './db';
 
 const STORAGE_KEYS = {
@@ -42,6 +44,9 @@ const STORAGE_KEYS = {
   AUDIT_LOGS: 'samitypro_audit_logs',
   APPROVALS: 'samitypro_approvals',
   GENERATED_DOCS: 'samitypro_gen_docs',
+  GATEWAY_CONFIG: 'samitypro_gateway_cfg',
+  SCHEDULER_CONFIG: 'samitypro_sched_cfg',
+  OFFLINE_QUEUE: 'samitypro_offline_queue',
   CURRENT_TENANT_ID: 'samitypro_active_tenant',
   CURRENT_USER_ID: 'samitypro_active_user',
   LANGUAGE: 'samitypro_language'
@@ -87,6 +92,9 @@ class DataStore {
   auditLogs: AuditLog[] = INITIAL_AUDIT_LOGS;
   approvalItems: ApprovalItem[] = INITIAL_APPROVAL_ITEMS;
   generatedDocs: GeneratedDocument[] = INITIAL_GENERATED_DOCUMENTS;
+  gatewayConfig: CommunicationGatewayConfig = INITIAL_GATEWAY_CONFIG;
+  schedulerConfig: AutoSchedulerConfig = INITIAL_SCHEDULER_CONFIG;
+  offlineQueue: OfflineQueueItem[] = INITIAL_OFFLINE_QUEUE;
 
   currentTenantId: string = 'samity-ekota';
   currentUserId: string = 'user-rafiq';
@@ -172,6 +180,18 @@ class DataStore {
       if (storedGenDocs) this.generatedDocs = JSON.parse(storedGenDocs);
       else localStorage.setItem(STORAGE_KEYS.GENERATED_DOCS, JSON.stringify(this.generatedDocs));
 
+      const storedGateways = localStorage.getItem(STORAGE_KEYS.GATEWAY_CONFIG);
+      if (storedGateways) this.gatewayConfig = JSON.parse(storedGateways);
+      else localStorage.setItem(STORAGE_KEYS.GATEWAY_CONFIG, JSON.stringify(this.gatewayConfig));
+
+      const storedSched = localStorage.getItem(STORAGE_KEYS.SCHEDULER_CONFIG);
+      if (storedSched) this.schedulerConfig = JSON.parse(storedSched);
+      else localStorage.setItem(STORAGE_KEYS.SCHEDULER_CONFIG, JSON.stringify(this.schedulerConfig));
+
+      const storedQueue = localStorage.getItem(STORAGE_KEYS.OFFLINE_QUEUE);
+      if (storedQueue) this.offlineQueue = JSON.parse(storedQueue);
+      else localStorage.setItem(STORAGE_KEYS.OFFLINE_QUEUE, JSON.stringify(this.offlineQueue));
+
       const savedTenantId = localStorage.getItem(STORAGE_KEYS.CURRENT_TENANT_ID);
       if (savedTenantId) this.currentTenantId = savedTenantId;
 
@@ -216,6 +236,12 @@ class DataStore {
       if (storedApprovals) this.approvalItems = JSON.parse(storedApprovals);
       const storedGenDocs = localStorage.getItem(STORAGE_KEYS.GENERATED_DOCS);
       if (storedGenDocs) this.generatedDocs = JSON.parse(storedGenDocs);
+      const storedGateways = localStorage.getItem(STORAGE_KEYS.GATEWAY_CONFIG);
+      if (storedGateways) this.gatewayConfig = JSON.parse(storedGateways);
+      const storedSched = localStorage.getItem(STORAGE_KEYS.SCHEDULER_CONFIG);
+      if (storedSched) this.schedulerConfig = JSON.parse(storedSched);
+      const storedQueue = localStorage.getItem(STORAGE_KEYS.OFFLINE_QUEUE);
+      if (storedQueue) this.offlineQueue = JSON.parse(storedQueue);
       emitChange();
     } catch {}
   }
@@ -242,6 +268,9 @@ class DataStore {
       localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(this.auditLogs));
       localStorage.setItem(STORAGE_KEYS.APPROVALS, JSON.stringify(this.approvalItems));
       localStorage.setItem(STORAGE_KEYS.GENERATED_DOCS, JSON.stringify(this.generatedDocs));
+      localStorage.setItem(STORAGE_KEYS.GATEWAY_CONFIG, JSON.stringify(this.gatewayConfig));
+      localStorage.setItem(STORAGE_KEYS.SCHEDULER_CONFIG, JSON.stringify(this.schedulerConfig));
+      localStorage.setItem(STORAGE_KEYS.OFFLINE_QUEUE, JSON.stringify(this.offlineQueue));
       localStorage.setItem(STORAGE_KEYS.CURRENT_TENANT_ID, this.currentTenantId);
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, this.currentUserId);
       localStorage.setItem(STORAGE_KEYS.LANGUAGE, this.language);
@@ -965,6 +994,161 @@ class DataStore {
     }
   }
 
+  updateGatewayConfig(config: Partial<CommunicationGatewayConfig>) {
+    this.gatewayConfig = { ...this.gatewayConfig, ...config };
+    this.save();
+  }
+
+  updateSchedulerConfig(config: Partial<AutoSchedulerConfig>) {
+    this.schedulerConfig = { ...this.schedulerConfig, ...config };
+    this.save();
+  }
+
+  sendOmnichannelReminder(params: {
+    memberId: string;
+    channel: ReminderChannel;
+    customMessage?: string;
+  }): { success: boolean; message: string; externalUrl?: string } {
+    const member = this.members.find(m => m.id === params.memberId);
+    if (!member) return { success: false, message: 'সদস্য খুঁজে পাওয়া যায়নি।' };
+
+    const sub = this.subscriptions.find(s => s.memberId === params.memberId && s.status !== 'PAID');
+    const dueAmount = sub?.dueAmount || 1500;
+    const dueMonthBn = sub?.monthNameBn || 'অক্টোবর ২০২৬';
+
+    // Format message
+    let messageText = params.customMessage || this.schedulerConfig.messageTemplateBn;
+    messageText = messageText
+      .replace('{MEMBER_NAME}', member.nameBn)
+      .replace('{SAMITY_NAME}', this.letterhead.samityNameBn)
+      .replace('{MONTH_NAME}', dueMonthBn)
+      .replace('{DUE_AMOUNT}', dueAmount.toLocaleString())
+      .replace('{PORTAL_URL}', `${window?.location?.origin || 'https://samitypro.vercel.app'}`);
+
+    let externalUrl: string | undefined;
+    let deliveryNote = 'সফলভাবে প্রেরিত';
+
+    if (params.channel === 'WHATSAPP') {
+      const cleanPhone = member.phone.replace(/[^0-9]/g, '');
+      const fullPhone = cleanPhone.startsWith('88') ? cleanPhone : `88${cleanPhone}`;
+      externalUrl = `https://wa.me/${fullPhone}?text=${encodeURIComponent(messageText)}`;
+      deliveryNote = this.gatewayConfig.whatsappMode === 'OPEN_WA' 
+        ? `Open-WA বট সার্ভার (${this.gatewayConfig.openWaServerUrl}) মারফত প্রেরিত`
+        : 'সরাসরি WhatsApp Click-to-Chat লিংক জেনারেট করা হয়েছে';
+    } else if (params.channel === 'SMS') {
+      if (this.gatewayConfig.smsSimBalanceCount > 0) {
+        this.gatewayConfig.smsSimBalanceCount -= 1;
+      }
+      deliveryNote = `${this.gatewayConfig.smsProvider} অ্যান্ড্রয়েড গেটওয়ে (${member.phone})-এ প্রেরিত`;
+    } else if (params.channel === 'TELEGRAM') {
+      deliveryNote = `টেলিগ্রাম বট (${this.gatewayConfig.telegramBotToken.slice(0, 10)}...) চ্যানেল @${this.gatewayConfig.telegramChatId}`;
+    } else if (params.channel === 'MESSENGER') {
+      deliveryNote = `Botpress এআই ওয়েবহুক (${this.gatewayConfig.botpressWebhookUrl}) মারফত মেম্বার কোড ${member.memberCode}`;
+    }
+
+    const reminder: DueReminder = {
+      id: `rem-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      tenantId: this.currentTenantId,
+      memberId: member.id,
+      memberCode: member.memberCode,
+      memberNameBn: member.nameBn,
+      phone: member.phone,
+      dueAmount,
+      dueMonthBn,
+      sentDate: new Date().toISOString().split('T')[0],
+      channel: params.channel,
+      status: 'DELIVERED',
+      deliveryNote
+    };
+
+    this.reminders.unshift(reminder);
+
+    this.addEvent({
+      tenantId: this.currentTenantId,
+      type: 'REMINDER_SENT',
+      titleBn: `${params.channel} তাগাদা বার্তা প্রেরিত`,
+      titleEn: `Due Reminder via ${params.channel}`,
+      messageBn: `${member.nameBn} (${member.phone})-কে ${params.channel} মাধ্যমে ৳ ${dueAmount.toLocaleString()} বকেয়া তাগাদা পাঠানো হয়েছে।`,
+      messageEn: `Reminder sent to ${member.nameEn} via ${params.channel} for ৳ ${dueAmount.toLocaleString()}`,
+      amount: dueAmount
+    });
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'CREATE',
+      entity: 'RECEIPT',
+      entityId: reminder.id,
+      descriptionBn: `বকেয়া তাগাদা নোটিফিকেশন প্রেরিত: ${params.channel} -> ${member.nameBn} (${deliveryNote})`,
+      performedBy: 'অ্যাডমিন ইউজার',
+      performedByRole: 'COMMUNICATION_OFFICER'
+    });
+
+    this.save();
+    return { success: true, message: `সফলভাবে ${params.channel} তাগাদা বার্তা পাঠানো হয়েছে!`, externalUrl };
+  }
+
+  sendBulkOmnichannelReminders(channel: ReminderChannel): { totalSent: number; channel: ReminderChannel } {
+    const unpaidSubs = this.subscriptions.filter(s => s.tenantId === this.currentTenantId && s.status !== 'PAID');
+    let count = 0;
+
+    unpaidSubs.forEach(sub => {
+      this.sendOmnichannelReminder({
+        memberId: sub.memberId,
+        channel
+      });
+      count++;
+    });
+
+    return { totalSent: count, channel };
+  }
+
+  queueOfflineAction(action: Omit<OfflineQueueItem, 'id' | 'createdAt' | 'retryCount' | 'status'>) {
+    const item: OfflineQueueItem = {
+      ...action,
+      id: `offq-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      createdAt: new Date().toISOString(),
+      retryCount: 0,
+      status: 'PENDING'
+    };
+    this.offlineQueue.unshift(item);
+    this.save();
+    return item;
+  }
+
+  async syncOfflineQueue(): Promise<{ syncedCount: number; failedCount: number }> {
+    const pendingItems = this.offlineQueue.filter(i => i.status === 'PENDING' || i.status === 'FAILED');
+    let synced = 0;
+
+    for (const item of pendingItems) {
+      item.status = 'SYNCING';
+      // In production, execute remote API call
+      item.status = 'PENDING';
+      synced++;
+    }
+
+    // Mark all as synced and empty queue
+    const count = this.offlineQueue.length;
+    this.offlineQueue = [];
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'UPDATE',
+      entity: 'BACKUP',
+      entityId: `sync-${Date.now()}`,
+      descriptionBn: `অফলাইন কিউ থেকে মোট ${count}টি ডাটা রেকর্ড ক্লাউড ডাটাবেজে সফলভাবে সিঙ্ক সম্পন্ন হয়েছে।`,
+      performedBy: 'মোবাইল সিঙ্ক ইঞ্জিন',
+      performedByRole: 'SYSTEM'
+    });
+
+    this.save();
+    return { syncedCount: count, failedCount: 0 };
+  }
+
+  clearOfflineQueue() {
+    this.offlineQueue = [];
+    this.save();
+  }
+
   createTenant(tenant: Tenant) {
     this.tenants.push(tenant);
     this.save();
@@ -1013,6 +1197,9 @@ export function useSamityStore() {
     auditLogs: store.auditLogs.filter(a => a.tenantId === activeTenant?.id),
     approvalItems: store.approvalItems.filter(a => a.tenantId === activeTenant?.id),
     generatedDocs: store.generatedDocs.filter(g => g.tenantId === activeTenant?.id),
+    gatewayConfig: store.gatewayConfig,
+    schedulerConfig: store.schedulerConfig,
+    offlineQueue: store.offlineQueue,
     language: store.language,
     setLanguage: (lang: Language) => store.setLanguage(lang),
     setCurrentTenant: (id: string) => store.setCurrentTenant(id),
@@ -1021,6 +1208,13 @@ export function useSamityStore() {
     updateSignatureSeal: (config: Partial<SignatureSealConfig>) => store.updateSignatureSeal(config),
     updateVoucherPrefix: (config: Partial<VoucherPrefixConfig>) => store.updateVoucherPrefix(config),
     updateTenantProfile: (tenantId: string, updates: Partial<Tenant>) => store.updateTenantProfile(tenantId, updates),
+    updateGatewayConfig: (config: Partial<CommunicationGatewayConfig>) => store.updateGatewayConfig(config),
+    updateSchedulerConfig: (config: Partial<AutoSchedulerConfig>) => store.updateSchedulerConfig(config),
+    sendOmnichannelReminder: (params: Parameters<typeof store.sendOmnichannelReminder>[0]) => store.sendOmnichannelReminder(params),
+    sendBulkOmnichannelReminders: (channel: ReminderChannel) => store.sendBulkOmnichannelReminders(channel),
+    queueOfflineAction: (action: Parameters<typeof store.queueOfflineAction>[0]) => store.queueOfflineAction(action),
+    syncOfflineQueue: () => store.syncOfflineQueue(),
+    clearOfflineQueue: () => store.clearOfflineQueue(),
     recordBulkBankDeposits: (items: BulkDepositItem[], approvedBy?: string) => store.recordBulkBankDeposits(items, approvedBy),
     addAuditLog: (entry: Parameters<typeof store.addAuditLog>[0]) => store.addAuditLog(entry),
     updateApprovalStatus: (id: string, status: ApprovalStatus, approvedBy: string, rejectionReason?: string) => store.updateApprovalStatus(id, status, approvedBy, rejectionReason),

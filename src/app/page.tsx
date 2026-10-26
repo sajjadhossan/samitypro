@@ -27,6 +27,7 @@ import { DocumentGeneratorView } from '@/components/documents/DocumentGeneratorV
 import { ApprovalWorkflowView } from '@/components/approvals/ApprovalWorkflowView';
 import { AuditTrailView } from '@/components/audit/AuditTrailView';
 import { BackupRestoreView } from '@/components/backup/BackupRestoreView';
+import { CommunicationHubView } from '@/components/messaging/CommunicationHubView';
 
 import { useSamityStore } from '@/lib/store';
 import { 
@@ -117,6 +118,7 @@ export default function Home() {
         )}
         {activeTab === 'accounts' && <AccountsView />}
         {activeTab === 'approvals' && <ApprovalWorkflowView />}
+        {activeTab === 'communication-hub' && <CommunicationHubView />}
         {activeTab === 'doc-generator' && <DocumentGeneratorView />}
         {activeTab === 'notices' && <NoticesView />}
         {activeTab === 'documents' && <DocumentsView />}

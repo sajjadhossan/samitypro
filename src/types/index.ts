@@ -437,6 +437,8 @@ export interface LetterheadConfig {
   treasurerNameBn: string;
 }
 
+export type ReminderChannel = 'SMS' | 'WHATSAPP' | 'TELEGRAM' | 'MESSENGER' | 'PUSH' | 'MANUAL';
+
 export interface DueReminder {
   id: string;
   tenantId: string;
@@ -447,8 +449,9 @@ export interface DueReminder {
   dueAmount: number;
   dueMonthBn: string;
   sentDate: string;
-  channel: 'SMS' | 'PUSH' | 'MANUAL';
+  channel: ReminderChannel;
   status: 'DELIVERED' | 'PENDING' | 'FAILED';
+  deliveryNote?: string;
 }
 
 export type PrintPaperSize = 'A4' | 'A5' | 'THERMAL_80MM';
@@ -547,5 +550,62 @@ export interface GeneratedDocument {
   issueDate: string;
   issuedBy: string;
   status: 'ACTIVE' | 'REVOKED';
+}
+
+export type WhatsAppMode = 'OPEN_WA' | 'WA_ME_DIRECT' | 'OFFICIAL_META';
+export type SmsProvider = 'TEXTBEE' | 'HTTPSMS' | 'LOCAL_ANDROID' | 'COMMERCIAL_AGGREGATOR';
+
+export interface CommunicationGatewayConfig {
+  tenantId: string;
+  // WhatsApp Settings (Open-WA & wa.me)
+  whatsappMode: WhatsAppMode;
+  openWaServerUrl: string;
+  openWaApiKey: string;
+  whatsappConnectedPhone?: string;
+  isWhatsappConnected: boolean;
+
+  // SMS Gateway Settings (TextBee, HTTP SMS, Local Android SIM)
+  smsProvider: SmsProvider;
+  textBeeDeviceId: string;
+  textBeeApiKey: string;
+  httpSmsApiKey: string;
+  localAndroidGatewayUrl: string;
+  commercialSmsApiKey: string;
+  commercialSmsSenderId: string;
+  smsSimBalanceCount: number;
+
+  // Telegram Bot Settings
+  telegramBotToken: string;
+  telegramChatId: string;
+  isTelegramConnected: boolean;
+
+  // Facebook Messenger & Botpress Settings
+  botpressWebhookUrl: string;
+  facebookPageId: string;
+  facebookPageToken: string;
+  isMessengerConnected: boolean;
+}
+
+export interface AutoSchedulerConfig {
+  tenantId: string;
+  enableAutoDueReminder: boolean;
+  triggerDayOfMonth: number;
+  defaultChannel: ReminderChannel;
+  rateLimitDelaySec: number;
+  lastRunDate?: string;
+  nextScheduledDate: string;
+  messageTemplateBn: string;
+}
+
+export interface OfflineQueueItem {
+  id: string;
+  tenantId: string;
+  entity: string;
+  action: 'CREATE' | 'UPDATE' | 'DELETE';
+  payload: any;
+  createdAt: string;
+  retryCount: number;
+  status: 'PENDING' | 'SYNCING' | 'FAILED';
+  errorMessage?: string;
 }
 

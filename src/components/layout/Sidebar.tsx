@@ -6,7 +6,7 @@ import {
   CalendarCheck, Vote, FileBarChart, ShieldAlert,
   CreditCard, MessageSquare, BookOpen, Bell,
   BadgePercent, Building2, FolderLock, Sliders,
-  ScrollText, ShieldCheck, History, Database
+  ScrollText, ShieldCheck, History, Database, Zap
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations } from '@/lib/i18n';
@@ -38,6 +38,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'savings', labelBn: t.savings, labelEn: 'Savings & DPS', icon: PiggyBank },
     { id: 'loans', labelBn: t.loans, labelEn: 'Loans & EMIs', icon: HandCoins },
     { id: 'approvals', labelBn: 'অনুমোদন ও ওয়ার্কফ্লো', labelEn: 'Approvals Workflow', icon: ShieldCheck },
+    { id: 'communication-hub', labelBn: 'মেসেজিং ও গেটওয়ে হাব', labelEn: 'Communication Hub', icon: Zap },
     { id: 'doc-generator', labelBn: 'প্রত্যয়ন ও চুক্তিপত্র', labelEn: 'Doc Generator', icon: ScrollText },
     { id: 'accounts', labelBn: t.accounts, labelEn: 'Accounts & Vouchers', icon: ReceiptText },
     { id: 'notices', labelBn: 'ডিজিটাল নোটিশ বোর্ড', labelEn: 'Notice Board', icon: Bell },

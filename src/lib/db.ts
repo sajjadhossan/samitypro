@@ -2,7 +2,8 @@ import {
   Tenant, User, Member, SavingsAccount, SavingsTransaction, 
   Loan, Voucher, Meeting, Election, RealtimeEvent,
   MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder,
-  SignatureSealConfig, VoucherPrefixConfig, AuditLog, ApprovalItem, GeneratedDocument
+  SignatureSealConfig, VoucherPrefixConfig, AuditLog, ApprovalItem, GeneratedDocument,
+  CommunicationGatewayConfig, AutoSchedulerConfig, OfflineQueueItem
 } from '@/types';
 
 // Pre-seeded multi-tenant data
@@ -1187,5 +1188,45 @@ export const INITIAL_GENERATED_DOCUMENTS: GeneratedDocument[] = [
     status: 'ACTIVE'
   }
 ];
+
+export const INITIAL_GATEWAY_CONFIG: CommunicationGatewayConfig = {
+  tenantId: 'samity-ekota',
+  whatsappMode: 'OPEN_WA',
+  openWaServerUrl: 'http://localhost:8000',
+  openWaApiKey: 'wa-open-samity-secret-key-9821',
+  whatsappConnectedPhone: '+8801711223344',
+  isWhatsappConnected: true,
+
+  smsProvider: 'TEXTBEE',
+  textBeeDeviceId: 'dev_android_9941a8',
+  textBeeApiKey: 'tb_live_984128503817',
+  httpSmsApiKey: 'hsms_token_8812',
+  localAndroidGatewayUrl: 'http://192.168.1.150:8080',
+  commercialSmsApiKey: 'bms_live_44921',
+  commercialSmsSenderId: 'EKOTA_SAMITY',
+  smsSimBalanceCount: 840,
+
+  telegramBotToken: '7182930412:AAH9f28_kLs09384EkotaBot',
+  telegramChatId: '@ekota_samity_official',
+  isTelegramConnected: true,
+
+  botpressWebhookUrl: 'https://webhook.botpress.cloud/v1/bots/ekota-samity-bot',
+  facebookPageId: '1098234819284',
+  facebookPageToken: 'EAAO...PAGE_TOKEN_SECURE',
+  isMessengerConnected: true,
+};
+
+export const INITIAL_SCHEDULER_CONFIG: AutoSchedulerConfig = {
+  tenantId: 'samity-ekota',
+  enableAutoDueReminder: true,
+  triggerDayOfMonth: 7,
+  defaultChannel: 'WHATSAPP',
+  rateLimitDelaySec: 4,
+  lastRunDate: '2026-10-07',
+  nextScheduledDate: '2026-11-07',
+  messageTemplateBn: 'শ্রদ্ধেয় {MEMBER_NAME}, {SAMITY_NAME}-এ আপনার {MONTH_NAME} মাসের মোট বকেয়া ৳ {DUE_AMOUNT} টাকা। আগামী ১০ তারিখের মধ্যে পরিশোধের জন্য অনুরোধ করা হলো। রসিদ ও পাসবই দেখতে ক্লিক করুন: {PORTAL_URL}'
+};
+
+export const INITIAL_OFFLINE_QUEUE: OfflineQueueItem[] = [];
 
 

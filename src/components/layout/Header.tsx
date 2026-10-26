@@ -16,7 +16,7 @@ interface HeaderProps {
 export function Header({ onOpenApkModal }: HeaderProps) {
   const { 
     tenants, activeTenant, currentUser, language, setLanguage, 
-    setCurrentTenant, setCurrentUser, events 
+    setCurrentTenant, setCurrentUser, events, offlineQueue, syncOfflineQueue 
   } = useSamityStore();
 
   const [showTenantDropdown, setShowTenantDropdown] = useState(false);
@@ -134,6 +134,23 @@ export function Header({ onOpenApkModal }: HeaderProps) {
         {/* Right Actions: Role Switcher, Language Toggle, APK Download & Notifications */}
         <div className="flex items-center gap-2 sm:gap-3">
           
+          {/* Offline Sync Status Badge (Rule 3) */}
+          {offlineQueue.length > 0 ? (
+            <button
+              onClick={() => syncOfflineQueue()}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 text-xs font-semibold animate-pulse transition cursor-pointer"
+              title="Click to sync offline changes to cloud"
+            >
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <span>পেন্ডিং সিঙ্ক ({offlineQueue.length})</span>
+            </button>
+          ) : (
+            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-semibold text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>ক্লাউড সিঙ্কড</span>
+            </div>
+          )}
+
           {/* Mobile APK Action Button */}
           <button
             onClick={onOpenApkModal}
