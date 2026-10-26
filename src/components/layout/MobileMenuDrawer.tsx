@@ -156,9 +156,9 @@ export function MobileMenuDrawer({
                 >
                   <div className="flex items-center gap-2.5">
                     <BadgePercent className="w-4 h-4 text-emerald-400" />
-                    <span>মাসিক চাঁদা বোর্ড (Subscriptions)</span>
+                    <span>চাঁদা ও বকেয়া পলিসি (Subscription)</span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">চালু</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">মডিউল ৩</span>
                 </button>
 
                 <button

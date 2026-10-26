@@ -3,7 +3,8 @@ import {
   Loan, Voucher, Meeting, Election, RealtimeEvent,
   MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder,
   SignatureSealConfig, VoucherPrefixConfig, AuditLog, ApprovalItem, GeneratedDocument,
-  CommunicationGatewayConfig, AutoSchedulerConfig, OfflineQueueItem
+  CommunicationGatewayConfig, AutoSchedulerConfig, OfflineQueueItem,
+  SubscriptionPolicyConfig, LateFeeWaiverRecord
 } from '@/types';
 
 // Pre-seeded multi-tenant data
@@ -1272,5 +1273,89 @@ export const INITIAL_SCHEDULER_CONFIG: AutoSchedulerConfig = {
 };
 
 export const INITIAL_OFFLINE_QUEUE: OfflineQueueItem[] = [];
+
+export const INITIAL_SUBSCRIPTION_POLICY: SubscriptionPolicyConfig = {
+  tenantId: 'samity-ekota',
+  defaultMonthlyAmount: 1500,
+  frequency: 'MONTHLY',
+  dueDayOfMonth: 10,
+  gracePeriodDays: 5,
+  lateFeeEnabled: true,
+  lateFeeType: 'FIXED',
+  lateFeeAmount: 100,
+  annualDiscountEnabled: true,
+  annualDiscountPercent: 10,
+  autoBillingEnabled: true,
+  autoBillingDay: 1,
+  lateFeeWaiverRole: 'PRESIDENT',
+  updatedBy: 'ইঞ্জিঃ সাজ্জাদ হোসাইন (সুপার অ্যাডমিন)',
+  updatedAt: '2026-10-25',
+  categoryRates: [
+    {
+      category: 'GENERAL',
+      categoryNameBn: 'সাধারণ সদস্য',
+      categoryNameEn: 'General Member',
+      monthlyAmount: 1500,
+      admissionFee: 1000,
+      isExempt: false
+    },
+    {
+      category: 'EXECUTIVE',
+      categoryNameBn: 'কার্যনির্বাহী সদস্য',
+      categoryNameEn: 'Executive Member',
+      monthlyAmount: 2500,
+      admissionFee: 2000,
+      isExempt: false
+    },
+    {
+      category: 'ADVISORY',
+      categoryNameBn: 'উপদেষ্টা সদস্য',
+      categoryNameEn: 'Advisory Member',
+      monthlyAmount: 3000,
+      admissionFee: 5000,
+      isExempt: false
+    },
+    {
+      category: 'LIFE',
+      categoryNameBn: 'আজীবন সদস্য',
+      categoryNameEn: 'Life Member',
+      monthlyAmount: 0,
+      admissionFee: 50000,
+      isExempt: true
+    },
+    {
+      category: 'DONOR',
+      categoryNameBn: 'দাতা সদস্য',
+      categoryNameEn: 'Donor Member',
+      monthlyAmount: 5000,
+      admissionFee: 10000,
+      isExempt: false
+    },
+    {
+      category: 'ASSOCIATE',
+      categoryNameBn: 'সহযোগী সদস্য',
+      categoryNameEn: 'Associate Member',
+      monthlyAmount: 1000,
+      admissionFee: 500,
+      isExempt: false
+    }
+  ]
+};
+
+export const INITIAL_LATE_FEE_WAIVERS: LateFeeWaiverRecord[] = [
+  {
+    id: 'waiver-001',
+    tenantId: 'samity-ekota',
+    subscriptionId: 'sub-003',
+    memberId: 'mem-003',
+    memberNameBn: 'নাজমুল হুদা',
+    monthYear: '2026-09',
+    originalLateFee: 100,
+    waivedAmount: 50,
+    waivedReason: 'চিকিৎসাজনিত জরুরি পারিবারিক সংকট বিবেচনায় সভাপতি কর্তৃক মওকুফ',
+    waivedBy: 'আলহাজ্ব রফিকুল ইসলাম (সভাপতি)',
+    waivedAt: '2026-09-20'
+  }
+];
 
 

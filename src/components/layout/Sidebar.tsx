@@ -33,10 +33,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   // Samity Admin & Manager Navigation Items
   const samityAdminNav = [
     { id: 'dashboard', labelBn: t.dashboard, labelEn: 'Dashboard', icon: LayoutDashboard },
-    { id: 'samity-setup', labelBn: 'সমিতি সেটআপ ও প্রোফাইল', labelEn: 'Samity Setup', icon: Building2 },
-    { id: 'subscriptions-due', labelBn: 'মাসিক চাঁদা ও বকেয়া', labelEn: 'Fees & Dues', icon: BadgePercent },
-    { id: 'bank-deposits', labelBn: 'ব্যাংক হিসাব ও জমা', labelEn: 'Bank Deposits', icon: Building2 },
+    { id: 'samity-setup', labelBn: 'সমিতি সেটআপ (মডিউল ১)', labelEn: 'Samity Setup (Mod 1)', icon: Building2 },
     { id: 'members', labelBn: 'সদস্য ব্যবস্থাপনা (মডিউল ২)', labelEn: 'Members & KYC (Mod 2)', icon: Users },
+    { id: 'subscriptions-due', labelBn: 'চাঁদা ও বকেয়া পলিসি (মডিউল ৩)', labelEn: 'Fees & Policy (Mod 3)', icon: BadgePercent },
+    { id: 'bank-deposits', labelBn: 'ব্যাংক হিসাব ও জমা', labelEn: 'Bank Deposits', icon: Building2 },
     { id: 'savings', labelBn: t.savings, labelEn: 'Savings & DPS', icon: PiggyBank },
     { id: 'loans', labelBn: t.loans, labelEn: 'Loans & EMIs', icon: HandCoins },
     { id: 'approvals', labelBn: 'অনুমোদন ও ওয়ার্কফ্লো', labelEn: 'Approvals Workflow', icon: ShieldCheck },

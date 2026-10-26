@@ -7,7 +7,8 @@ import {
   MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder,
   SignatureSealConfig, VoucherPrefixConfig, BulkDepositItem,
   AuditLog, ApprovalItem, GeneratedDocument, ApprovalStatus,
-  CommunicationGatewayConfig, AutoSchedulerConfig, OfflineQueueItem, ReminderChannel
+  CommunicationGatewayConfig, AutoSchedulerConfig, OfflineQueueItem, ReminderChannel,
+  SubscriptionPolicyConfig, LateFeeWaiverRecord, FeePaymentStatus
 } from '@/types';
 import { 
   INITIAL_TENANTS, INITIAL_USERS, INITIAL_MEMBERS, 
@@ -18,7 +19,8 @@ import {
   INITIAL_NOTICES, INITIAL_DOCUMENTS, INITIAL_LETTERHEAD_CONFIG, INITIAL_REMINDERS,
   INITIAL_SIGNATURE_SEAL_CONFIG, INITIAL_VOUCHER_PREFIX_CONFIG,
   INITIAL_AUDIT_LOGS, INITIAL_APPROVAL_ITEMS, INITIAL_GENERATED_DOCUMENTS,
-  INITIAL_GATEWAY_CONFIG, INITIAL_SCHEDULER_CONFIG, INITIAL_OFFLINE_QUEUE
+  INITIAL_GATEWAY_CONFIG, INITIAL_SCHEDULER_CONFIG, INITIAL_OFFLINE_QUEUE,
+  INITIAL_SUBSCRIPTION_POLICY, INITIAL_LATE_FEE_WAIVERS
 } from './db';
 
 const STORAGE_KEYS = {
@@ -47,6 +49,8 @@ const STORAGE_KEYS = {
   GATEWAY_CONFIG: 'samitypro_gateway_cfg',
   SCHEDULER_CONFIG: 'samitypro_sched_cfg',
   OFFLINE_QUEUE: 'samitypro_offline_queue',
+  SUBSCRIPTION_POLICIES: 'samitypro_sub_policies',
+  LATE_FEE_WAIVERS: 'samitypro_late_waivers',
   CURRENT_TENANT_ID: 'samitypro_active_tenant',
   CURRENT_USER_ID: 'samitypro_active_user',
   LANGUAGE: 'samitypro_language'
@@ -95,6 +99,8 @@ class DataStore {
   gatewayConfig: CommunicationGatewayConfig = INITIAL_GATEWAY_CONFIG;
   schedulerConfig: AutoSchedulerConfig = INITIAL_SCHEDULER_CONFIG;
   offlineQueue: OfflineQueueItem[] = INITIAL_OFFLINE_QUEUE;
+  subscriptionPolicies: Record<string, SubscriptionPolicyConfig> = { 'samity-ekota': INITIAL_SUBSCRIPTION_POLICY };
+  lateFeeWaivers: LateFeeWaiverRecord[] = INITIAL_LATE_FEE_WAIVERS;
 
   currentTenantId: string = 'samity-ekota';
   currentUserId: string = 'user-rafiq';
@@ -192,6 +198,14 @@ class DataStore {
       if (storedQueue) this.offlineQueue = JSON.parse(storedQueue);
       else localStorage.setItem(STORAGE_KEYS.OFFLINE_QUEUE, JSON.stringify(this.offlineQueue));
 
+      const storedSubPol = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTION_POLICIES);
+      if (storedSubPol) this.subscriptionPolicies = JSON.parse(storedSubPol);
+      else localStorage.setItem(STORAGE_KEYS.SUBSCRIPTION_POLICIES, JSON.stringify(this.subscriptionPolicies));
+
+      const storedWaivers = localStorage.getItem(STORAGE_KEYS.LATE_FEE_WAIVERS);
+      if (storedWaivers) this.lateFeeWaivers = JSON.parse(storedWaivers);
+      else localStorage.setItem(STORAGE_KEYS.LATE_FEE_WAIVERS, JSON.stringify(this.lateFeeWaivers));
+
       const savedTenantId = localStorage.getItem(STORAGE_KEYS.CURRENT_TENANT_ID);
       if (savedTenantId) this.currentTenantId = savedTenantId;
 
@@ -242,6 +256,10 @@ class DataStore {
       if (storedSched) this.schedulerConfig = JSON.parse(storedSched);
       const storedQueue = localStorage.getItem(STORAGE_KEYS.OFFLINE_QUEUE);
       if (storedQueue) this.offlineQueue = JSON.parse(storedQueue);
+      const storedSubPol = localStorage.getItem(STORAGE_KEYS.SUBSCRIPTION_POLICIES);
+      if (storedSubPol) this.subscriptionPolicies = JSON.parse(storedSubPol);
+      const storedWaivers = localStorage.getItem(STORAGE_KEYS.LATE_FEE_WAIVERS);
+      if (storedWaivers) this.lateFeeWaivers = JSON.parse(storedWaivers);
       emitChange();
     } catch {}
   }
@@ -271,6 +289,8 @@ class DataStore {
       localStorage.setItem(STORAGE_KEYS.GATEWAY_CONFIG, JSON.stringify(this.gatewayConfig));
       localStorage.setItem(STORAGE_KEYS.SCHEDULER_CONFIG, JSON.stringify(this.schedulerConfig));
       localStorage.setItem(STORAGE_KEYS.OFFLINE_QUEUE, JSON.stringify(this.offlineQueue));
+      localStorage.setItem(STORAGE_KEYS.SUBSCRIPTION_POLICIES, JSON.stringify(this.subscriptionPolicies));
+      localStorage.setItem(STORAGE_KEYS.LATE_FEE_WAIVERS, JSON.stringify(this.lateFeeWaivers));
       localStorage.setItem(STORAGE_KEYS.CURRENT_TENANT_ID, this.currentTenantId);
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, this.currentUserId);
       localStorage.setItem(STORAGE_KEYS.LANGUAGE, this.language);
@@ -733,6 +753,225 @@ class DataStore {
     this.save();
     return receipt;
   }
+
+  getSubscriptionPolicy(tenantId: string): SubscriptionPolicyConfig {
+    if (this.subscriptionPolicies[tenantId]) {
+      return this.subscriptionPolicies[tenantId];
+    }
+    const defaultCopy: SubscriptionPolicyConfig = {
+      ...INITIAL_SUBSCRIPTION_POLICY,
+      tenantId
+    };
+    this.subscriptionPolicies[tenantId] = defaultCopy;
+    this.save();
+    return defaultCopy;
+  }
+
+  updateSubscriptionPolicy(tenantId: string, updates: Partial<SubscriptionPolicyConfig>): SubscriptionPolicyConfig {
+    const current = this.getSubscriptionPolicy(tenantId);
+    const updated: SubscriptionPolicyConfig = {
+      ...current,
+      ...updates,
+      updatedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      updatedAt: new Date().toISOString().split('T')[0]
+    };
+    this.subscriptionPolicies[tenantId] = updated;
+
+    this.addAuditLog({
+      tenantId,
+      action: 'UPDATE',
+      entity: 'SUBSCRIPTION',
+      entityId: `policy-${tenantId}`,
+      descriptionBn: `সমিতির চাঁদা ও লেট ফি পলিসি কনফিগারেশন হালনাগাদ করা হয়েছে (ডিফল্ট: ৳ ${updated.defaultMonthlyAmount}, ডিউ ডে: ${updated.dueDayOfMonth} তারিখ, গ্রেস: ${updated.gracePeriodDays} দিন)`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return updated;
+  }
+
+  generateMonthlyDues(tenantId: string, monthYear: string, monthNameBn: string): { generatedCount: number; skippedCount: number; totalDemand: number } {
+    const activeMembers = this.members.filter(m => m.tenantId === tenantId && m.status === 'ACTIVE');
+    const policy = this.getSubscriptionPolicy(tenantId);
+    const today = new Date().toISOString().split('T')[0];
+
+    let generatedCount = 0;
+    let skippedCount = 0;
+    let totalDemand = 0;
+
+    activeMembers.forEach(member => {
+      // Check if already billed for this month
+      const existing = this.subscriptions.find(s => s.tenantId === tenantId && s.memberId === member.id && s.monthYear === monthYear);
+      if (existing) {
+        skippedCount++;
+        return;
+      }
+
+      // Check category rate
+      const categoryRate = policy.categoryRates?.find(r => r.category === member.category);
+      if (categoryRate?.isExempt) {
+        skippedCount++;
+        return;
+      }
+
+      const feeAmount = member.monthlySubscriptionAmount || categoryRate?.monthlyAmount || policy.defaultMonthlyAmount || 1500;
+      
+      // Check late fee based on current date
+      const dueDay = policy.dueDayOfMonth || 10;
+      const graceDays = policy.gracePeriodDays || 5;
+      const cutoffDate = `${monthYear}-${String(dueDay + graceDays).padStart(2, '0')}`;
+      let lateFee = 0;
+      let status: FeePaymentStatus = 'UNPAID';
+
+      if (policy.lateFeeEnabled && today > cutoffDate) {
+        lateFee = policy.lateFeeType === 'PERCENTAGE' 
+          ? Math.round((feeAmount * (policy.lateFeeAmount || 5)) / 100) 
+          : (policy.lateFeeAmount || 100);
+        status = 'OVERDUE';
+      }
+
+      const totalAmount = feeAmount + lateFee;
+      totalDemand += totalAmount;
+
+      const newSub: MonthlySubscription = {
+        id: `sub-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        tenantId,
+        memberId: member.id,
+        memberCode: member.memberCode,
+        memberNameBn: member.nameBn,
+        memberNameEn: member.nameEn,
+        phone: member.phone,
+        monthYear,
+        monthNameBn,
+        feeAmount,
+        lateFee,
+        totalAmount,
+        paidAmount: 0,
+        dueAmount: totalAmount,
+        status,
+        createdAt: today,
+        updatedAt: today
+      };
+
+      this.subscriptions.unshift(newSub);
+      generatedCount++;
+    });
+
+    if (generatedCount > 0) {
+      this.addAuditLog({
+        tenantId,
+        action: 'CREATE',
+        entity: 'SUBSCRIPTION',
+        entityId: `gen-${monthYear}`,
+        descriptionBn: `${monthNameBn} মাসের জন্য সর্বমোট ${generatedCount} জন সদস্যের চাঁদা (মোট দাবি ৳ ${totalDemand.toLocaleString()}) স্বয়ংক্রিয়ভাবে জেনারেট করা হয়েছে। বাদ পড়েছেন/পূর্বনির্ধারিত: ${skippedCount} জন`,
+        performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+        performedByRole: 'ADMIN'
+      });
+
+      this.addEvent({
+        tenantId,
+        type: 'SYSTEM_ANNOUNCEMENT',
+        titleBn: `${monthNameBn} মাসের চাঁদা জেনারেট সম্পন্ন`,
+        titleEn: `Monthly Dues Generated for ${monthYear}`,
+        messageBn: `${generatedCount} জন সদস্যের জন্য সর্বমোট ৳ ${totalDemand.toLocaleString()} টাকা চাঁদা ধার্য করা হয়েছে।`,
+        messageEn: `Total ৳ ${totalDemand.toLocaleString()} dues generated for ${generatedCount} active members.`,
+        amount: totalDemand
+      });
+
+      this.save();
+    }
+
+    return { generatedCount, skippedCount, totalDemand };
+  }
+
+  waiveLateFee(subscriptionId: string, waivedAmount: number, reason: string): boolean {
+    const sub = this.subscriptions.find(s => s.id === subscriptionId);
+    if (!sub || sub.lateFee <= 0 || waivedAmount <= 0) return false;
+
+    const actualWaiver = Math.min(sub.lateFee, waivedAmount);
+    const oldLateFee = sub.lateFee;
+    sub.lateFee -= actualWaiver;
+    sub.totalAmount = sub.feeAmount + sub.lateFee;
+    sub.dueAmount = Math.max(0, sub.totalAmount - sub.paidAmount);
+    sub.status = sub.dueAmount === 0 ? 'PAID' : (sub.paidAmount > 0 ? 'PARTIAL' : (sub.status === 'OVERDUE' ? 'OVERDUE' : 'UNPAID'));
+    sub.updatedAt = new Date().toISOString().split('T')[0];
+
+    const waiverRecord: LateFeeWaiverRecord = {
+      id: `waiver-${Date.now()}`,
+      tenantId: sub.tenantId,
+      subscriptionId: sub.id,
+      memberId: sub.memberId,
+      memberNameBn: sub.memberNameBn,
+      monthYear: sub.monthYear,
+      originalLateFee: oldLateFee,
+      waivedAmount: actualWaiver,
+      waivedReason: reason || 'প্রশাসনিক সিদ্ধান্তে মওকুফ',
+      waivedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'সভাপতি / অ্যাডমিন',
+      waivedAt: new Date().toISOString().split('T')[0]
+    };
+    this.lateFeeWaivers.unshift(waiverRecord);
+
+    this.addAuditLog({
+      tenantId: sub.tenantId,
+      action: 'UPDATE',
+      entity: 'SUBSCRIPTION',
+      entityId: sub.id,
+      descriptionBn: `সদস্য ${sub.memberNameBn} (${sub.memberCode}) এর ${sub.monthNameBn} মাসের বিলম্ব ফি ৳ ${actualWaiver.toLocaleString()} মওকুফ করা হয়েছে। কারণ: ${reason}`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'সভাপতি',
+      performedByRole: 'PRESIDENT'
+    });
+
+    this.save();
+    return true;
+  }
+
+  applyOverdueLateFees(tenantId: string): { updatedCount: number; totalLateFeesAdded: number } {
+    const policy = this.getSubscriptionPolicy(tenantId);
+    if (!policy.lateFeeEnabled) return { updatedCount: 0, totalLateFeesAdded: 0 };
+
+    const today = new Date().toISOString().split('T')[0];
+    const dueDay = policy.dueDayOfMonth || 10;
+    const graceDays = policy.gracePeriodDays || 5;
+
+    let updatedCount = 0;
+    let totalLateFeesAdded = 0;
+
+    this.subscriptions.forEach(sub => {
+      if (sub.tenantId === tenantId && sub.status !== 'PAID') {
+        const cutoffDate = `${sub.monthYear}-${String(dueDay + graceDays).padStart(2, '0')}`;
+        if (today > cutoffDate && sub.lateFee === 0) {
+          const lateFee = policy.lateFeeType === 'PERCENTAGE'
+            ? Math.round((sub.feeAmount * (policy.lateFeeAmount || 5)) / 100)
+            : (policy.lateFeeAmount || 100);
+
+          sub.lateFee = lateFee;
+          sub.totalAmount = sub.feeAmount + lateFee;
+          sub.dueAmount = sub.totalAmount - sub.paidAmount;
+          sub.status = 'OVERDUE';
+          sub.updatedAt = today;
+          updatedCount++;
+          totalLateFeesAdded += lateFee;
+        }
+      }
+    });
+
+    if (updatedCount > 0) {
+      this.addAuditLog({
+        tenantId,
+        action: 'UPDATE',
+        entity: 'SUBSCRIPTION',
+        entityId: `late-fee-batch-${Date.now()}`,
+        descriptionBn: `গ্রেস পিরিয়ড উত্তীর্ণ হওয়ায় মোট ${updatedCount} জন সদস্যের বকেয়া চাঁদায় লেট ফি ৳ ${totalLateFeesAdded.toLocaleString()} যুক্ত করা হয়েছে।`,
+        performedBy: 'অটো লেট ফি শিডিউলার ইঞ্জিন',
+        performedByRole: 'SYSTEM'
+      });
+      this.save();
+    }
+
+    return { updatedCount, totalLateFeesAdded };
+  }
+
 
   recordBankDeposit(params: {
     tenantId: string;
@@ -1412,5 +1651,11 @@ export function useSamityStore() {
     softDeleteMember: (memberId: string, reason?: string) => store.softDeleteMember(memberId, reason),
     toggleMemberStatus: (memberId: string, status: MemberStatus) => store.toggleMemberStatus(memberId, status),
     bulkImportMembers: (tenantId: string, newMembers: Parameters<typeof store.bulkImportMembers>[1]) => store.bulkImportMembers(tenantId, newMembers),
+    subscriptionPolicy: store.getSubscriptionPolicy(activeTenant?.id || 'samity-ekota'),
+    lateFeeWaivers: store.lateFeeWaivers.filter(w => w.tenantId === activeTenant?.id),
+    updateSubscriptionPolicy: (updates: Partial<SubscriptionPolicyConfig>) => store.updateSubscriptionPolicy(activeTenant?.id || 'samity-ekota', updates),
+    generateMonthlyDues: (monthYear: string, monthNameBn: string) => store.generateMonthlyDues(activeTenant?.id || 'samity-ekota', monthYear, monthNameBn),
+    waiveLateFee: (subscriptionId: string, waivedAmount: number, reason: string) => store.waiveLateFee(subscriptionId, waivedAmount, reason),
+    applyOverdueLateFees: () => store.applyOverdueLateFees(activeTenant?.id || 'samity-ekota'),
   };
 }

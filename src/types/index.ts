@@ -410,6 +410,50 @@ export interface PassbookRecord {
 }
 
 export type FeePaymentStatus = 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE';
+export type SubscriptionBillingFrequency = 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY';
+export type LateFeeType = 'FIXED' | 'PERCENTAGE' | 'DAILY_RECURRING';
+
+export interface CategorySubscriptionRate {
+  category: MemberCategory;
+  categoryNameBn: string;
+  categoryNameEn: string;
+  monthlyAmount: number;
+  admissionFee: number;
+  isExempt: boolean;
+}
+
+export interface SubscriptionPolicyConfig {
+  tenantId: string;
+  defaultMonthlyAmount: number;
+  frequency: SubscriptionBillingFrequency;
+  dueDayOfMonth: number; // e.g. 10
+  gracePeriodDays: number; // e.g. 5 days
+  lateFeeEnabled: boolean;
+  lateFeeType: LateFeeType;
+  lateFeeAmount: number; // e.g. 100 BDT or 5%
+  annualDiscountEnabled: boolean;
+  annualDiscountPercent: number; // e.g. 10%
+  autoBillingEnabled: boolean;
+  autoBillingDay: number; // e.g. 1
+  categoryRates: CategorySubscriptionRate[];
+  lateFeeWaiverRole: string; // e.g. 'PRESIDENT' | 'ADMIN'
+  updatedBy?: string;
+  updatedAt?: string;
+}
+
+export interface LateFeeWaiverRecord {
+  id: string;
+  tenantId: string;
+  subscriptionId: string;
+  memberId: string;
+  memberNameBn: string;
+  monthYear: string;
+  originalLateFee: number;
+  waivedAmount: number;
+  waivedReason: string;
+  waivedBy: string;
+  waivedAt: string;
+}
 
 export interface MonthlySubscription {
   id: string;
@@ -602,7 +646,7 @@ export interface BulkDepositItem {
 }
 
 export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'EXPORT' | 'IMPORT' | 'RESTORE' | 'LOGIN';
-export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'DOCUMENT' | 'BACKUP' | 'TENANT';
+export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'DOCUMENT' | 'BACKUP' | 'TENANT' | 'SUBSCRIPTION';
 
 export interface AuditLog {
   id: string;
