@@ -67,6 +67,13 @@ jobs:
           fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
+      - name: Prepare Versioned Release APKs
+        run: |
+          mkdir -p release_assets
+          cp android/app/build/outputs/apk/debug/app-debug.apk release_assets/samitypro-${{ steps.release_meta.outputs.tag }}.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk release_assets/samitypro-latest.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk release_assets/app-debug.apk
+
       - name: Publish Official GitHub Release
         uses: softprops/action-gh-release@v2
         continue-on-error: true
@@ -74,9 +81,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: |
-            apk/*
-            android/app/build/outputs/apk/debug/app-debug.apk
-          name: SamityPro Release ${{ steps.release_meta.outputs.tag }}
+            release_assets/samitypro-${{ steps.release_meta.outputs.tag }}.apk
+            release_assets/samitypro-latest.apk
+            release_assets/app-debug.apk
+          name: SamityPro Official Release ${{ steps.release_meta.outputs.tag }}
           tag_name: ${{ steps.release_meta.outputs.tag }}
           draft: false
           prerelease: false

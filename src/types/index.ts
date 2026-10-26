@@ -1,3 +1,5 @@
+export const APP_VERSION = 'v1.1.3';
+
 export type Language = 'bn' | 'en';
 
 export type TenantType = 

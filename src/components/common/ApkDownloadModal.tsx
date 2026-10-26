@@ -6,6 +6,7 @@ import {
   Terminal, ShieldCheck, Cpu, ArrowUpRight 
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
+import { APP_VERSION } from '@/types';
 
 interface ApkDownloadModalProps {
   isOpen: boolean;
@@ -130,7 +131,7 @@ export function ApkDownloadModal({ isOpen, onClose }: ApkDownloadModalProps) {
         {/* Footer actions */}
         <div className="flex items-center justify-between pt-4 border-t border-slate-800">
           <span className="text-xs text-slate-500 font-mono">
-            Version 1.0.9 • Production Ready
+            Version {APP_VERSION.replace('v', '')} • Production Ready
           </span>
           <div className="flex items-center gap-2">
             <a

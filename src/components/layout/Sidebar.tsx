@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations } from '@/lib/i18n';
+import { APP_VERSION } from '@/types';
 
 interface SidebarProps {
   activeTab: string;
@@ -120,7 +121,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-400">
             <span>{language === 'bn' ? 'মোবাইল APK ভার্সন' : 'Mobile APK'}</span>
-            <span className="text-cyan-400 font-mono">v1.0.9 (Capacitor)</span>
+            <span className="text-cyan-400 font-mono">{APP_VERSION} (Capacitor)</span>
           </div>
           <div className="text-[10px] text-slate-500 text-center pt-1 border-t border-slate-800">
             {language === 'bn' ? 'মাল্টি-ইউজার রিয়েলটাইম সিঙ্ক' : 'Multi-User Real-time Sync'}

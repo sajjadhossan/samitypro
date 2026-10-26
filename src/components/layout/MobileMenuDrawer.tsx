@@ -9,7 +9,7 @@ import {
   Globe, ArrowRightLeft, Check, AlertTriangle, BookOpen
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
-import { UserRole } from '@/types';
+import { UserRole, APP_VERSION } from '@/types';
 
 interface MobileMenuDrawerProps {
   isOpen: boolean;
@@ -80,7 +80,7 @@ export function MobileMenuDrawer({
                      currentUser.role === 'MANAGER' ? 'ম্যানেজার' :
                      currentUser.role === 'FIELD_COLLECTOR' ? 'কালেক্টর' : 'সদস্য'}
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">v1.0.9</span>
+                  <span className="text-[10px] text-slate-400 font-mono">{APP_VERSION}</span>
                 </div>
               </div>
             </div>
