@@ -122,48 +122,91 @@ export interface User {
   createdAt: string;
 }
 
-export type MemberStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'RETIRED';
-export type MemberCategory = 'GENERAL' | 'EXECUTIVE' | 'ADVISORY' | 'LIFE' | 'DONOR';
+export type MemberStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'RETIRED' | 'SUSPENDED';
+export type MemberCategory = 'GENERAL' | 'EXECUTIVE' | 'ADVISORY' | 'LIFE' | 'DONOR' | 'ASSOCIATE';
 export type Gender = 'MALE' | 'FEMALE' | 'OTHER';
 
 export interface Nominee {
   name: string;
+  nameEn?: string;
   relation: string;
   nidOrBirthCert: string;
   phone: string;
   sharePercentage: number;
+  dateOfBirth?: string;
+  address?: string;
+  photoUrl?: string;
 }
 
 export interface Member {
   id: string;
   tenantId: string;
-  memberCode: string; // e.g. "MEM-001"
+  memberCode: string; // e.g. "MEM-001" or "MEM-2026-001"
   nameBn: string;
   nameEn: string;
   fatherHusbandName: string;
   motherName: string;
+  spouseName?: string;
   phone: string;
+  whatsappNumber?: string;
+  alternatePhone?: string;
   email?: string;
   nid: string;
+  nidType?: 'SMART_NID' | 'OLD_NID' | 'BIRTH_CERTIFICATE' | 'PASSPORT';
+  birthRegistrationNo?: string;
   dateOfBirth: string;
+  age?: number;
   gender: Gender;
   bloodGroup?: string;
-  presentAddress: string;
-  permanentAddress: string;
+  religion?: 'ISLAM' | 'HINDUISM' | 'BUDDHISM' | 'CHRISTIANITY' | 'OTHER';
+  maritalStatus?: 'MARRIED' | 'UNMARRIED' | 'WIDOWED' | 'DIVORCED';
   occupation: string;
+  education?: string;
+  designation?: string; // সভাপতি, সাধারণ সম্পাদক, কোষাধ্যক্ষ, সাধারণ সদস্য, etc.
   category: MemberCategory;
   status: MemberStatus;
   admissionDate: string;
   admissionFee: number;
+  monthlySubscriptionAmount?: number;
   sharesHeld: number;
   shareValue: number;
   savingsBalance: number;
   dpsBalance: number;
   loanOutstanding: number;
+  
+  // Photos & KYC
   photoUrl?: string;
   nidDocumentUrl?: string;
+  nidFrontUrl?: string;
+  nidBackUrl?: string;
+  signatureUrl?: string;
+
+  // Address
+  presentAddress: string;
+  presentDivision?: string;
+  presentDistrict?: string;
+  presentUpazila?: string;
+  permanentAddress: string;
+  permanentDivision?: string;
+  permanentDistrict?: string;
+  permanentUpazila?: string;
+  isSameAddress?: boolean;
+
+  // Nominee & Emergency Contact
   nominee: Nominee;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
+
+  // Audit & Tracking Metadata
+  createdBy?: string;
   createdAt: string;
+  updatedBy?: string;
+  updatedAt?: string;
+  deletedAt?: string;
+  deletedBy?: string;
+  syncVersion?: number;
+  isSynced?: boolean;
 }
 
 export interface ShareAccount {
@@ -558,7 +601,7 @@ export interface BulkDepositItem {
   category: string;
 }
 
-export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'EXPORT' | 'RESTORE' | 'LOGIN';
+export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'EXPORT' | 'IMPORT' | 'RESTORE' | 'LOGIN';
 export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'DOCUMENT' | 'BACKUP' | 'TENANT';
 
 export interface AuditLog {

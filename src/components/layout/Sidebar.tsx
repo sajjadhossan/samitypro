@@ -36,7 +36,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'samity-setup', labelBn: 'সমিতি সেটআপ ও প্রোফাইল', labelEn: 'Samity Setup', icon: Building2 },
     { id: 'subscriptions-due', labelBn: 'মাসিক চাঁদা ও বকেয়া', labelEn: 'Fees & Dues', icon: BadgePercent },
     { id: 'bank-deposits', labelBn: 'ব্যাংক হিসাব ও জমা', labelEn: 'Bank Deposits', icon: Building2 },
-    { id: 'members', labelBn: t.members, labelEn: 'Members & KYC', icon: Users },
+    { id: 'members', labelBn: 'সদস্য ব্যবস্থাপনা (মডিউল ২)', labelEn: 'Members & KYC (Mod 2)', icon: Users },
     { id: 'savings', labelBn: t.savings, labelEn: 'Savings & DPS', icon: PiggyBank },
     { id: 'loans', labelBn: t.loans, labelEn: 'Loans & EMIs', icon: HandCoins },
     { id: 'approvals', labelBn: 'অনুমোদন ও ওয়ার্কফ্লো', labelEn: 'Approvals Workflow', icon: ShieldCheck },

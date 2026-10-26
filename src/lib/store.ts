@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  Tenant, User, Member, SavingsAccount, SavingsTransaction, 
+  Tenant, User, Member, MemberStatus, SavingsAccount, SavingsTransaction, 
   Loan, Voucher, Meeting, Election, RealtimeEvent, Language,
   MonthlySubscription, BankDeposit, PaidReceipt, Notice, SamityDocument, LetterheadConfig, DueReminder,
   SignatureSealConfig, VoucherPrefixConfig, BulkDepositItem,
@@ -297,17 +297,21 @@ class DataStore {
     this.save();
   }
 
-  addMember(memberData: Omit<Member, 'id' | 'createdAt' | 'sharesHeld' | 'shareValue' | 'savingsBalance' | 'dpsBalance' | 'loanOutstanding'>) {
+  addMember(memberData: Omit<Member, 'id' | 'createdAt' | 'savingsBalance' | 'dpsBalance' | 'loanOutstanding'> & { sharesHeld?: number; shareValue?: number }) {
     const newId = `mem-${Date.now().toString().slice(-4)}`;
+    const nowIso = new Date().toISOString();
     const newMember: Member = {
       ...memberData,
       id: newId,
-      sharesHeld: 10,
-      shareValue: 10000,
+      sharesHeld: memberData.sharesHeld ?? 10,
+      shareValue: memberData.shareValue ?? 10000,
       savingsBalance: 0,
       dpsBalance: 0,
       loanOutstanding: 0,
-      createdAt: new Date().toISOString().split('T')[0]
+      createdBy: this.currentUserId,
+      createdAt: nowIso.split('T')[0],
+      syncVersion: 1,
+      isSynced: true
     };
     this.members.unshift(newMember);
 
@@ -318,12 +322,12 @@ class DataStore {
       voucherNo: `VR-${Date.now().toString().slice(-4)}`,
       type: 'CREDIT',
       category: 'সদস্য ভর্তি ফি ও শেয়ার ফি',
-      amount: memberData.admissionFee + 10000,
+      amount: (memberData.admissionFee || 1000) + (newMember.shareValue || 10000),
       descriptionBn: `নতুন সদস্য ${memberData.nameBn} (${memberData.memberCode}) এর ভর্তি ফি ও শেয়ার আদায়`,
       descriptionEn: `Admission fee & share payment for new member ${memberData.nameEn}`,
       paidToOrReceivedFrom: memberData.nameBn,
       paymentMethod: 'CASH',
-      date: new Date().toISOString().split('T')[0],
+      date: nowIso.split('T')[0],
       createdBy: this.currentUserId
     };
     this.vouchers.unshift(voucher);
@@ -339,9 +343,131 @@ class DataStore {
       memberName: memberData.nameBn
     });
 
+    this.addAuditLog({
+      tenantId: memberData.tenantId,
+      action: 'CREATE',
+      entity: 'MEMBER',
+      entityId: newId,
+      descriptionBn: `নতুন সদস্য নিবন্ধন: ${memberData.nameBn} (${memberData.memberCode}), মোবাইল: ${memberData.phone}`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ADMIN'
+    });
+
     this.save();
     return newMember;
   }
+
+  updateMember(memberId: string, updates: Partial<Member>) {
+    const memberIndex = this.members.findIndex(m => m.id === memberId);
+    if (memberIndex === -1) return null;
+
+    const existing = this.members[memberIndex];
+    const updated: Member = {
+      ...existing,
+      ...updates,
+      updatedBy: this.currentUserId,
+      updatedAt: new Date().toISOString(),
+      syncVersion: (existing.syncVersion || 1) + 1
+    };
+    this.members[memberIndex] = updated;
+
+    this.addAuditLog({
+      tenantId: updated.tenantId,
+      action: 'UPDATE',
+      entity: 'MEMBER',
+      entityId: memberId,
+      descriptionBn: `সদস্য প্রোফাইল হালনাগাদ: ${updated.nameBn} (${updated.memberCode})`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return updated;
+  }
+
+  softDeleteMember(memberId: string, reason?: string) {
+    const member = this.members.find(m => m.id === memberId);
+    if (!member) return false;
+
+    member.deletedAt = new Date().toISOString();
+    member.deletedBy = this.currentUserId;
+    member.status = 'INACTIVE';
+
+    this.addAuditLog({
+      tenantId: member.tenantId,
+      action: 'DELETE',
+      entity: 'MEMBER',
+      entityId: memberId,
+      descriptionBn: `সদস্য সফট ডিলিট/স্থগিত: ${member.nameBn} (${member.memberCode}). কারণ: ${reason || 'প্রশাসনিক সিদ্ধান্ত'}`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return true;
+  }
+
+  toggleMemberStatus(memberId: string, status: MemberStatus) {
+    const member = this.members.find(m => m.id === memberId);
+    if (!member) return null;
+
+    const oldStatus = member.status;
+    member.status = status;
+    member.updatedAt = new Date().toISOString();
+    member.updatedBy = this.currentUserId;
+
+    this.addAuditLog({
+      tenantId: member.tenantId,
+      action: 'UPDATE',
+      entity: 'MEMBER',
+      entityId: memberId,
+      descriptionBn: `সদস্যের স্ট্যাটাস পরিবর্তন: ${member.nameBn} (${oldStatus} -> ${status})`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return member;
+  }
+
+  bulkImportMembers(tenantId: string, newMembers: Omit<Member, 'id' | 'createdAt'>[]) {
+    const imported: Member[] = [];
+    const nowIso = new Date().toISOString();
+
+    newMembers.forEach((data, index) => {
+      const newId = `mem-${Date.now().toString().slice(-4)}-${index}`;
+      const m: Member = {
+        ...data,
+        id: newId,
+        tenantId,
+        sharesHeld: data.sharesHeld || 10,
+        shareValue: data.shareValue || 10000,
+        savingsBalance: data.savingsBalance || 0,
+        dpsBalance: data.dpsBalance || 0,
+        loanOutstanding: data.loanOutstanding || 0,
+        createdBy: this.currentUserId,
+        createdAt: nowIso.split('T')[0],
+        syncVersion: 1,
+        isSynced: true
+      };
+      this.members.unshift(m);
+      imported.push(m);
+    });
+
+    this.addAuditLog({
+      tenantId,
+      action: 'IMPORT',
+      entity: 'MEMBER',
+      entityId: `bulk-mem-${Date.now()}`,
+      descriptionBn: `বাল্ক এক্সেল/সিএসভি থেকে সর্বমোট ${imported.length} জন সদস্য সফলভাবে ডাটাবেজে ইমপোর্ট সম্পন্ন হয়েছে`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return imported;
+  }
+
 
   recordSavingsDeposit(params: {
     tenantId: string;
@@ -1281,5 +1407,10 @@ export function useSamityStore() {
     exportFullBackup: () => store.exportFullBackup(),
     restoreFullBackup: (json: string) => store.restoreFullBackup(json),
     exportTableToCsv: (table: Parameters<typeof store.exportTableToCsv>[0]) => store.exportTableToCsv(table),
+    addMember: (memberData: Parameters<typeof store.addMember>[0]) => store.addMember(memberData),
+    updateMember: (memberId: string, updates: Partial<Member>) => store.updateMember(memberId, updates),
+    softDeleteMember: (memberId: string, reason?: string) => store.softDeleteMember(memberId, reason),
+    toggleMemberStatus: (memberId: string, status: MemberStatus) => store.toggleMemberStatus(memberId, status),
+    bulkImportMembers: (tenantId: string, newMembers: Parameters<typeof store.bulkImportMembers>[1]) => store.bulkImportMembers(tenantId, newMembers),
   };
 }

@@ -197,9 +197,9 @@ export function MobileMenuDrawer({
                 >
                   <div className="flex items-center gap-2.5">
                     <Users className="w-4 h-4 text-indigo-400" />
-                    <span>সদস্য তালিকা ও কেওয়াইসি (Members)</span>
+                    <span>সদস্য ব্যবস্থাপনা ও কেওয়াইসি (Members)</span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-semibold">সদস্য</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-semibold">মডিউল ২</span>
                 </button>
 
                 <button
