@@ -10,7 +10,8 @@ import {
   CommunicationGatewayConfig, AutoSchedulerConfig, OfflineQueueItem, ReminderChannel,
   SubscriptionPolicyConfig, LateFeeWaiverRecord, FeePaymentStatus,
   SavingsPolicyConfig, SavingsType, PaymentMethod,
-  LoanPolicyConfig, LoanInterestMethod, LoanFrequency, LoanGuarantor, LoanInstallment
+  LoanPolicyConfig, LoanInterestMethod, LoanFrequency, LoanGuarantor, LoanInstallment,
+  AccountHead, AccountHeadGroup, GeneralLedgerEntry, TrialBalanceItem
 } from '@/types';
 import { 
   INITIAL_TENANTS, INITIAL_USERS, INITIAL_MEMBERS, 
@@ -23,7 +24,7 @@ import {
   INITIAL_AUDIT_LOGS, INITIAL_APPROVAL_ITEMS, INITIAL_GENERATED_DOCUMENTS,
   INITIAL_GATEWAY_CONFIG, INITIAL_SCHEDULER_CONFIG, INITIAL_OFFLINE_QUEUE,
   INITIAL_SUBSCRIPTION_POLICY, INITIAL_LATE_FEE_WAIVERS, INITIAL_SAVINGS_POLICY,
-  INITIAL_LOAN_POLICY
+  INITIAL_LOAN_POLICY, INITIAL_CHART_OF_ACCOUNTS
 } from './db';
 
 const STORAGE_KEYS = {
@@ -56,6 +57,7 @@ const STORAGE_KEYS = {
   SUBSCRIPTION_POLICIES: 'samitypro_sub_policies',
   LATE_FEE_WAIVERS: 'samitypro_late_waivers',
   LOAN_POLICIES: 'samitypro_loan_policies',
+  CHART_OF_ACCOUNTS: 'samitypro_chart_of_accounts',
   CURRENT_TENANT_ID: 'samitypro_active_tenant',
   CURRENT_USER_ID: 'samitypro_active_user',
   LANGUAGE: 'samitypro_language'
@@ -86,6 +88,7 @@ class DataStore {
   savingsTransactions: SavingsTransaction[] = INITIAL_SAVINGS_TRANSACTIONS;
   loans: Loan[] = INITIAL_LOANS;
   vouchers: Voucher[] = INITIAL_VOUCHERS;
+  chartOfAccounts: AccountHead[] = INITIAL_CHART_OF_ACCOUNTS;
   meetings: Meeting[] = INITIAL_MEETINGS;
   elections: Election[] = INITIAL_ELECTIONS;
   events: RealtimeEvent[] = INITIAL_EVENTS;
@@ -148,6 +151,10 @@ class DataStore {
       const storedVouchers = localStorage.getItem(STORAGE_KEYS.VOUCHERS);
       if (storedVouchers) this.vouchers = JSON.parse(storedVouchers);
       else localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(this.vouchers));
+
+      const storedCoa = localStorage.getItem(STORAGE_KEYS.CHART_OF_ACCOUNTS);
+      if (storedCoa) this.chartOfAccounts = JSON.parse(storedCoa);
+      else localStorage.setItem(STORAGE_KEYS.CHART_OF_ACCOUNTS, JSON.stringify(this.chartOfAccounts));
 
       const storedElections = localStorage.getItem(STORAGE_KEYS.ELECTIONS);
       if (storedElections) this.elections = JSON.parse(storedElections);
@@ -285,6 +292,10 @@ class DataStore {
       if (storedSavPol) this.savingsPolicies = JSON.parse(storedSavPol);
       const storedLoanPol = localStorage.getItem(STORAGE_KEYS.LOAN_POLICIES);
       if (storedLoanPol) this.loanPolicies = JSON.parse(storedLoanPol);
+      const storedCoa = localStorage.getItem(STORAGE_KEYS.CHART_OF_ACCOUNTS);
+      if (storedCoa) this.chartOfAccounts = JSON.parse(storedCoa);
+      const storedVouchers = localStorage.getItem(STORAGE_KEYS.VOUCHERS);
+      if (storedVouchers) this.vouchers = JSON.parse(storedVouchers);
       emitChange();
     } catch {}
   }
@@ -300,6 +311,7 @@ class DataStore {
       localStorage.setItem(STORAGE_KEYS.LOANS, JSON.stringify(this.loans));
       localStorage.setItem(STORAGE_KEYS.LOAN_POLICIES, JSON.stringify(this.loanPolicies));
       localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(this.vouchers));
+      localStorage.setItem(STORAGE_KEYS.CHART_OF_ACCOUNTS, JSON.stringify(this.chartOfAccounts));
       localStorage.setItem(STORAGE_KEYS.ELECTIONS, JSON.stringify(this.elections));
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(this.events));
       localStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
@@ -1755,6 +1767,413 @@ class DataStore {
     return deposit;
   }
 
+  getChartOfAccounts(tenantId: string): AccountHead[] {
+    return this.chartOfAccounts.filter(c => c.tenantId === tenantId);
+  }
+
+  addAccountHead(headData: Omit<AccountHead, 'id'>): AccountHead {
+    const newHead: AccountHead = {
+      ...headData,
+      id: `coa-${Date.now()}`
+    };
+    this.chartOfAccounts.push(newHead);
+    this.addAuditLog({
+      tenantId: headData.tenantId,
+      action: 'CREATE',
+      entity: 'SETTINGS',
+      entityId: newHead.id,
+      descriptionBn: `নতুন চার্ট অফ অ্যাকাউন্টস লেজার যুক্ত করা হয়েছে: [${newHead.code}] ${newHead.nameBn} (${newHead.group})`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ACCOUNTANT'
+    });
+    this.save();
+    return newHead;
+  }
+
+  updateAccountHead(id: string, updates: Partial<AccountHead>): boolean {
+    const head = this.chartOfAccounts.find(c => c.id === id);
+    if (!head) return false;
+    Object.assign(head, updates);
+    this.addAuditLog({
+      tenantId: head.tenantId,
+      action: 'UPDATE',
+      entity: 'SETTINGS',
+      entityId: head.id,
+      descriptionBn: `চার্ট অফ অ্যাকাউন্টস লেজার আপডেট করা হয়েছে: [${head.code}] ${head.nameBn}`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'অ্যাডমিন',
+      performedByRole: 'ACCOUNTANT'
+    });
+    this.save();
+    return true;
+  }
+
+  createVoucher(params: {
+    tenantId: string;
+    type: 'DEBIT' | 'CREDIT' | 'JOURNAL';
+    category: string;
+    accountHeadCode: string;
+    accountHeadNameBn: string;
+    debitAccount: string;
+    creditAccount: string;
+    amount: number;
+    descriptionBn: string;
+    descriptionEn?: string;
+    paidToOrReceivedFrom: string;
+    paymentMethod: PaymentMethod;
+    bankAccountName?: string;
+    chequeOrTxNo?: string;
+    date?: string;
+    approvedBy?: string;
+  }): Voucher {
+    const today = params.date || new Date().toISOString().split('T')[0];
+    const prefix = params.type === 'DEBIT' ? 'VR-EXP-' : params.type === 'CREDIT' ? 'VR-REC-' : 'VR-JNL-';
+    const voucherNo = `${prefix}${Date.now().toString().slice(-5)}`;
+
+    const voucher: Voucher = {
+      id: `vch-${Date.now()}`,
+      tenantId: params.tenantId,
+      voucherNo,
+      type: params.type,
+      category: params.category,
+      accountHeadCode: params.accountHeadCode,
+      accountHeadNameBn: params.accountHeadNameBn,
+      debitAccount: params.debitAccount,
+      creditAccount: params.creditAccount,
+      amount: params.amount,
+      descriptionBn: params.descriptionBn,
+      descriptionEn: params.descriptionEn || params.descriptionBn,
+      paidToOrReceivedFrom: params.paidToOrReceivedFrom,
+      paymentMethod: params.paymentMethod,
+      bankAccountName: params.bankAccountName,
+      chequeOrTxNo: params.chequeOrTxNo,
+      date: today,
+      createdBy: this.currentUserId,
+      approvedBy: params.approvedBy || 'আলহাজ্ব রফিকুল ইসলাম (সভাপতি)',
+      status: 'APPROVED'
+    };
+
+    this.vouchers.unshift(voucher);
+
+    // Update balances of relevant account heads
+    const targetHead = this.chartOfAccounts.find(c => c.tenantId === params.tenantId && c.code === params.accountHeadCode);
+    if (targetHead) {
+      if (params.type === 'DEBIT') {
+        if (targetHead.group === 'EXPENSE' || targetHead.group === 'ASSET') {
+          targetHead.currentBalance += params.amount;
+        } else {
+          targetHead.currentBalance -= params.amount;
+        }
+      } else if (params.type === 'CREDIT') {
+        if (targetHead.group === 'INCOME' || targetHead.group === 'LIABILITY') {
+          targetHead.currentBalance += params.amount;
+        } else {
+          targetHead.currentBalance -= params.amount;
+        }
+      }
+    }
+
+    // Cash / Bank balance sync
+    if (params.paymentMethod === 'CASH') {
+      const cashHead = this.chartOfAccounts.find(c => c.tenantId === params.tenantId && c.code === '1010');
+      if (cashHead) {
+        if (params.type === 'CREDIT') cashHead.currentBalance += params.amount;
+        else if (params.type === 'DEBIT') cashHead.currentBalance = Math.max(0, cashHead.currentBalance - params.amount);
+      }
+    } else if (params.paymentMethod === 'BANK') {
+      const bankHead = this.chartOfAccounts.find(c => c.tenantId === params.tenantId && (c.code === '1020' || c.code === '1021'));
+      if (bankHead) {
+        if (params.type === 'CREDIT') bankHead.currentBalance += params.amount;
+        else if (params.type === 'DEBIT') bankHead.currentBalance = Math.max(0, bankHead.currentBalance - params.amount);
+      }
+    }
+
+    this.addEvent({
+      tenantId: params.tenantId,
+      type: 'NEW_VOUCHER_CREATED',
+      titleBn: 'নতুন হিসাব ভাউচার সংরক্ষিত',
+      titleEn: 'New Voucher Recorded',
+      messageBn: `${params.type === 'DEBIT' ? 'খরচ' : params.type === 'CREDIT' ? 'জমা' : 'স্থানান্তর'} ভাউচার নং ${voucherNo}: ৳${params.amount.toLocaleString()} (${params.category})`,
+      messageEn: `Voucher ${voucherNo}: ৳${params.amount.toLocaleString()}`,
+      amount: params.amount
+    });
+
+    this.addAuditLog({
+      tenantId: params.tenantId,
+      action: 'CREATE',
+      entity: 'EXPENSE',
+      entityId: voucher.id,
+      descriptionBn: `ভাউচার প্রস্তুত: ${voucher.voucherNo}, ধরন: ${voucher.type}, খাত: ${voucher.category}, টাকা: ৳${params.amount.toLocaleString()}, মাধ্যম: ${params.paymentMethod}`,
+      performedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'কোষাধ্যক্ষ / হিসাবরক্ষক',
+      performedByRole: 'ACCOUNTANT'
+    });
+
+    this.save();
+    return voucher;
+  }
+
+  approveVoucher(voucherId: string, approvedBy: string): boolean {
+    const vch = this.vouchers.find(v => v.id === voucherId);
+    if (!vch) return false;
+    vch.status = 'APPROVED';
+    vch.approvedBy = approvedBy;
+    this.addEvent({
+      tenantId: vch.tenantId,
+      type: 'VOUCHER_APPROVED',
+      titleBn: 'ভাউচার অনুমোদিত',
+      titleEn: 'Voucher Approved',
+      messageBn: `ভাউচার নং ${vch.voucherNo} (৳${vch.amount.toLocaleString()}) অনুমোদন করা হয়েছে।`,
+      messageEn: `Voucher ${vch.voucherNo} approved.`
+    });
+    this.addAuditLog({
+      tenantId: vch.tenantId,
+      action: 'APPROVE',
+      entity: 'EXPENSE',
+      entityId: vch.id,
+      descriptionBn: `ভাউচার অনুমোদন: ${vch.voucherNo}, অনুমোদক: ${approvedBy}`,
+      performedBy: approvedBy,
+      performedByRole: 'PRESIDENT'
+    });
+    this.save();
+    return true;
+  }
+
+  rejectVoucher(voucherId: string, rejectedBy: string, reason: string): boolean {
+    const vch = this.vouchers.find(v => v.id === voucherId);
+    if (!vch) return false;
+    vch.status = 'REJECTED';
+    this.addAuditLog({
+      tenantId: vch.tenantId,
+      action: 'REJECT',
+      entity: 'EXPENSE',
+      entityId: vch.id,
+      descriptionBn: `ভাউচার বাতিল করা হয়েছে: ${vch.voucherNo}, কারণ: ${reason}`,
+      performedBy: rejectedBy,
+      performedByRole: 'PRESIDENT'
+    });
+    this.save();
+    return true;
+  }
+
+  getCashBook(tenantId: string, startDate?: string, endDate?: string) {
+    const allVouchers = this.vouchers.filter(v => v.tenantId === tenantId && v.paymentMethod === 'CASH' && v.status !== 'REJECTED');
+    const sorted = [...allVouchers].sort((a, b) => a.date.localeCompare(b.date));
+    
+    let openingCash = 125000;
+    const filterStart = startDate || '';
+    const filterEnd = endDate || '';
+
+    if (filterStart) {
+      sorted.forEach(v => {
+        if (v.date < filterStart) {
+          if (v.type === 'CREDIT') openingCash += v.amount;
+          else if (v.type === 'DEBIT') openingCash -= v.amount;
+        }
+      });
+    }
+
+    const filtered = sorted.filter(v => {
+      if (filterStart && v.date < filterStart) return false;
+      if (filterEnd && v.date > filterEnd) return false;
+      return true;
+    });
+
+    let runningCash = openingCash;
+    const entries = filtered.map(v => {
+      const receipt = v.type === 'CREDIT' ? v.amount : 0;
+      const payment = v.type === 'DEBIT' ? v.amount : 0;
+      runningCash = runningCash + receipt - payment;
+      return {
+        id: v.id,
+        date: v.date,
+        voucherNo: v.voucherNo,
+        particulars: v.category,
+        description: v.descriptionBn,
+        party: v.paidToOrReceivedFrom,
+        receipt,
+        payment,
+        balance: runningCash,
+        type: v.type
+      };
+    });
+
+    const totalReceipts = entries.reduce((s, e) => s + e.receipt, 0);
+    const totalPayments = entries.reduce((s, e) => s + e.payment, 0);
+    const closingCash = openingCash + totalReceipts - totalPayments;
+
+    return {
+      openingCash,
+      totalReceipts,
+      totalPayments,
+      closingCash,
+      entries: entries.reverse()
+    };
+  }
+
+  getBankBook(tenantId: string, startDate?: string, endDate?: string) {
+    const bankVouchers = this.vouchers.filter(v => v.tenantId === tenantId && (v.paymentMethod === 'BANK' || v.type === 'JOURNAL') && v.status !== 'REJECTED');
+    const sorted = [...bankVouchers].sort((a, b) => a.date.localeCompare(b.date));
+
+    let openingBank = 730000; // Combined initial bank balance (Sonali 450k + DBBL 280k)
+    const filterStart = startDate || '';
+    const filterEnd = endDate || '';
+
+    if (filterStart) {
+      sorted.forEach(v => {
+        if (v.date < filterStart) {
+          if (v.type === 'CREDIT' || (v.type === 'JOURNAL' && v.debitAccount?.includes('1020'))) openingBank += v.amount;
+          else if (v.type === 'DEBIT') openingBank -= v.amount;
+        }
+      });
+    }
+
+    const filtered = sorted.filter(v => {
+      if (filterStart && v.date < filterStart) return false;
+      if (filterEnd && v.date > filterEnd) return false;
+      return true;
+    });
+
+    let runningBank = openingBank;
+    const entries = filtered.map(v => {
+      const deposit = (v.type === 'CREDIT' || (v.type === 'JOURNAL' && v.debitAccount?.includes('1020'))) ? v.amount : 0;
+      const withdraw = v.type === 'DEBIT' ? v.amount : 0;
+      runningBank = runningBank + deposit - withdraw;
+      return {
+        id: v.id,
+        date: v.date,
+        voucherNo: v.voucherNo,
+        bankName: v.bankAccountName || 'সোনালী ব্যাংক লিমিটেড',
+        chequeOrTxNo: v.chequeOrTxNo || 'N/A',
+        particulars: v.category,
+        description: v.descriptionBn,
+        deposit,
+        withdraw,
+        balance: runningBank
+      };
+    });
+
+    const totalDeposits = entries.reduce((s, e) => s + e.deposit, 0);
+    const totalWithdraws = entries.reduce((s, e) => s + e.withdraw, 0);
+    const closingBank = openingBank + totalDeposits - totalWithdraws;
+
+    return {
+      openingBank,
+      totalDeposits,
+      totalWithdraws,
+      closingBank,
+      entries: entries.reverse()
+    };
+  }
+
+  getGeneralLedger(tenantId: string, headCode: string) {
+    const head = this.chartOfAccounts.find(c => c.tenantId === tenantId && c.code === headCode) || this.chartOfAccounts[0];
+    const relatedVouchers = this.vouchers.filter(v => 
+      v.tenantId === tenantId && 
+      (v.accountHeadCode === headCode || v.debitAccount?.includes(headCode) || v.creditAccount?.includes(headCode))
+    );
+
+    let running = head ? head.openingBalance : 0;
+    const entries: GeneralLedgerEntry[] = relatedVouchers.map(v => {
+      const isDebit = v.type === 'DEBIT' || v.debitAccount?.includes(headCode);
+      const debit = isDebit ? v.amount : 0;
+      const credit = !isDebit ? v.amount : 0;
+      
+      if (head && (head.group === 'ASSET' || head.group === 'EXPENSE')) {
+        running = running + debit - credit;
+      } else {
+        running = running + credit - debit;
+      }
+
+      return {
+        id: v.id,
+        date: v.date,
+        voucherNo: v.voucherNo,
+        particularsBn: v.descriptionBn || v.category,
+        accountHeadCode: head ? head.code : headCode,
+        debit,
+        credit,
+        balance: running,
+        paymentMethod: v.paymentMethod
+      };
+    });
+
+    return {
+      head,
+      openingBalance: head ? head.openingBalance : 0,
+      closingBalance: running,
+      entries: entries.reverse()
+    };
+  }
+
+  getTrialBalance(tenantId: string): { items: TrialBalanceItem[]; totalDebit: number; totalCredit: number; isBalanced: boolean } {
+    const heads = this.chartOfAccounts.filter(c => c.tenantId === tenantId);
+    let totalDebit = 0;
+    let totalCredit = 0;
+
+    const items: TrialBalanceItem[] = heads.map(h => {
+      let debit = 0;
+      let credit = 0;
+      if (h.group === 'ASSET' || h.group === 'EXPENSE') {
+        debit = h.currentBalance;
+        totalDebit += debit;
+      } else {
+        credit = h.currentBalance;
+        totalCredit += credit;
+      }
+
+      return {
+        code: h.code,
+        nameBn: h.nameBn,
+        nameEn: h.nameEn,
+        group: h.group,
+        debit,
+        credit
+      };
+    });
+
+    return {
+      items,
+      totalDebit,
+      totalCredit,
+      isBalanced: Math.abs(totalDebit - totalCredit) < 1
+    };
+  }
+
+  getIncomeStatement(tenantId: string) {
+    const heads = this.chartOfAccounts.filter(c => c.tenantId === tenantId);
+    const incomeItems = heads.filter(h => h.group === 'INCOME');
+    const expenseItems = heads.filter(h => h.group === 'EXPENSE');
+
+    const totalIncome = incomeItems.reduce((s, h) => s + h.currentBalance, 0);
+    const totalExpense = expenseItems.reduce((s, h) => s + h.currentBalance, 0);
+    const netSurplus = totalIncome - totalExpense;
+
+    return {
+      incomeItems,
+      expenseItems,
+      totalIncome,
+      totalExpense,
+      netSurplus,
+      isProfit: netSurplus >= 0
+    };
+  }
+
+  getBalanceSheet(tenantId: string) {
+    const heads = this.chartOfAccounts.filter(c => c.tenantId === tenantId);
+    const assetItems = heads.filter(h => h.group === 'ASSET');
+    const liabilityItems = heads.filter(h => h.group === 'LIABILITY');
+
+    const totalAssets = assetItems.reduce((s, h) => s + h.currentBalance, 0);
+    const totalLiabilities = liabilityItems.reduce((s, h) => s + h.currentBalance, 0);
+
+    return {
+      assetItems,
+      liabilityItems,
+      totalAssets,
+      totalLiabilities,
+      isBalanced: totalAssets === totalLiabilities
+    };
+  }
+
   publishNotice(noticeData: Omit<Notice, 'id' | 'viewCount'>): Notice {
     const newNotice: Notice = {
       ...noticeData,
@@ -2048,6 +2467,7 @@ class DataStore {
       loans: this.loans.filter(l => l.tenantId === this.currentTenantId),
       loanPolicies: this.loanPolicies,
       vouchers: this.vouchers.filter(v => v.tenantId === this.currentTenantId),
+      chartOfAccounts: this.chartOfAccounts.filter(c => c.tenantId === this.currentTenantId),
       subscriptions: this.subscriptions.filter(s => s.tenantId === this.currentTenantId),
       bankDeposits: this.bankDeposits.filter(b => b.tenantId === this.currentTenantId),
       receipts: this.receipts.filter(r => r.tenantId === this.currentTenantId),
@@ -2087,6 +2507,7 @@ class DataStore {
       if (data.loans) this.loans = data.loans;
       if (data.loanPolicies) this.loanPolicies = data.loanPolicies;
       if (data.vouchers) this.vouchers = data.vouchers;
+      if (data.chartOfAccounts) this.chartOfAccounts = data.chartOfAccounts;
       if (data.subscriptions) this.subscriptions = data.subscriptions;
       if (data.bankDeposits) this.bankDeposits = data.bankDeposits;
       if (data.receipts) this.receipts = data.receipts;
@@ -2332,6 +2753,7 @@ export function useSamityStore() {
     savingsTransactions: store.savingsTransactions.filter(t => t.tenantId === activeTenant?.id),
     loans: store.loans.filter(l => l.tenantId === activeTenant?.id),
     vouchers: store.vouchers.filter(v => v.tenantId === activeTenant?.id),
+    chartOfAccounts: store.chartOfAccounts.filter(c => c.tenantId === activeTenant?.id),
     meetings: store.meetings.filter(m => m.tenantId === activeTenant?.id),
     elections: store.elections.filter(e => e.tenantId === activeTenant?.id),
     events: store.events.filter(e => e.tenantId === activeTenant?.id || !e.tenantId),
@@ -2398,5 +2820,16 @@ export function useSamityStore() {
     collectLoanInstallment: (params: Parameters<typeof store.collectLoanInstallment>[0]) => store.collectLoanInstallment(params),
     waiveLoanPenalty: (loanId: string, installmentNumber: number, amount: number, reason: string) => store.waiveLoanPenalty(loanId, installmentNumber, amount, reason),
     updateLoanPolicy: (updates: Partial<LoanPolicyConfig>) => store.updateLoanPolicy(activeTenant?.id || 'samity-ekota', updates),
+    createVoucher: (params: Parameters<typeof store.createVoucher>[0]) => store.createVoucher(params),
+    approveVoucher: (voucherId: string, approvedBy: string) => store.approveVoucher(voucherId, approvedBy),
+    rejectVoucher: (voucherId: string, rejectedBy: string, reason: string) => store.rejectVoucher(voucherId, rejectedBy, reason),
+    addAccountHead: (headData: Parameters<typeof store.addAccountHead>[0]) => store.addAccountHead(headData),
+    updateAccountHead: (id: string, updates: Partial<AccountHead>) => store.updateAccountHead(id, updates),
+    getCashBook: (startDate?: string, endDate?: string) => store.getCashBook(activeTenant?.id || 'samity-ekota', startDate, endDate),
+    getBankBook: (startDate?: string, endDate?: string) => store.getBankBook(activeTenant?.id || 'samity-ekota', startDate, endDate),
+    getGeneralLedger: (headCode: string) => store.getGeneralLedger(activeTenant?.id || 'samity-ekota', headCode),
+    getTrialBalance: () => store.getTrialBalance(activeTenant?.id || 'samity-ekota'),
+    getIncomeStatement: () => store.getIncomeStatement(activeTenant?.id || 'samity-ekota'),
+    getBalanceSheet: () => store.getBalanceSheet(activeTenant?.id || 'samity-ekota'),
   };
 }

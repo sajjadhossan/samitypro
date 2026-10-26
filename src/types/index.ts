@@ -390,6 +390,21 @@ export interface LoanRepayment {
 }
 
 export type VoucherType = 'DEBIT' | 'CREDIT' | 'JOURNAL';
+export type AccountHeadGroup = 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE';
+
+export interface AccountHead {
+  id: string;
+  tenantId: string;
+  code: string;               // e.g. "1010", "1020", "2010", "3010", "4010"
+  nameBn: string;             // e.g. "হাতে নগদ ক্যাশ"
+  nameEn: string;             // e.g. "Cash in Hand"
+  group: AccountHeadGroup;
+  subGroup: string;           // e.g. "চলতি সম্পদ", "স্থায়ী সম্পদ", "চলতি দায়", "অফিস ব্যয়"
+  openingBalance: number;
+  currentBalance: number;
+  isSystemDefault: boolean;
+  notes?: string;
+}
 
 export interface Voucher {
   id: string;
@@ -397,15 +412,43 @@ export interface Voucher {
   voucherNo: string;
   type: VoucherType;
   category: string; // e.g. "Office Rent", "Member Savings Deposit", "Loan Disbursement", "Event Expense"
+  accountHeadCode?: string;
+  accountHeadNameBn?: string;
+  debitAccount?: string;
+  creditAccount?: string;
   amount: number;
   descriptionBn: string;
   descriptionEn: string;
   paidToOrReceivedFrom: string;
   paymentMethod: PaymentMethod;
+  bankAccountName?: string;
+  chequeOrTxNo?: string;
   date: string;
   createdBy: string;
   approvedBy?: string;
+  status?: 'APPROVED' | 'PENDING' | 'REJECTED';
   attachmentUrl?: string;
+}
+
+export interface GeneralLedgerEntry {
+  id: string;
+  date: string;
+  voucherNo: string;
+  particularsBn: string;
+  accountHeadCode: string;
+  debit: number;
+  credit: number;
+  balance: number;
+  paymentMethod: PaymentMethod;
+}
+
+export interface TrialBalanceItem {
+  code: string;
+  nameBn: string;
+  nameEn: string;
+  group: AccountHeadGroup;
+  debit: number;
+  credit: number;
 }
 
 export interface Meeting {
@@ -456,6 +499,7 @@ export interface RealtimeEvent {
     | 'LOAN_INSTALLMENT_PAID' 
     | 'NEW_MEMBER_JOINED' 
     | 'NEW_VOUCHER_CREATED'
+    | 'VOUCHER_APPROVED'
     | 'LOAN_APPROVED'
     | 'LOAN_APPLICATION_SUBMITTED'
     | 'LOAN_DISBURSED'

@@ -42,7 +42,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'approvals', labelBn: 'অনুমোদন ও ওয়ার্কফ্লো', labelEn: 'Approvals Workflow', icon: ShieldCheck },
     { id: 'communication-hub', labelBn: 'মেসেজিং ও গেটওয়ে হাব', labelEn: 'Communication Hub', icon: Zap },
     { id: 'doc-generator', labelBn: 'প্রত্যয়ন ও চুক্তিপত্র', labelEn: 'Doc Generator', icon: ScrollText },
-    { id: 'accounts', labelBn: t.accounts, labelEn: 'Accounts & Vouchers', icon: ReceiptText },
+    { id: 'accounts', labelBn: 'হিসাব ও ভাউচার (মডিউল ৬)', labelEn: 'Accounts & Vouchers (Mod 6)', icon: ReceiptText },
     { id: 'notices', labelBn: 'ডিজিটাল নোটিশ বোর্ড', labelEn: 'Notice Board', icon: Bell },
     { id: 'documents', labelBn: 'নথি ও দলিল ভল্ট', labelEn: 'Documents Vault', icon: FolderLock },
     { id: 'meetings', labelBn: t.meetings, labelEn: 'Meetings & Minutes', icon: CalendarCheck },
@@ -119,7 +119,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-400">
             <span>{language === 'bn' ? 'মোবাইল APK ভার্সন' : 'Mobile APK'}</span>
-            <span className="text-cyan-400 font-mono">v1.0.8 (Capacitor)</span>
+            <span className="text-cyan-400 font-mono">v1.0.9 (Capacitor)</span>
           </div>
           <div className="text-[10px] text-slate-500 text-center pt-1 border-t border-slate-800">
             {language === 'bn' ? 'মাল্টি-ইউজার রিয়েলটাইম সিঙ্ক' : 'Multi-User Real-time Sync'}
