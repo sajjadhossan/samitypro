@@ -3,13 +3,19 @@
 <head>
   <meta charset="utf-8">
   <title>SamityPro Mobile</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
+    html, body {
       background: radial-gradient(circle at top, #0f172a, #020617);
       color: #f1f5f9;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hind Siliguri", sans-serif;
+      overflow-x: hidden !important;
+      max-width: 100vw !important;
+      width: 100% !important;
+      touch-action: pan-y;
+      overscroll-behavior-x: none;
+      -webkit-overflow-scrolling: touch;
       display: flex;
       flex-direction: column;
       align-items: center;

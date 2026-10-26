@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { 
   Building2, Users, Bell, Globe, Smartphone, ShieldCheck, 
-  ChevronDown, Check, Zap, RefreshCw, LogOut, ArrowRightLeft, Radio
+  ChevronDown, Check, Zap, RefreshCw, LogOut, ArrowRightLeft, Radio,
+  MoreVertical
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations, toBengaliNumber } from '@/lib/i18n';
@@ -11,9 +12,10 @@ import { UserRole } from '@/types';
 
 interface HeaderProps {
   onOpenApkModal: () => void;
+  onOpenMenu?: () => void;
 }
 
-export function Header({ onOpenApkModal }: HeaderProps) {
+export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
   const { 
     tenants, activeTenant, currentUser, language, setLanguage, 
     setCurrentTenant, setCurrentUser, events, offlineQueue, syncOfflineQueue 
@@ -151,26 +153,26 @@ export function Header({ onOpenApkModal }: HeaderProps) {
             </div>
           )}
 
-          {/* Mobile APK Action Button */}
+          {/* Mobile APK Action Button (Responsive) */}
           <button
             onClick={onOpenApkModal}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600/20 to-teal-600/20 hover:from-emerald-600/30 hover:to-teal-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-medium transition cursor-pointer"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600/20 to-teal-600/20 hover:from-emerald-600/30 hover:to-teal-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-medium transition cursor-pointer"
             title="Download Android APK"
           >
             <Smartphone className="w-4 h-4 text-emerald-400" />
-            <span className="hidden sm:inline">
+            <span>
               {language === 'bn' ? 'অ্যান্ড্রয়েড APK' : 'Android APK'}
             </span>
           </button>
 
           {/* Role Switcher (For Demo & Architecture Walkthrough) */}
-          <div className="relative">
+          <div className="relative hidden lg:block">
             <button
               onClick={() => setShowRoleDropdown(!showRoleDropdown)}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-medium transition"
             >
               <ArrowRightLeft className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden md:inline font-medium">
+              <span className="font-medium">
                 {currentUser.role === 'SUPER_ADMIN' ? 'Super Admin' : 
                  currentUser.role === 'SAMITY_ADMIN' ? 'President' :
                  currentUser.role === 'MANAGER' ? 'Manager' :
@@ -205,11 +207,21 @@ export function Header({ onOpenApkModal }: HeaderProps) {
           {/* Language Toggle (Bangla / English) */}
           <button
             onClick={() => setLanguage(language === 'bn' ? 'en' : 'bn')}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 transition"
+            className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 transition"
             title="Toggle Language"
           >
             <Globe className="w-3.5 h-3.5 text-amber-400" />
             <span className="font-semibold">{language === 'bn' ? 'English' : 'বাংলা'}</span>
+          </button>
+
+          {/* 3-Dot All Modules & Boards Menu Button */}
+          <button
+            onClick={onOpenMenu}
+            className="p-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 flex items-center justify-center transition active:scale-95 cursor-pointer shadow-sm shadow-amber-500/10"
+            title="সকল মডিউল ও বোর্ড মেনু (৩-ডট)"
+            aria-label="Open 3-dot menu"
+          >
+            <MoreVertical className="w-5 h-5 text-amber-400" />
           </button>
 
           {/* Notification Bell */}

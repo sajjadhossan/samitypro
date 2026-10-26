@@ -69,7 +69,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   }
 
   return (
-    <aside className="w-full md:w-64 glass-panel border-r border-slate-800/80 p-3 sm:p-4 flex flex-col justify-between shrink-0">
+    <aside className="hidden md:flex md:w-64 glass-panel border-r border-slate-800/80 p-3 sm:p-4 flex-col justify-between shrink-0">
       <div className="space-y-6">
         {/* Role Identity Tag */}
         <div className="px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800">

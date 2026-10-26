@@ -28,11 +28,12 @@ import { ApprovalWorkflowView } from '@/components/approvals/ApprovalWorkflowVie
 import { AuditTrailView } from '@/components/audit/AuditTrailView';
 import { BackupRestoreView } from '@/components/backup/BackupRestoreView';
 import { CommunicationHubView } from '@/components/messaging/CommunicationHubView';
+import { MobileMenuDrawer } from '@/components/layout/MobileMenuDrawer';
 
 import { useSamityStore } from '@/lib/store';
 import { 
   LayoutDashboard, Users, PiggyBank, HandCoins, 
-  FileBarChart, BookOpen 
+  FileBarChart, BookOpen, Building2, BadgePercent, MoreVertical 
 } from 'lucide-react';
 
 export default function Home() {
@@ -56,6 +57,7 @@ export default function Home() {
   const [isLoanCollectOpen, setIsLoanCollectOpen] = useState(false);
   const [collectLoanId, setCollectLoanId] = useState<string | undefined>(undefined);
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
+  const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
 
   const handleOpenDeposit = (memberId?: string) => {
     setDepositMemberId(memberId);
@@ -133,27 +135,30 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 w-full max-w-full overflow-x-hidden">
       
-      {/* Universal Top Header */}
-      <Header onOpenApkModal={() => setIsApkModalOpen(true)} />
+      {/* Universal Top Header with 3-Dot Menu trigger */}
+      <Header 
+        onOpenApkModal={() => setIsApkModalOpen(true)} 
+        onOpenMenu={() => setIsMenuDrawerOpen(true)}
+      />
 
       {/* Main Body with Sidebar + Content */}
-      <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto pb-16 md:pb-6">
+      <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto pb-20 md:pb-6 overflow-x-hidden">
         
-        {/* Sidebar Navigation */}
+        {/* Sidebar Navigation (Desktop only) */}
         <Sidebar 
           activeTab={activeTab} 
           onTabChange={tab => setActiveTab(tab)} 
         />
 
         {/* Dynamic Main View Area */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 overflow-y-auto max-w-full w-full overflow-x-hidden">
           {renderMainContent()}
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar (Tailored for Android APK / Mobile Web) */}
+      {/* Mobile Bottom Navigation Bar (Tailored for Android APK / Mobile Web with 3-Dot Menu) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-800 bg-slate-950/95 px-2 py-1.5 flex items-center justify-around text-[10px]">
         {currentUser.role === 'MEMBER' ? (
           <>
@@ -165,6 +170,15 @@ export default function Home() {
             >
               <BookOpen className="w-5 h-5" />
               <span>পাসবই</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('subscriptions-due')}
+              className={`flex flex-col items-center gap-0.5 p-1 ${
+                activeTab === 'subscriptions-due' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+              }`}
+            >
+              <BadgePercent className="w-5 h-5" />
+              <span>চাঁদা ও রসিদ</span>
             </button>
             <button
               onClick={() => setActiveTab('member-loans')}
@@ -184,6 +198,13 @@ export default function Home() {
               <Users className="w-5 h-5" />
               <span>ভোট দিন</span>
             </button>
+            <button
+              onClick={() => setIsMenuDrawerOpen(true)}
+              className="flex flex-col items-center gap-0.5 p-1 text-amber-400 font-bold hover:text-amber-300 transition"
+            >
+              <MoreVertical className="w-5 h-5 text-amber-400 animate-pulse" />
+              <span>৩-ডট মেনু</span>
+            </button>
           </>
         ) : (
           <>
@@ -197,13 +218,13 @@ export default function Home() {
               <span>ড্যাশবোর্ড</span>
             </button>
             <button
-              onClick={() => setActiveTab('members')}
+              onClick={() => setActiveTab('subscriptions-due')}
               className={`flex flex-col items-center gap-0.5 p-1 ${
-                activeTab === 'members' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+                activeTab === 'subscriptions-due' ? 'text-emerald-400 font-bold' : 'text-slate-400'
               }`}
             >
-              <Users className="w-5 h-5" />
-              <span>সদস্য</span>
+              <BadgePercent className="w-5 h-5" />
+              <span>চাঁদা/বকেয়া</span>
             </button>
             <button
               onClick={() => handleOpenDeposit()}
@@ -215,26 +236,33 @@ export default function Home() {
               <span className="font-semibold">জমা</span>
             </button>
             <button
-              onClick={() => setActiveTab('loans')}
+              onClick={() => setActiveTab('bank-deposits')}
               className={`flex flex-col items-center gap-0.5 p-1 ${
-                activeTab === 'loans' ? 'text-cyan-400 font-bold' : 'text-slate-400'
+                activeTab === 'bank-deposits' ? 'text-cyan-400 font-bold' : 'text-slate-400'
               }`}
             >
-              <HandCoins className="w-5 h-5" />
-              <span>ঋণ</span>
+              <Building2 className="w-5 h-5" />
+              <span>ব্যাংক হিসাব</span>
             </button>
             <button
-              onClick={() => setActiveTab('reports')}
-              className={`flex flex-col items-center gap-0.5 p-1 ${
-                activeTab === 'reports' ? 'text-emerald-400 font-bold' : 'text-slate-400'
-              }`}
+              onClick={() => setIsMenuDrawerOpen(true)}
+              className="flex flex-col items-center gap-0.5 p-1 text-amber-400 font-bold hover:text-amber-300 transition"
             >
-              <FileBarChart className="w-5 h-5" />
-              <span>রিপোর্ট</span>
+              <MoreVertical className="w-5 h-5 text-amber-400 animate-pulse" />
+              <span>৩-ডট মেনু</span>
             </button>
           </>
         )}
       </div>
+
+      {/* Slide-out 3-Dot Drawer Menu (All Boards & Modules) */}
+      <MobileMenuDrawer
+        isOpen={isMenuDrawerOpen}
+        onClose={() => setIsMenuDrawerOpen(false)}
+        activeTab={activeTab}
+        onTabChange={tab => setActiveTab(tab)}
+        onOpenApkModal={() => setIsApkModalOpen(true)}
+      />
 
       {/* Interactive Global Modals */}
       <AddMemberModal

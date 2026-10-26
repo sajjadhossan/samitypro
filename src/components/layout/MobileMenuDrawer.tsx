@@ -1,0 +1,468 @@
+'use client';
+
+import React from 'react';
+import { 
+  X, LayoutDashboard, BadgePercent, Building2, Users, 
+  PiggyBank, HandCoins, ReceiptText, ShieldCheck, Zap, 
+  ScrollText, Bell, FolderLock, CalendarCheck, Vote, 
+  FileBarChart, History, Database, Sliders, Smartphone, 
+  Globe, ArrowRightLeft, Check, AlertTriangle, BookOpen
+} from 'lucide-react';
+import { useSamityStore } from '@/lib/store';
+import { UserRole } from '@/types';
+
+interface MobileMenuDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+  onOpenApkModal: () => void;
+}
+
+export function MobileMenuDrawer({
+  isOpen,
+  onClose,
+  activeTab,
+  onTabChange,
+  onOpenApkModal
+}: MobileMenuDrawerProps) {
+  const { 
+    currentUser, activeTenant, language, setLanguage, 
+    setCurrentUser, offlineQueue, syncOfflineQueue 
+  } = useSamityStore();
+
+  if (!isOpen) return null;
+
+  const handleNavigate = (tabId: string) => {
+    onTabChange(tabId);
+    onClose();
+  };
+
+  const roleOptions: { role: UserRole; labelBn: string; userId: string }[] = [
+    { role: 'SUPER_ADMIN', labelBn: 'সুপার অ্যাডমিন', userId: 'user-superadmin' },
+    { role: 'SAMITY_ADMIN', labelBn: 'সভাপতি (অ্যাডমিন)', userId: 'user-rafiq' },
+    { role: 'MANAGER', labelBn: 'ম্যানেজার / কোষাধ্যক্ষ', userId: 'user-tareq' },
+    { role: 'FIELD_COLLECTOR', labelBn: 'মাঠ কর্মী (কালেক্টর)', userId: 'user-sumon' },
+    { role: 'MEMBER', labelBn: 'সাধারণ সদস্য (কবির)', userId: 'user-kabir' },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-hidden">
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity animate-in fade-in"
+        onClick={onClose}
+      />
+
+      {/* Slide-over Drawer */}
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+        <div className="w-screen max-w-sm bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300">
+          
+          {/* Drawer Header */}
+          <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 p-0.5 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <div className="h-full w-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-emerald-400" />
+                </div>
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-base leading-tight">
+                  {language === 'bn' ? activeTenant?.nameBn : activeTenant?.nameEn}
+                </h3>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold border border-emerald-500/30">
+                    {currentUser.role === 'SUPER_ADMIN' ? 'সুপার অ্যাডমিন' : 
+                     currentUser.role === 'SAMITY_ADMIN' ? 'সমিতি সভাপতি' :
+                     currentUser.role === 'MANAGER' ? 'ম্যানেজার' :
+                     currentUser.role === 'FIELD_COLLECTOR' ? 'কালেক্টর' : 'সদস্য'}
+                  </span>
+                  <span className="text-[10px] text-slate-400">সমিতিপ্রো v2.5</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700 transition"
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Drawer Body - Scrollable Categories */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-5">
+            
+            {/* Quick Status / Offline Queue */}
+            {offlineQueue.length > 0 && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs text-amber-300">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>পেন্ডিং অফলাইন সিঙ্ক ({offlineQueue.length})</span>
+                </div>
+                <button
+                  onClick={() => syncOfflineQueue()}
+                  className="px-2.5 py-1 rounded bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400"
+                >
+                  সিঙ্ক করুন
+                </button>
+              </div>
+            )}
+
+            {/* Category 1: প্রধান বোর্ড ও হিসাবসমূহ (Core Boards) */}
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 px-2 mb-2 flex items-center gap-1.5">
+                <span>১. প্রধান বোর্ড ও হিসাবসমূহ</span>
+              </div>
+              <div className="space-y-1">
+                <button
+                  onClick={() => handleNavigate('dashboard')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'dashboard'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <LayoutDashboard className="w-4 h-4 text-emerald-400" />
+                    <span>ড্যাশবোর্ড (Dashboard)</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">লাইভ</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('subscriptions-due')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'subscriptions-due'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <BadgePercent className="w-4 h-4 text-emerald-400" />
+                    <span>মাসিক চাঁদা বোর্ড (Subscriptions)</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">চালু</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('subscriptions-due')}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800/70 transition"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <BadgePercent className="w-4 h-4 text-amber-400" />
+                    <span>বকেয়া হিসাব ও তাগাদা (Dues)</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold">বকেয়া</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('bank-deposits')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'bank-deposits'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Building2 className="w-4 h-4 text-cyan-400" />
+                    <span>ব্যাংক হিসাব ও জমা (Bank Accounts)</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-semibold">ব্যাংক</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('members')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'members'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Users className="w-4 h-4 text-indigo-400" />
+                    <span>সদস্য তালিকা ও কেওয়াইসি (Members)</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-semibold">সদস্য</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('savings')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'savings'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <PiggyBank className="w-4 h-4 text-emerald-400" />
+                    <span>সঞ্চয় ও ডিপিএস হিসাব (Savings & DPS)</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">সঞ্চয়</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('loans')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'loans'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <HandCoins className="w-4 h-4 text-rose-400" />
+                    <span>ঋণ ও কিস্তি আদায় (Loans & EMIs)</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold">ঋণ</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('accounts')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'accounts'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ReceiptText className="w-4 h-4 text-amber-400" />
+                    <span>খরচ, ভাউচার ও খতিয়ান (Accounts)</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold">ভাউচার</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Category 2: কার্যক্রম ও অটোমেশন (Operations & Automation) */}
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-cyan-400 px-2 mb-2 flex items-center gap-1.5">
+                <span>২. কার্যক্রম ও অটোমেশন</span>
+              </div>
+              <div className="space-y-1">
+                <button
+                  onClick={() => handleNavigate('approvals')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'approvals'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ShieldCheck className="w-4 h-4 text-teal-400" />
+                    <span>অনুমোদন ওয়ার্কফ্লো (Approvals)</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('communication-hub')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'communication-hub'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Zap className="w-4 h-4 text-yellow-400" />
+                    <span>মেসেজিং ও রিমাইন্ডার হাব (WhatsApp/SMS)</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('doc-generator')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'doc-generator'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ScrollText className="w-4 h-4 text-purple-400" />
+                    <span>প্রত্যয়ন ও চুক্তিপত্র (Documents)</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('notices')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'notices'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Bell className="w-4 h-4 text-blue-400" />
+                    <span>ডিজিটাল নোটিশ বোর্ড (Notices)</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('documents')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'documents'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FolderLock className="w-4 h-4 text-sky-400" />
+                    <span>সমিতির নথি ও গঠনতন্ত্র (Vault)</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('meetings')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'meetings'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <CalendarCheck className="w-4 h-4 text-green-400" />
+                    <span>সাধারণ সভা ও রেজোলিউশন (Meetings)</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('elections')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'elections'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Vote className="w-4 h-4 text-indigo-400" />
+                    <span>নির্বাচন ও অনলাইন ভোট (Elections)</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Category 3: রিপোর্ট ও সিস্টেম অ্যাডমিন (Reports & Admin) */}
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-purple-400 px-2 mb-2 flex items-center gap-1.5">
+                <span>৩. রিপোর্ট ও সিস্টেম সেটিংস</span>
+              </div>
+              <div className="space-y-1">
+                <button
+                  onClick={() => handleNavigate('reports')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'reports'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileBarChart className="w-4 h-4 text-emerald-400" />
+                    <span>আর্থিক রিপোর্ট ও অডিট (Reports)</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('audit-trail')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'audit-trail'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <History className="w-4 h-4 text-cyan-400" />
+                    <span>অডিট ট্রেইল ও লগ (Audit Trail)</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('backup-restore')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'backup-restore'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Database className="w-4 h-4 text-amber-400" />
+                    <span>ডাটা ব্যাকআপ ও রিস্টোর (Backup)</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('settings')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'settings'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Sliders className="w-4 h-4 text-rose-400" />
+                    <span>সমিতি সেটিংস ও কনফিগারেশন (Settings)</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Category 4: ভূমিকা পরিবর্তন (Role Switcher) */}
+            <div className="pt-2 border-t border-slate-800">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-2 flex items-center gap-1.5">
+                <ArrowRightLeft className="w-3.5 h-3.5 text-indigo-400" />
+                <span>পোর্টাল রোল পরিবর্তন করুন</span>
+              </div>
+              <div className="grid grid-cols-1 gap-1.5">
+                {roleOptions.map(opt => (
+                  <button
+                    key={opt.role}
+                    onClick={() => {
+                      setCurrentUser(opt.userId);
+                      onClose();
+                    }}
+                    className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs transition ${
+                      currentUser.role === opt.role 
+                        ? 'bg-indigo-600 text-white font-bold' 
+                        : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    <span>{opt.labelBn}</span>
+                    {currentUser.role === opt.role && <Check className="w-4 h-4 text-white" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Drawer Footer Actions */}
+          <div className="p-4 border-t border-slate-800 bg-slate-950/80 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setLanguage(language === 'bn' ? 'en' : 'bn')}
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition"
+              >
+                <Globe className="w-4 h-4 text-amber-400" />
+                <span>{language === 'bn' ? 'English' : 'বাংলা'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenApkModal();
+                }}
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold hover:bg-emerald-600/30 transition"
+              >
+                <Smartphone className="w-4 h-4 text-emerald-400" />
+                <span>অ্যান্ড্রয়েড APK</span>
+              </button>
+            </div>
+            
+            <p className="text-[10px] text-center text-slate-500 pt-1">
+              SamityPro SaaS • রিয়েলটাইম মাল্টি-ইউজার ক্লাউড
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
