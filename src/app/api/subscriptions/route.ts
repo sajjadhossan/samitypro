@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { INITIAL_SUBSCRIPTIONS, INITIAL_SUBSCRIPTION_POLICY, INITIAL_LATE_FEE_WAIVERS } from '@/lib/db';
-import { FeePaymentStatus, MonthlySubscription } from '@/types';
+import { INITIAL_SUBSCRIPTIONS, INITIAL_SUBSCRIPTION_POLICY } from '@/lib/db';
 
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
   try {
     const tenantId = request.nextUrl.searchParams.get('tenantId') || 'samity-ekota';
     const memberId = request.nextUrl.searchParams.get('memberId');
     const status = request.nextUrl.searchParams.get('status');
     const monthYear = request.nextUrl.searchParams.get('monthYear');
-    const page = parseInt(request.nextUrl.searchParams.get('page') || '1', 10);
-    const limit = parseInt(request.nextUrl.searchParams.get('limit') || '50', 10);
+    const page = Number.parseInt(request.nextUrl.searchParams.get('page') || '1', 10);
+    const limit = Number.parseInt(request.nextUrl.searchParams.get('limit') || '50', 10);
 
     let list = INITIAL_SUBSCRIPTIONS.filter(s => s.tenantId === tenantId);
     if (memberId) list = list.filter(s => s.memberId === memberId);

@@ -26,7 +26,7 @@ export function DocumentsView() {
     return matchesSearch && matchesCat;
   });
 
-  const handleUploadSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleUploadSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!titleBn) return;
 

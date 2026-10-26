@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { INITIAL_NOTICES } from '@/lib/db';
 
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
   try {
     const tenantId = request.nextUrl.searchParams.get('tenantId') || 'samity-ekota';
     const list = INITIAL_NOTICES.filter(n => n.tenantId === tenantId);

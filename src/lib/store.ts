@@ -591,8 +591,12 @@ class DataStore {
   }) {
     const member = this.members.find(m => m.id === params.memberId);
     if (!member) throw new Error('সদস্য খুঁজে পাওয়া যায়নি');
-
-    const prefix = params.type === 'DPS' ? 'DPS' : params.type === 'FIXED_DEPOSIT' ? 'FDR' : 'SAV';
+    let prefix = 'SAV';
+    if (params.type === 'DPS') {
+      prefix = 'DPS';
+    } else if (params.type === 'FIXED_DEPOSIT') {
+      prefix = 'FDR';
+    }
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const accountNo = `${prefix}-EK-${randomSuffix}`;
 

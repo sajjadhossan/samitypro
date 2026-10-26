@@ -3,8 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Bell, Plus, Pin, Calendar, Eye, Send, 
-  Trash2, Printer, Search, Filter, AlertCircle, 
-  CheckCircle2, X, Share2, Tag 
+  Trash2, Printer, Search, Filter, X 
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { NoticeCategory, NoticePriority, Notice } from '@/types';
@@ -29,7 +28,7 @@ export function NoticesView() {
   const [priority, setPriority] = useState<NoticePriority>('NORMAL');
   const [isPinned, setIsPinned] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!titleBn || !contentBn) return;
 

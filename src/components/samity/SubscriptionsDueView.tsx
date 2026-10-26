@@ -3,8 +3,7 @@
 import React, { useState } from 'react';
 import { 
   BadgePercent, Search, CheckCircle2, AlertCircle, 
-  Clock, Send, Receipt, Plus, Printer, Sliders,
-  Calendar, Award, ShieldAlert, Sparkles, X, Check
+  Clock, Send, Receipt, Plus, Sliders, Award 
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/i18n';
@@ -100,11 +99,16 @@ export function SubscriptionsDueView() {
     setIsCollectModalOpen(true);
   };
 
-  const handleCollectSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleCollectSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!collectMemberId || collectAmount <= 0) return;
 
-    const monthLabel = selectedMonth === '2026-10' ? 'অক্টোবর ২০২৬' : selectedMonth === '2026-11' ? 'নভেম্বর ২০২৬' : `${selectedMonth} এর চাঁদা`;
+    let monthLabel = `${selectedMonth} এর চাঁদা`;
+    if (selectedMonth === '2026-10') {
+      monthLabel = 'অক্টোবর ২০২৬';
+    } else if (selectedMonth === '2026-11') {
+      monthLabel = 'নভেম্বর ২০২৬';
+    }
 
     const receipt = store.recordMonthlySubscription({
       tenantId: activeTenant.id,
@@ -153,7 +157,7 @@ export function SubscriptionsDueView() {
     setWaiverReason('সভাপতি কর্তৃক বিশেষ বিবেচনায় জরিমানা মওকুফ');
   };
 
-  const handleSubmitWaiver = (e: React.FormEvent) => {
+  const handleSubmitWaiver = (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!waiverSub) return;
     waiveLateFee(waiverSub.id, Number(waiverAmount), waiverReason);
@@ -483,8 +487,9 @@ export function SubscriptionsDueView() {
 
             <form onSubmit={handleCollectSubmit} className="py-4 space-y-4 text-xs">
               <div>
-                <label className="block text-slate-300 mb-1 font-medium">সদস্য নির্বাচন করুন</label>
+                <label htmlFor="collect-member-select" className="block text-slate-300 mb-1 font-medium">সদস্য নির্বাচন করুন</label>
                 <select
+                  id="collect-member-select"
                   value={collectMemberId}
                   onChange={e => setCollectMemberId(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200"
@@ -498,8 +503,9 @@ export function SubscriptionsDueView() {
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1 font-medium">চাঁদা জমার পরিমাণ (টাকা) *</label>
+                <label htmlFor="collect-amount-input" className="block text-slate-300 mb-1 font-medium">চাঁদা জমার পরিমাণ (টাকা) *</label>
                 <input
+                  id="collect-amount-input"
                   type="number"
                   required
                   value={collectAmount}
@@ -509,8 +515,9 @@ export function SubscriptionsDueView() {
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1 font-medium">পরিশোধের মাধ্যম</label>
+                <label htmlFor="collect-payment-method" className="block text-slate-300 mb-1 font-medium">পরিশোধের মাধ্যম</label>
                 <select
+                  id="collect-payment-method"
                   value={paymentMethod}
                   onChange={e => setPaymentMethod(e.target.value as any)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200"
@@ -562,8 +569,9 @@ export function SubscriptionsDueView() {
 
             <form onSubmit={handleSubmitWaiver} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-300 mb-1 font-medium">মওকুফকৃত জরিমানার পরিমাণ (টাকা) *</label>
+                <label htmlFor="waiver-amount-input" className="block text-slate-300 mb-1 font-medium">মওকুফকৃত জরিমানার পরিমাণ (টাকা) *</label>
                 <input
+                  id="waiver-amount-input"
                   type="number"
                   min="1"
                   max={waiverSub.lateFee}
@@ -575,8 +583,9 @@ export function SubscriptionsDueView() {
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1 font-medium">মওকুফের প্রশাসনিক কারণ *</label>
+                <label htmlFor="waiver-reason-input" className="block text-slate-300 mb-1 font-medium">মওকুফের প্রশাসনিক কারণ *</label>
                 <input
+                  id="waiver-reason-input"
                   type="text"
                   required
                   value={waiverReason}

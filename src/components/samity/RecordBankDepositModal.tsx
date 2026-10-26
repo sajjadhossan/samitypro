@@ -20,6 +20,45 @@ const COMMON_BANKS = [
   'মিউচুয়াল ট্রাস্ট ব্যাংক পিএলসি'
 ];
 
+interface DepositSuccessProps {
+  readonly language: 'bn' | 'en';
+  readonly lastVoucher: string;
+  readonly onDone: () => void;
+}
+
+function DepositSuccessView({ language, lastVoucher, onDone }: DepositSuccessProps) {
+  const isBn = language === 'bn';
+  return (
+    <div className="py-6 text-center space-y-4">
+      <div className="w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto text-cyan-400">
+        <CheckCircle2 className="w-10 h-10" />
+      </div>
+      <div>
+        <h4 className="text-base font-bold text-slate-100">
+          {isBn ? 'ব্যাংক জমা সফলভাবে সংরক্ষিত হয়েছে!' : 'Bank Deposit Recorded Successfully!'}
+        </h4>
+        <p className="text-xs text-slate-400 mt-1">
+          {isBn ? 'ভাউচার নম্বর:' : 'Voucher No:'} <span className="font-mono text-cyan-400 font-bold">{lastVoucher}</span>
+        </p>
+        <p className="text-xs text-slate-300 mt-2 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+          {isBn 
+            ? '⚡ সভাপতি ও সেক্রেটারির স্ক্রিনে নতুন ব্যালান্স ও জমা রিয়েল-টাইমে দৃশ্যমান হয়েছে।' 
+            : '⚡ Live balance updated across all web and mobile sessions.'}
+        </p>
+      </div>
+
+      <div className="pt-2">
+        <button
+          onClick={onDone}
+          className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition cursor-pointer"
+        >
+          {isBn ? 'সম্পন্ন / বন্ধ করুন' : 'Done / Close'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function RecordBankDepositModal({ isOpen, onClose }: RecordBankDepositModalProps) {
   const { store, activeTenant, language } = useSamityStore();
 
@@ -34,7 +73,7 @@ export function RecordBankDepositModal({ isOpen, onClose }: RecordBankDepositMod
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (amount <= 0 || !slipNumber) return;
 
@@ -84,40 +123,14 @@ export function RecordBankDepositModal({ isOpen, onClose }: RecordBankDepositMod
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {isSuccess ? (
-          <div className="py-6 text-center space-y-4">
-            <div className="w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto text-cyan-400">
-              <CheckCircle2 className="w-10 h-10" />
-            </div>
-            <div>
-              <h4 className="text-base font-bold text-slate-100">
-                {language === 'bn' ? 'ব্যাংক জমা সফলভাবে সংরক্ষিত হয়েছে!' : 'Bank Deposit Recorded Successfully!'}
-              </h4>
-              <p className="text-xs text-slate-400 mt-1">
-                {language === 'bn' ? 'ভাউচার নম্বর:' : 'Voucher No:'} <span className="font-mono text-cyan-400 font-bold">{lastVoucher}</span>
-              </p>
-              <p className="text-xs text-slate-300 mt-2 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
-                {language === 'bn' 
-                  ? '⚡ সভাপতি ও সেক্রেটারির স্ক্রিনে নতুন ব্যালান্স ও জমা রিয়েল-টাইমে দৃশ্যমান হয়েছে।' 
-                  : '⚡ Live balance updated across all web and mobile sessions.'}
-              </p>
-            </div>
-
-            <div className="pt-2">
-              <button
-                onClick={handleReset}
-                className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition"
-              >
-                {language === 'bn' ? 'সম্পন্ন / বন্ধ করুন' : 'Done / Close'}
-              </button>
-            </div>
-          </div>
+          <DepositSuccessView language={language} lastVoucher={lastVoucher} onDone={handleReset} />
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 pt-4 text-xs">
             

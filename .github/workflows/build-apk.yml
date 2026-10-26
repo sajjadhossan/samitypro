@@ -32,7 +32,7 @@ jobs:
       - name: Build Web Application
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'https://samitypro.vercel.app' }}
+          NEXT_PUBLIC_API_URL: https://samitypro.vercel.app
 
       - name: Setup Java JDK
         uses: actions/setup-java@v5

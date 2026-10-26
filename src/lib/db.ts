@@ -1950,7 +1950,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
     performedBy: 'মো: রফিকুল ইসলাম',
     performedByRole: 'TREASURER',
     timestamp: '2026-10-25 14:32:10',
-    ipAddress: '103.230.104.42'
+    ipAddress: '127.0.0.1'
   },
   {
     id: 'audit-002',
@@ -1962,7 +1962,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
     performedBy: 'ইঞ্জিঃ সাজ্জাদ হোসাইন',
     performedByRole: 'OWNER',
     timestamp: '2026-10-24 11:15:00',
-    ipAddress: '103.230.104.42'
+    ipAddress: '127.0.0.1'
   },
   {
     id: 'audit-003',
@@ -1974,7 +1974,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
     performedBy: 'এডমিন ইউজার',
     performedByRole: 'ADMIN',
     timestamp: '2026-10-26 07:45:22',
-    ipAddress: '192.168.1.3'
+    ipAddress: '127.0.0.1'
   },
   {
     id: 'audit-004',
@@ -1986,7 +1986,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
     performedBy: 'মো: আব্দুল করিম',
     performedByRole: 'SECRETARY',
     timestamp: '2026-10-23 16:20:15',
-    ipAddress: '103.230.104.42'
+    ipAddress: '127.0.0.1'
   },
   {
     id: 'audit-005',
@@ -1998,7 +1998,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
     performedBy: 'ইঞ্জিঃ সাজ্জাদ হোসাইন',
     performedByRole: 'OWNER',
     timestamp: '2026-10-26 08:00:00',
-    ipAddress: '192.168.1.3'
+    ipAddress: '127.0.0.1'
   }
 ];
 
@@ -2098,7 +2098,7 @@ export const INITIAL_GATEWAY_CONFIG: CommunicationGatewayConfig = {
   textBeeDeviceId: 'dev_android_9941a8',
   textBeeApiKey: 'tb_live_984128503817',
   httpSmsApiKey: 'hsms_token_8812',
-  localAndroidGatewayUrl: 'http://192.168.1.150:8080',
+  localAndroidGatewayUrl: 'https://192.168.1.150:8080',
   commercialSmsApiKey: 'bms_live_44921',
   commercialSmsSenderId: 'EKOTA_SAMITY',
   smsSimBalanceCount: 840,
