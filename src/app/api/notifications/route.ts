@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { INITIAL_NOTIFICATION_TEMPLATES, INITIAL_NOTIFICATION_LOGS, INITIAL_SMS_GATEWAY_SETTINGS } from '@/lib/db';
+import { SmsGatewayService } from '@/lib/server/gateways/sms';
+import { WhatsAppCloudService } from '@/lib/server/gateways/whatsapp';
 
 export async function GET(request: Request) {
   try {
@@ -12,7 +14,10 @@ export async function GET(request: Request) {
       data: {
         templates: INITIAL_NOTIFICATION_TEMPLATES.filter(t => t.tenantId === tenantId),
         logs: INITIAL_NOTIFICATION_LOGS.filter(l => l.tenantId === tenantId),
-        smsBalance: INITIAL_SMS_GATEWAY_SETTINGS.balanceCount
+        smsBalance: INITIAL_SMS_GATEWAY_SETTINGS.balanceCount,
+        activeSmsGateway: process.env.SMS_GATEWAY_PROVIDER || 'GREENWEB',
+        smsConfigured: !!process.env.SMS_API_KEY,
+        whatsAppConfigured: !!process.env.WHATSAPP_PHONE_NUMBER_ID
       },
       errors: []
     });
@@ -43,6 +48,23 @@ export async function POST(request: Request) {
     const cleanPhone = recipientPhone.replace(/[^0-9]/g, '').slice(-11);
     const waMeUrl = `https://wa.me/88${cleanPhone}?text=${encodeURIComponent(messageText)}`;
 
+    let gatewayResult: Record<string, unknown> = {};
+
+    if (channel === 'SMS') {
+      const smsRes = await SmsGatewayService.send({
+        to: cleanPhone,
+        message: messageText
+      });
+      gatewayResult = { ...smsRes };
+    } else {
+      // WhatsApp Channel
+      const waRes = await WhatsAppCloudService.send({
+        to: cleanPhone,
+        message: messageText
+      });
+      gatewayResult = { ...waRes };
+    }
+
     return NextResponse.json({
       success: true,
       message: `${channel || 'WHATSAPP'} বার্তা সফলভাবে ডিসপ্যাচ করা হয়েছে`,
@@ -51,6 +73,7 @@ export async function POST(request: Request) {
         recipientName: recipientName || 'সদস্য',
         channel: channel || 'WHATSAPP',
         waMeUrl,
+        gatewayResult,
         sentAt: new Date().toISOString()
       },
       errors: []

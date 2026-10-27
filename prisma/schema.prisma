@@ -1,0 +1,522 @@
+// SamityPro - Multi-Tenant Relational Database Schema
+// Optimized for PostgreSQL (Supabase / Neon / AWS RDS)
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// -----------------------------------------------------------------------------
+// 1. Tenants & Organizations (SaaS Core)
+// -----------------------------------------------------------------------------
+model Tenant {
+  id              String    @id @default(uuid())
+  code            String    @unique // e.g. "SMP-001"
+  name            String
+  slogan          String?
+  registrationNo  String?
+  logoUrl         String?
+  sealUrl         String?
+  signatureUrl    String?
+  phone           String
+  email           String?
+  address         String?
+  themeColor      String    @default("#059669")
+  currency        String    @default("BDT")
+  timezone        String    @default("Asia/Dhaka")
+  subscriptionPlan String   @default("STANDARD") // TRIAL, BASIC, STANDARD, ENTERPRISE
+  status          String    @default("ACTIVE") // ACTIVE, SUSPENDED, PENDING
+  smsBalance      Int       @default(100)
+  autoSmsEnabled  Boolean   @default(true)
+  autoWaEnabled   Boolean   @default(true)
+  settings        Json?     // custom letterhead, prefix, voucher rules
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  // Relations
+  users           User[]
+  members         Member[]
+  savingsAccounts SavingsAccount[]
+  loans           Loan[]
+  vouchers        Voucher[]
+  staff           Staff[]
+  payrolls        Payroll[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+  fdrAccounts     FdrAccount[]
+  shares          ShareRecord[]
+  projects        Project[]
+  fixedAssets     FixedAsset[]
+
+  @@index([code])
+  @@index([status])
+}
+
+// -----------------------------------------------------------------------------
+// 2. Users & Roles (RBAC)
+// -----------------------------------------------------------------------------
+model User {
+  id              String    @id @default(uuid())
+  tenantId        String?
+  name            String
+  phone           String    @unique
+  email           String?   @unique
+  passwordHash    String
+  role            String    @default("MEMBER") // SUPER_ADMIN, SAMITY_ADMIN, MANAGER, ACCOUNTANT, FIELD_COLLECTOR, MEMBER
+  status          String    @default("ACTIVE")
+  avatarUrl       String?
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  auditLogs       AuditLog[]
+  approvalsHandled ApprovalRequest[]
+
+  @@index([tenantId])
+  @@index([phone])
+}
+
+// -----------------------------------------------------------------------------
+// 3. Members & KYC
+// -----------------------------------------------------------------------------
+model Member {
+  id              String    @id @default(uuid())
+  tenantId        String
+  memberNo        String    // e.g. "M-101"
+  nameBangla      String
+  nameEnglish     String
+  phone           String
+  email           String?
+  nid             String?
+  fatherOrSpouse  String?
+  motherName      String?
+  address         String?
+  photoUrl        String?
+  signatureUrl    String?
+  nomineeName     String?
+  nomineeRelation String?
+  nomineePhone    String?
+  nomineeNid      String?
+  nomineeSharePct Float     @default(100.0)
+  admissionFee    Float     @default(0.0)
+  shareCapital    Float     @default(0.0)
+  monthlyFeeDue   Float     @default(0.0)
+  status          String    @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
+  joinedDate      DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  savings         SavingsAccount[]
+  loans           Loan[]
+  fdrAccounts     FdrAccount[]
+  shares          ShareRecord[]
+  notifications   Notification[]
+
+  @@unique([tenantId, memberNo])
+  @@index([tenantId, phone])
+}
+
+// -----------------------------------------------------------------------------
+// 4. Savings & DPS Accounts
+// -----------------------------------------------------------------------------
+model SavingsAccount {
+  id              String    @id @default(uuid())
+  tenantId        String
+  memberId        String
+  accountNo       String
+  accountType     String    @default("GENERAL") // GENERAL, DAILY, WEEKLY, MONTHLY_DPS
+  targetAmount    Float?
+  installmentAmt  Float     @default(0.0)
+  totalDeposited  Float     @default(0.0)
+  totalWithdrawn  Float     @default(0.0)
+  currentBalance  Float     @default(0.0)
+  interestRatePct Float     @default(0.0)
+  durationMonths  Int?
+  startDate       DateTime  @default(now())
+  maturityDate    DateTime?
+  status          String    @default("ACTIVE") // ACTIVE, MATURED, CLOSED
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member          Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  transactions    SavingsTransaction[]
+
+  @@unique([tenantId, accountNo])
+  @@index([tenantId, memberId])
+}
+
+model SavingsTransaction {
+  id              String    @id @default(uuid())
+  tenantId        String
+  savingsAccountId String
+  voucherNo       String
+  type            String    // DEPOSIT, WITHDRAWAL, PROFIT_CREDIT
+  amount          Float
+  balanceAfter    Float
+  paymentMethod   String    @default("CASH") // CASH, BANK, BKASH, NAGAD
+  collectorId     String?
+  trxId           String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+
+  savingsAccount  SavingsAccount @relation(fields: [savingsAccountId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, savingsAccountId])
+}
+
+// -----------------------------------------------------------------------------
+// 5. Loans, Microfinance & EMIs
+// -----------------------------------------------------------------------------
+model Loan {
+  id              String    @id @default(uuid())
+  tenantId        String
+  memberId        String
+  loanNo          String
+  principalAmount Float
+  interestRatePct Float
+  totalInterest   Float
+  totalRepayable  Float
+  durationMonths  Int
+  installmentType String    @default("MONTHLY") // DAILY, WEEKLY, MONTHLY
+  installmentAmt  Float
+  totalPaid       Float     @default(0.0)
+  remainingDue    Float
+  penaltyAmount   Float     @default(0.0)
+  purpose         String?
+  guarantor1Name  String?
+  guarantor1Phone String?
+  guarantor2Name  String?
+  guarantor2Phone String?
+  disbursedDate   DateTime  @default(now())
+  status          String    @default("ACTIVE") // PENDING, ACTIVE, REPAID, DEFAULTED
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member          Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  repayments      LoanRepayment[]
+
+  @@unique([tenantId, loanNo])
+  @@index([tenantId, memberId])
+}
+
+model LoanRepayment {
+  id              String    @id @default(uuid())
+  tenantId        String
+  loanId          String
+  voucherNo       String
+  installmentNo   Int
+  principalPaid   Float
+  interestPaid    Float
+  penaltyPaid     Float     @default(0.0)
+  totalPaid       Float
+  remainingAfter  Float
+  paymentMethod   String    @default("CASH")
+  collectorId     String?
+  trxId           String?
+  paidDate        DateTime  @default(now())
+
+  loan            Loan      @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, loanId])
+}
+
+// -----------------------------------------------------------------------------
+// 6. Accounting & General Ledger (Cashbook, Bank & Vouchers)
+// -----------------------------------------------------------------------------
+model AccountHead {
+  id              String    @id @default(uuid())
+  tenantId        String
+  code            String
+  name            String
+  type            String    // ASSET, LIABILITY, EQUITY, INCOME, EXPENSE
+  currentBalance  Float     @default(0.0)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  vouchers        VoucherItem[]
+
+  @@unique([tenantId, code])
+}
+
+model Voucher {
+  id              String    @id @default(uuid())
+  tenantId        String
+  voucherNo       String
+  type            String    // DEBIT_EXPENSE, CREDIT_INCOME, JOURNAL, CONTRA_TRANSFER
+  amount          Float
+  narration       String
+  paymentMethod   String    @default("CASH")
+  bankAccount     String?
+  chequeNo        String?
+  approvedBy      String?
+  createdBy       String
+  status          String    @default("POSTED") // DRAFT, PENDING_APPROVAL, POSTED, CANCELLED
+  date            DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items           VoucherItem[]
+
+  @@unique([tenantId, voucherNo])
+  @@index([tenantId, date])
+}
+
+model VoucherItem {
+  id              String    @id @default(uuid())
+  voucherId       String
+  accountHeadId   String
+  debit           Float     @default(0.0)
+  credit          Float     @default(0.0)
+  narration       String?
+
+  voucher         Voucher   @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  accountHead     AccountHead @relation(fields: [accountHeadId], references: [id])
+
+  @@index([voucherId])
+}
+
+// -----------------------------------------------------------------------------
+// 7. Staff, Attendance & HR Payroll
+// -----------------------------------------------------------------------------
+model Staff {
+  id              String    @id @default(uuid())
+  tenantId        String
+  staffNo         String
+  nameBangla      String
+  nameEnglish     String
+  designation     String
+  department      String    @default("FIELD") // FIELD, ACCOUNTS, MANAGEMENT, ADMIN
+  phone           String
+  email           String?
+  basicSalary     Float
+  houseRent       Float     @default(0.0)
+  medicalAllowance Float    @default(0.0)
+  transportAllowance Float  @default(0.0)
+  bankAccountNo   String?
+  bankName        String?
+  joiningDate     DateTime
+  status          String    @default("ACTIVE")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  attendances     StaffAttendance[]
+  payrolls        Payroll[]
+  advances        StaffAdvance[]
+
+  @@unique([tenantId, staffNo])
+  @@index([tenantId, phone])
+}
+
+model StaffAttendance {
+  id              String    @id @default(uuid())
+  tenantId        String
+  staffId         String
+  date            DateTime  @db.Date
+  status          String    @default("PRESENT") // PRESENT, ABSENT, LEAVE, LATE, HALF_DAY
+  inTime          String?
+  outTime         String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+
+  staff           Staff     @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, staffId, date])
+}
+
+model StaffAdvance {
+  id              String    @id @default(uuid())
+  tenantId        String
+  staffId         String
+  amount          Float
+  repaidAmount    Float     @default(0.0)
+  month           String    // e.g. "2026-10"
+  reason          String?
+  status          String    @default("APPROVED") // PENDING, APPROVED, REPAID
+  createdAt       DateTime  @default(now())
+
+  staff           Staff     @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, staffId])
+}
+
+model Payroll {
+  id              String    @id @default(uuid())
+  tenantId        String
+  staffId         String
+  salaryMonth     String    // e.g. "2026-10"
+  basicSalary     Float
+  allowances      Float     @default(0.0)
+  bonus           Float     @default(0.0)
+  advanceDeduction Float    @default(0.0)
+  otherDeductions Float     @default(0.0)
+  netPayable      Float
+  paymentStatus   String    @default("PENDING") // PENDING, PAID
+  paidDate        DateTime?
+  paymentMethod   String    @default("BANK")
+  voucherNo       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff           Staff     @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, staffId, salaryMonth])
+}
+
+// -----------------------------------------------------------------------------
+// 8. Notifications, SMS & WhatsApp Gateway Hub
+// -----------------------------------------------------------------------------
+model Notification {
+  id              String    @id @default(uuid())
+  tenantId        String
+  recipientPhone  String
+  recipientName   String?
+  memberId        String?
+  channel         String    // SMS, WHATSAPP, SYSTEM
+  category        String    // FEE_DUE, DEPOSIT_RECEIPT, LOAN_EMI, NOTICE, SALARY
+  message         String
+  status          String    @default("SENT") // PENDING, SENT, FAILED
+  gatewayProvider String?   // GREENWEB, BULKSMSBD, SSL_WIRELESS, META_WHATSAPP
+  gatewayTrxId    String?
+  creditsUsed     Int       @default(1)
+  errorDetails    String?
+  sentAt          DateTime  @default(now())
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member          Member?   @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, sentAt])
+  @@index([tenantId, recipientPhone])
+}
+
+// -----------------------------------------------------------------------------
+// 9. FDR, Fixed Assets, Shares & Projects
+// -----------------------------------------------------------------------------
+model FdrAccount {
+  id              String    @id @default(uuid())
+  tenantId        String
+  memberId        String
+  fdrNo           String
+  principalAmount Float
+  interestRatePct Float
+  termMonths      Int
+  maturityAmount  Float
+  profitPayment   String    @default("ON_MATURITY") // MONTHLY, QUARTERLY, ON_MATURITY
+  startDate       DateTime  @default(now())
+  maturityDate    DateTime
+  status          String    @default("ACTIVE") // ACTIVE, MATURED, PREMATURE_CLOSED
+  createdAt       DateTime  @default(now())
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member          Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, fdrNo])
+}
+
+model ShareRecord {
+  id              String    @id @default(uuid())
+  tenantId        String
+  memberId        String
+  certificateNo   String
+  shareCount      Int
+  faceValuePerShare Float   @default(100.0)
+  totalAmount     Float
+  purchaseDate    DateTime  @default(now())
+  dividendEarned  Float     @default(0.0)
+  status          String    @default("ACTIVE")
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member          Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, certificateNo])
+}
+
+model Project {
+  id              String    @id @default(uuid())
+  tenantId        String
+  code            String
+  title           String
+  budget          Float
+  totalInvested   Float     @default(0.0)
+  status          String    @default("RUNNING") // PLANNING, RUNNING, COMPLETED
+  startDate       DateTime
+  endDate         DateTime?
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, code])
+}
+
+model FixedAsset {
+  id              String    @id @default(uuid())
+  tenantId        String
+  assetTag        String
+  name            String
+  category        String    // FURNITURE, VEHICLE, ELECTRONICS, REAL_ESTATE
+  purchaseCost    Float
+  salvageValue    Float     @default(0.0)
+  usefulLifeYears Int       @default(5)
+  currentBookValue Float
+  purchaseDate    DateTime
+  location        String?
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, assetTag])
+}
+
+// -----------------------------------------------------------------------------
+// 10. Audit Logs & Approval Workflow
+// -----------------------------------------------------------------------------
+model AuditLog {
+  id              String    @id @default(uuid())
+  tenantId        String?
+  userId          String?
+  action          String    // CREATE, UPDATE, DELETE, APPROVE, REJECT, EXPORT
+  entity          String    // MEMBER, DEPOSIT, LOAN, VOUCHER, STAFF, PAYROLL, NOTIFICATION
+  entityId        String?
+  oldValues       Json?
+  newValues       Json?
+  ipAddress       String?
+  userAgent       String?
+  timestamp       DateTime  @default(now())
+
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, timestamp])
+}
+
+model ApprovalRequest {
+  id              String    @id @default(uuid())
+  tenantId        String
+  requestType     String    // LOAN_DISBURSEMENT, EXPENSE_VOUCHER, WAIVE_PENALTY
+  entityId        String
+  amount          Float
+  requestedBy     String
+  status          String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  remarks         String?
+  handledBy       String?
+  handledAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  handler         User?     @relation(fields: [handledBy], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status])
+}
