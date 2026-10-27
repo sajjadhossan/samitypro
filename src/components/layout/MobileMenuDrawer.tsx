@@ -7,7 +7,7 @@ import {
   ScrollText, Bell, FolderLock, CalendarCheck, Vote, 
   FileBarChart, History, Database, Sliders, Smartphone, 
   Globe, ArrowRightLeft, Check, AlertTriangle, BookOpen,
-  Briefcase, Award, Percent, Layers
+  Briefcase, Award, Percent, Layers, UserCheck
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { UserRole, APP_VERSION } from '@/types';
@@ -193,6 +193,36 @@ export function MobileMenuDrawer({
                     <span>স্থাবর সম্পদ ও ইনভেন্টরি (Fixed Assets)</span>
                   </div>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-semibold">মডিউল ৬</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('staff-payroll')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'staff-payroll'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <UserCheck className="w-4 h-4 text-blue-400" />
+                    <span>স্টাফ পেরোল ও এইচআর (Payroll & HR)</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-semibold">মডিউল ৭</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('communication-hub')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'communication-hub'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Zap className="w-4 h-4 text-emerald-400" />
+                    <span>এসএমএস ও হোয়াটসঅ্যাপ (SMS & WhatsApp)</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">মডিউল ৮</span>
                 </button>
 
                 <button

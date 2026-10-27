@@ -7,7 +7,7 @@ import {
   CreditCard, MessageSquare, BookOpen, Bell,
   BadgePercent, Building2, FolderLock, Sliders,
   ScrollText, ShieldCheck, History, Database, Zap, Smartphone,
-  Briefcase, Award, Percent, Layers
+  Briefcase, Award, Percent, Layers, UserCheck
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations } from '@/lib/i18n';
@@ -41,6 +41,8 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'shares-dividend', labelBn: 'শেয়ার মূলধন ও লভ্যাংশ', labelEn: 'Shares & Dividend', icon: Award },
     { id: 'fdr', labelBn: 'এফডিআর ও দ্বিগুণ বৃদ্ধি (মডিউল ৫)', labelEn: 'FDR & Term Deposits (Mod 5)', icon: Percent },
     { id: 'fixed-assets', labelBn: 'স্থাবর সম্পদ ও ইনভেন্টরি (মডিউল ৬)', labelEn: 'Fixed Assets & Inventory (Mod 6)', icon: Layers },
+    { id: 'staff-payroll', labelBn: 'স্টাফ পেরোল ও এইচআর (মডিউল ৭)', labelEn: 'Staff Payroll & HR (Mod 7)', icon: UserCheck },
+    { id: 'communication-hub', labelBn: 'এসএমএস ও হোয়াটসঅ্যাপ (মডিউল ৮)', labelEn: 'SMS & WhatsApp (Mod 8)', icon: Zap },
     { id: 'samity-setup', labelBn: 'সমিতি সেটআপ (মডিউল ১)', labelEn: 'Samity Setup (Mod 1)', icon: Building2 },
     { id: 'members', labelBn: 'সদস্য ব্যবস্থাপনা (মডিউল ২)', labelEn: 'Members & KYC (Mod 2)', icon: Users },
     { id: 'subscriptions-due', labelBn: 'চাঁদা ও বকেয়া পলিসি (মডিউল ৩)', labelEn: 'Fees & Policy (Mod 3)', icon: BadgePercent },

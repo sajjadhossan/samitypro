@@ -934,6 +934,11 @@ export type AuditEntity =
   | 'FDR'
   | 'FIXED_ASSET'
   | 'INVENTORY'
+  | 'STAFF'
+  | 'ATTENDANCE'
+  | 'STAFF_ADVANCE'
+  | 'PAYROLL'
+  | 'NOTIFICATION'
   | 'OTHER';
 
 export type ReportType = 
@@ -1553,6 +1558,287 @@ export interface InventoryMovement {
   createdAt: string;
 }
 
+// ====================================================
+// MODULE 7: STAFF PAYROLL, ATTENDANCE & HR MANAGEMENT
+// ====================================================
 
+export type StaffDesignation =
+  | 'BRANCH_MANAGER'
+  | 'ASSISTANT_MANAGER'
+  | 'ACCOUNTANT'
+  | 'CASHIER'
+  | 'FIELD_SUPERVISOR'
+  | 'LOAN_OFFICER'
+  | 'FIELD_COLLECTOR'
+  | 'OFFICE_ASSISTANT'
+  | 'SECURITY_GUARD';
 
+export type StaffDepartment =
+  | 'ACCOUNTS_FINANCE'
+  | 'FIELD_OPERATIONS'
+  | 'ADMINISTRATION'
+  | 'IT_SYSTEMS'
+  | 'CUSTOMER_SERVICE';
 
+export type StaffStatus = 'ACTIVE' | 'ON_LEAVE' | 'RESIGNED' | 'TERMINATED';
+
+export type SalaryPaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'BKASH' | 'NAGAD' | 'ROCKET';
+
+export interface StaffEmployee {
+  id: string;
+  tenantId: string;
+  employeeCode: string; // e.g. "EMP-2026-01"
+  nameBn: string;
+  nameEn: string;
+  phone: string;
+  email?: string;
+  nid: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  designation: StaffDesignation;
+  department: StaffDepartment;
+  joiningDate: string; // YYYY-MM-DD
+  status: StaffStatus;
+
+  // Salary Structure (Monthly BDT)
+  basicSalary: number;
+  houseRentAllowance: number;
+  medicalAllowance: number;
+  conveyanceAllowance: number;
+  mobileInternetAllowance: number;
+  grossSalary: number;
+
+  // Standard Monthly Deductions
+  providentFundDeduction: number;
+  taxDeduction: number;
+
+  // Disbursement Details
+  paymentMethod: SalaryPaymentMethod;
+  bankName?: string;
+  bankBranch?: string;
+  bankAccountNo?: string;
+  bankRoutingNo?: string;
+  mfsNumber?: string; // bKash/Nagad personal or merchant
+
+  // Profile Information
+  presentAddress: string;
+  permanentAddress: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactRelation: string;
+  bloodGroup?: string;
+  photoUrl?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AttendanceStatus =
+  | 'PRESENT'
+  | 'LATE'
+  | 'ABSENT'
+  | 'LEAVE_CASUAL'
+  | 'LEAVE_SICK'
+  | 'HALF_DAY'
+  | 'HOLIDAY';
+
+export interface StaffAttendance {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  employeeCode: string;
+  employeeNameBn: string;
+  date: string; // YYYY-MM-DD
+  inTime?: string; // HH:mm
+  outTime?: string; // HH:mm
+  status: AttendanceStatus;
+  lateMinutes?: number;
+  overtimeHours?: number;
+  remarks?: string;
+  recordedBy: string;
+  createdAt: string;
+}
+
+export type StaffAdvanceStatus = 'PENDING' | 'APPROVED' | 'DISBURSED' | 'REPAID' | 'REJECTED';
+
+export interface StaffAdvanceSalary {
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  employeeCode: string;
+  employeeNameBn: string;
+  advanceNo: string; // e.g. "ADV-2026-01"
+  requestDate: string;
+  amount: number;
+  purpose: string;
+  repaymentMonths: number;
+  monthlyDeductionAmount: number;
+  remainingBalance: number;
+  status: StaffAdvanceStatus;
+  approvedBy?: string;
+  approvedAt?: string;
+  disbursedDate?: string;
+  disbursedVoucherNo?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PayslipStatus = 'DRAFT' | 'UNPAID' | 'PAID' | 'CANCELLED';
+
+export interface StaffPayslip {
+  id: string;
+  tenantId: string;
+  payslipNo: string; // e.g. "PAY-202610-01"
+  monthYear: string; // e.g. "2026-10"
+  salaryMonthBn: string; // e.g. "অক্টোবর ২০২৬"
+  employeeId: string;
+  employeeCode: string;
+  employeeNameBn: string;
+  designation: StaffDesignation;
+  department: StaffDepartment;
+  paymentMethod: SalaryPaymentMethod;
+  disbursementAccount?: string; // e.g. "১০১০: হাতে নগদ ক্যাশ" or bank name
+
+  // Work Summary
+  workingDays: number;
+  presentDays: number;
+  absentDays: number;
+  leaveDays: number;
+  lateDays: number;
+  overtimeHours: number;
+
+  // Earnings Breakdown
+  basicSalary: number;
+  houseRent: number;
+  medical: number;
+  conveyance: number;
+  mobileInternet: number;
+  overtimePay: number;
+  festivalBonus: number;
+  performanceBonus: number;
+  totalEarnings: number;
+
+  // Deductions Breakdown
+  providentFund: number;
+  tax: number;
+  advanceSalaryDeduction: number;
+  unpaidLeaveDeduction: number;
+  lateFineDeduction: number;
+  otherDeductions: number;
+  totalDeductions: number;
+
+  // Net Disbursable
+  netPayable: number;
+
+  // Status & Accounting Link
+  paymentStatus: PayslipStatus;
+  paymentDate?: string;
+  voucherNo?: string; // Linked DEBIT voucher in general ledger
+  disbursedBy?: string;
+  disbursedAt?: string;
+  remarks?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ====================================================
+// MODULE 8: SMS / WHATSAPP GATEWAY & AUTOMATED NOTIFICATIONS
+// ====================================================
+
+export type NotificationTriggerEvent =
+  | 'MANUAL_DISPATCH'
+  | 'SAVINGS_DEPOSIT_CONFIRMATION'
+  | 'SAVINGS_WITHDRAWAL_CONFIRMATION'
+  | 'LOAN_DISBURSEMENT'
+  | 'LOAN_INSTALLMENT_RECEIVED'
+  | 'LOAN_OVERDUE_ALERT'
+  | 'SUBSCRIPTION_FEE_REMINDER'
+  | 'SUBSCRIPTION_PAYMENT_CONFIRMATION'
+  | 'FDR_OPENING_CONFIRMATION'
+  | 'FDR_PROFIT_DISBURSEMENT'
+  | 'FDR_MATURITY_ALERT'
+  | 'STAFF_SALARY_DISBURSEMENT'
+  | 'AGM_MEETING_INVITATION'
+  | 'ELECTION_VOTING_OPEN'
+  | 'EMERGENCY_NOTICE';
+
+export interface NotificationTemplate {
+  id: string;
+  tenantId: string;
+  event: NotificationTriggerEvent;
+  titleBn: string;
+  titleEn: string;
+  channel: 'ALL' | 'WHATSAPP' | 'SMS' | 'TELEGRAM';
+  templateBn: string;
+  templateEn: string;
+  variables: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SmsGatewayProvider =
+  | 'GREENWEB_BD'
+  | 'BULKSMS_BD'
+  | 'ONNOROKOM_SMS'
+  | 'ALPHANET_BD'
+  | 'TEXTBEE_ANDROID_SIM'
+  | 'CUSTOM_REST_API';
+
+export interface SmsGatewaySettings {
+  provider: SmsGatewayProvider;
+  apiKey: string;
+  apiSecret?: string;
+  senderId: string; // Masking or Non-masking sender id
+  apiUrl?: string;
+  balanceCount: number;
+  lowBalanceThreshold: number;
+  isActive: boolean;
+}
+
+export interface WhatsAppGatewaySettings {
+  mode: 'WA_ME_DIRECT' | 'OPEN_WA_SERVER' | 'META_CLOUD_API';
+  serverUrl?: string;
+  apiKey?: string;
+  metaPhoneNumberId?: string;
+  metaAccessToken?: string;
+  metaWabaId?: string;
+  connectedPhone?: string;
+  isConnected: boolean;
+  autoSendReceiptPdf: boolean;
+}
+
+export interface TelegramGatewaySettings {
+  botToken: string;
+  chatIdOrChannel: string;
+  isActive: boolean;
+}
+
+export interface AutomatedSchedulerRule {
+  id: string;
+  tenantId: string;
+  nameBn: string;
+  triggerEvent: NotificationTriggerEvent;
+  channel: ReminderChannel;
+  preferredTime: string; // e.g. "09:00"
+  daysBeforeDue: number; // e.g. 2 days before due date
+  includeLateFineWarning: boolean;
+  isEnabled: boolean;
+}
+
+export interface NotificationLog {
+  id: string;
+  tenantId: string;
+  recipientMemberId?: string;
+  recipientEmployeeId?: string;
+  recipientName: string;
+  recipientPhone: string;
+  channel: ReminderChannel;
+  event: NotificationTriggerEvent;
+  messageText: string;
+  status: 'DELIVERED' | 'SENT' | 'PENDING' | 'FAILED';
+  gatewayResponse?: string;
+  referenceId?: string; // Receipt No or Voucher No
+  sentAt: string;
+  sentBy: string;
+}

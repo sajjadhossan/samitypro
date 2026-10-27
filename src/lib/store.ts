@@ -22,6 +22,11 @@ import {
   FDRTenureScheme, FixedDepositAccount, FDRProfitPayment, FDRProfitPayoutFrequency, FDRStatus,
   FixedAssetCategory, AssetDepreciationMethod, AssetStatus, FixedAsset, AssetDepreciationLog,
   InventoryItemCategory, InventoryItem, InventoryMovementType, InventoryMovement,
+  StaffDesignation, StaffDepartment, StaffStatus, SalaryPaymentMethod, StaffEmployee,
+  AttendanceStatus, StaffAttendance, StaffAdvanceStatus, StaffAdvanceSalary,
+  PayslipStatus, StaffPayslip, NotificationTriggerEvent, NotificationTemplate,
+  SmsGatewayProvider, SmsGatewaySettings, WhatsAppGatewaySettings, TelegramGatewaySettings,
+  AutomatedSchedulerRule, NotificationLog,
   APP_VERSION
 } from '@/types';
 import { 
@@ -41,7 +46,10 @@ import {
   INITIAL_PROJECTS, INITIAL_PROJECT_INVESTMENTS, INITIAL_PROJECT_TRANSACTIONS,
   INITIAL_SHARE_CONFIG, INITIAL_MEMBER_SHARES, INITIAL_DIVIDEND_SESSIONS, INITIAL_DIVIDEND_ITEMS,
   INITIAL_FDR_SCHEMES, INITIAL_FDR_ACCOUNTS, INITIAL_FDR_PROFIT_PAYMENTS,
-  INITIAL_FIXED_ASSETS, INITIAL_ASSET_DEPRECIATIONS, INITIAL_INVENTORY_ITEMS, INITIAL_INVENTORY_MOVEMENTS
+  INITIAL_FIXED_ASSETS, INITIAL_ASSET_DEPRECIATIONS, INITIAL_INVENTORY_ITEMS, INITIAL_INVENTORY_MOVEMENTS,
+  INITIAL_STAFF_EMPLOYEES, INITIAL_STAFF_ATTENDANCE, INITIAL_STAFF_ADVANCES, INITIAL_STAFF_PAYSLIPS,
+  INITIAL_NOTIFICATION_TEMPLATES, INITIAL_SMS_GATEWAY_SETTINGS, INITIAL_WHATSAPP_GATEWAY_SETTINGS,
+  INITIAL_NOTIFICATION_LOGS
 } from './db';
 
 const STORAGE_KEYS = {
@@ -94,6 +102,14 @@ const STORAGE_KEYS = {
   ASSET_DEPRECIATIONS: 'samitypro_asset_depreciations',
   INVENTORY_ITEMS: 'samitypro_inventory_items',
   INVENTORY_MOVEMENTS: 'samitypro_inventory_movements',
+  STAFF_EMPLOYEES: 'samitypro_staff_employees',
+  STAFF_ATTENDANCE: 'samitypro_staff_attendance',
+  STAFF_ADVANCES: 'samitypro_staff_advances',
+  STAFF_PAYSLIPS: 'samitypro_staff_payslips',
+  NOTIFICATION_TEMPLATES: 'samitypro_notif_templates',
+  SMS_GATEWAY_SETTINGS: 'samitypro_sms_gw_settings',
+  WHATSAPP_GATEWAY_SETTINGS: 'samitypro_wa_gw_settings',
+  NOTIFICATION_LOGS: 'samitypro_notif_logs',
   CURRENT_TENANT_ID: 'samitypro_active_tenant',
   CURRENT_USER_ID: 'samitypro_active_user',
   LANGUAGE: 'samitypro_language'
@@ -129,7 +145,9 @@ type StoreCollectionKey =
   | 'projects' | 'projectInvestments' | 'projectTransactions'
   | 'shareConfig' | 'memberShares' | 'dividendSessions' | 'dividendItems'
   | 'fdrSchemes' | 'fdrAccounts' | 'fdrProfitPayments'
-  | 'fixedAssets' | 'assetDepreciations' | 'inventoryItems' | 'inventoryMovements';
+  | 'fixedAssets' | 'assetDepreciations' | 'inventoryItems' | 'inventoryMovements'
+  | 'staffEmployees' | 'staffAttendances' | 'staffAdvanceSalaries' | 'staffPayslips'
+  | 'notificationTemplates' | 'smsGatewaySettings' | 'whatsAppGatewaySettings' | 'notificationLogs';
 
 const STORE_STORAGE_MAPPINGS: [string, StoreCollectionKey][] = [
   [STORAGE_KEYS.TENANTS, 'tenants'],
@@ -180,6 +198,14 @@ const STORE_STORAGE_MAPPINGS: [string, StoreCollectionKey][] = [
   [STORAGE_KEYS.ASSET_DEPRECIATIONS, 'assetDepreciations'],
   [STORAGE_KEYS.INVENTORY_ITEMS, 'inventoryItems'],
   [STORAGE_KEYS.INVENTORY_MOVEMENTS, 'inventoryMovements'],
+  [STORAGE_KEYS.STAFF_EMPLOYEES, 'staffEmployees'],
+  [STORAGE_KEYS.STAFF_ATTENDANCE, 'staffAttendances'],
+  [STORAGE_KEYS.STAFF_ADVANCES, 'staffAdvanceSalaries'],
+  [STORAGE_KEYS.STAFF_PAYSLIPS, 'staffPayslips'],
+  [STORAGE_KEYS.NOTIFICATION_TEMPLATES, 'notificationTemplates'],
+  [STORAGE_KEYS.SMS_GATEWAY_SETTINGS, 'smsGatewaySettings'],
+  [STORAGE_KEYS.WHATSAPP_GATEWAY_SETTINGS, 'whatsAppGatewaySettings'],
+  [STORAGE_KEYS.NOTIFICATION_LOGS, 'notificationLogs'],
 ];
 
 // In-memory fallback / cache
@@ -233,6 +259,18 @@ class DataStore {
   assetDepreciations: AssetDepreciationLog[] = INITIAL_ASSET_DEPRECIATIONS;
   inventoryItems: InventoryItem[] = INITIAL_INVENTORY_ITEMS;
   inventoryMovements: InventoryMovement[] = INITIAL_INVENTORY_MOVEMENTS;
+
+  // Module 7: Staff, Payroll & HR Management
+  staffEmployees: StaffEmployee[] = INITIAL_STAFF_EMPLOYEES;
+  staffAttendances: StaffAttendance[] = INITIAL_STAFF_ATTENDANCE;
+  staffAdvanceSalaries: StaffAdvanceSalary[] = INITIAL_STAFF_ADVANCES;
+  staffPayslips: StaffPayslip[] = INITIAL_STAFF_PAYSLIPS;
+
+  // Module 8: SMS / WhatsApp Gateway & Automated Notifications
+  notificationTemplates: NotificationTemplate[] = INITIAL_NOTIFICATION_TEMPLATES;
+  smsGatewaySettings: SmsGatewaySettings = INITIAL_SMS_GATEWAY_SETTINGS;
+  whatsAppGatewaySettings: WhatsAppGatewaySettings = INITIAL_WHATSAPP_GATEWAY_SETTINGS;
+  notificationLogs: NotificationLog[] = INITIAL_NOTIFICATION_LOGS;
 
   currentTenantId: string = 'samity-ekota';
   currentUserId: string = 'user-rafiq';
@@ -5191,6 +5229,589 @@ class DataStore {
     this.save();
     return movement;
   }
+
+  // ====================================================
+  // MODULE 7: STAFF PAYROLL, ATTENDANCE & HR MANAGEMENT
+  // ====================================================
+
+  createStaffEmployee(data: {
+    nameBn: string;
+    nameEn?: string;
+    phone: string;
+    email?: string;
+    nid: string;
+    gender: 'MALE' | 'FEMALE' | 'OTHER';
+    designation: StaffDesignation;
+    department: StaffDepartment;
+    joiningDate: string;
+    basicSalary: number;
+    houseRentAllowance: number;
+    medicalAllowance: number;
+    conveyanceAllowance: number;
+    mobileInternetAllowance: number;
+    providentFundDeduction?: number;
+    taxDeduction?: number;
+    paymentMethod: SalaryPaymentMethod;
+    bankName?: string;
+    bankBranch?: string;
+    bankAccountNo?: string;
+    bankRoutingNo?: string;
+    mfsNumber?: string;
+    presentAddress: string;
+    permanentAddress: string;
+    emergencyContactName: string;
+    emergencyContactPhone: string;
+    emergencyContactRelation: string;
+    bloodGroup?: string;
+    notes?: string;
+  }): StaffEmployee {
+    const codeNumber = this.staffEmployees.length + 1;
+    const employeeCode = `EMP-${new Date().getFullYear()}-${String(codeNumber).padStart(2, '0')}`;
+    const grossSalary = data.basicSalary + data.houseRentAllowance + data.medicalAllowance + 
+                        data.conveyanceAllowance + data.mobileInternetAllowance;
+
+    const newEmp: StaffEmployee = {
+      id: `emp-${Date.now()}`,
+      tenantId: this.currentTenantId,
+      employeeCode,
+      nameBn: data.nameBn,
+      nameEn: data.nameEn || '',
+      phone: data.phone,
+      email: data.email,
+      nid: data.nid,
+      gender: data.gender,
+      designation: data.designation,
+      department: data.department,
+      joiningDate: data.joiningDate,
+      status: 'ACTIVE',
+      basicSalary: data.basicSalary,
+      houseRentAllowance: data.houseRentAllowance,
+      medicalAllowance: data.medicalAllowance,
+      conveyanceAllowance: data.conveyanceAllowance,
+      mobileInternetAllowance: data.mobileInternetAllowance,
+      grossSalary,
+      providentFundDeduction: data.providentFundDeduction || 0,
+      taxDeduction: data.taxDeduction || 0,
+      paymentMethod: data.paymentMethod,
+      bankName: data.bankName,
+      bankBranch: data.bankBranch,
+      bankAccountNo: data.bankAccountNo,
+      bankRoutingNo: data.bankRoutingNo,
+      mfsNumber: data.mfsNumber,
+      presentAddress: data.presentAddress,
+      permanentAddress: data.permanentAddress,
+      emergencyContactName: data.emergencyContactName,
+      emergencyContactPhone: data.emergencyContactPhone,
+      emergencyContactRelation: data.emergencyContactRelation,
+      bloodGroup: data.bloodGroup,
+      notes: data.notes,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    this.staffEmployees.unshift(newEmp);
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'CREATE',
+      entity: 'STAFF',
+      entityId: newEmp.id,
+      descriptionBn: `নতুন কর্মকর্তা/কর্মচারী নথিভুক্ত: ${newEmp.nameBn} (${newEmp.employeeCode}) | পদবী: ${newEmp.designation} | মূল বেতন: ৳${newEmp.basicSalary.toLocaleString()}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return newEmp;
+  }
+
+  updateStaffEmployee(id: string, updates: Partial<StaffEmployee>): StaffEmployee {
+    const emp = this.staffEmployees.find(e => e.id === id);
+    if (!emp) throw new Error('কর্মকর্তা/কর্মচারী খুঁজে পাওয়া যায়নি');
+
+    Object.assign(emp, updates);
+    emp.grossSalary = emp.basicSalary + emp.houseRentAllowance + emp.medicalAllowance + 
+                      emp.conveyanceAllowance + emp.mobileInternetAllowance;
+    emp.updatedAt = new Date().toISOString();
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'UPDATE',
+      entity: 'STAFF',
+      entityId: emp.id,
+      descriptionBn: `কর্মকর্তা/কর্মচারীর তথ্য হালনাগাদ: ${emp.nameBn} (${emp.employeeCode})`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return emp;
+  }
+
+  recordStaffAttendance(params: {
+    employeeId: string;
+    date: string;
+    inTime?: string;
+    outTime?: string;
+    status: AttendanceStatus;
+    lateMinutes?: number;
+    overtimeHours?: number;
+    remarks?: string;
+  }): StaffAttendance {
+    const emp = this.staffEmployees.find(e => e.id === params.employeeId);
+    if (!emp) throw new Error('কর্মকর্তা/কর্মচারী খুঁজে পাওয়া যায়নি');
+
+    const existingIndex = this.staffAttendances.findIndex(
+      a => a.employeeId === params.employeeId && a.date === params.date && a.tenantId === this.currentTenantId
+    );
+
+    let record: StaffAttendance;
+    if (existingIndex >= 0) {
+      record = {
+        ...this.staffAttendances[existingIndex],
+        status: params.status,
+        inTime: params.inTime !== undefined ? params.inTime : this.staffAttendances[existingIndex].inTime,
+        outTime: params.outTime !== undefined ? params.outTime : this.staffAttendances[existingIndex].outTime,
+        lateMinutes: params.lateMinutes !== undefined ? params.lateMinutes : this.staffAttendances[existingIndex].lateMinutes,
+        overtimeHours: params.overtimeHours !== undefined ? params.overtimeHours : this.staffAttendances[existingIndex].overtimeHours,
+        remarks: params.remarks !== undefined ? params.remarks : this.staffAttendances[existingIndex].remarks,
+        recordedBy: this.currentUserId
+      };
+      this.staffAttendances[existingIndex] = record;
+    } else {
+      record = {
+        id: `att-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        tenantId: this.currentTenantId,
+        employeeId: emp.id,
+        employeeCode: emp.employeeCode,
+        employeeNameBn: emp.nameBn,
+        date: params.date,
+        inTime: params.inTime || '09:00',
+        outTime: params.outTime || '17:00',
+        status: params.status,
+        lateMinutes: params.lateMinutes || 0,
+        overtimeHours: params.overtimeHours || 0,
+        remarks: params.remarks,
+        recordedBy: this.currentUserId,
+        createdAt: new Date().toISOString()
+      };
+      this.staffAttendances.unshift(record);
+    }
+
+    this.save();
+    return record;
+  }
+
+  bulkRecordStaffAttendance(date: string, records: Array<{
+    employeeId: string;
+    status: AttendanceStatus;
+    inTime?: string;
+    outTime?: string;
+    remarks?: string;
+  }>): void {
+    for (const r of records) {
+      this.recordStaffAttendance({
+        employeeId: r.employeeId,
+        date,
+        status: r.status,
+        inTime: r.inTime,
+        outTime: r.outTime,
+        remarks: r.remarks
+      });
+    }
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'UPDATE',
+      entity: 'ATTENDANCE',
+      entityId: date,
+      descriptionBn: `তারিখের দৈনিক হাজিরা বাল্ক এন্ট্রি সম্পন্ন: ${date} (${records.length} জন)`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+    this.save();
+  }
+
+  requestStaffAdvance(params: {
+    employeeId: string;
+    amount: number;
+    purpose: string;
+    repaymentMonths: number;
+  }): StaffAdvanceSalary {
+    const emp = this.staffEmployees.find(e => e.id === params.employeeId);
+    if (!emp) throw new Error('কর্মকর্তা/কর্মচারী খুঁজে পাওয়া যায়নি');
+
+    const advanceNo = `ADV-${new Date().getFullYear()}-${String(this.staffAdvanceSalaries.length + 1).padStart(2, '0')}`;
+    const monthlyDeductionAmount = Math.ceil(params.amount / Math.max(1, params.repaymentMonths));
+
+    const newAdvance: StaffAdvanceSalary = {
+      id: `adv-${Date.now()}`,
+      tenantId: this.currentTenantId,
+      employeeId: emp.id,
+      employeeCode: emp.employeeCode,
+      employeeNameBn: emp.nameBn,
+      advanceNo,
+      requestDate: new Date().toISOString().split('T')[0],
+      amount: params.amount,
+      purpose: params.purpose,
+      repaymentMonths: params.repaymentMonths,
+      monthlyDeductionAmount,
+      remainingBalance: params.amount,
+      status: 'APPROVED',
+      approvedBy: this.currentUserId,
+      approvedAt: new Date().toISOString().split('T')[0],
+      disbursedDate: new Date().toISOString().split('T')[0],
+      disbursedVoucherNo: `VCH-DR-${Date.now().toString().slice(-6)}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // Auto-generate Debit Voucher in Ledger
+    this.createVoucher({
+      tenantId: this.currentTenantId,
+      type: 'DEBIT',
+      category: 'কর্মকর্তা-কর্মচারীদের অগ্রিম বেতন প্রদান',
+      accountHeadCode: '1050',
+      accountHeadNameBn: 'কর্মকর্তা/কর্মচারীদের অগ্রিম বেতন ও লোন',
+      debitAccount: '১০৫০: কর্মকর্তা/কর্মচারীদের অগ্রিম বেতন ও লোন',
+      creditAccount: '১০১০: হাতে নগদ ক্যাশ',
+      amount: params.amount,
+      descriptionBn: `অগ্রিম বেতন প্রদান: ${emp.nameBn} (${advanceNo}) | কারণ: ${params.purpose}`,
+      paidToOrReceivedFrom: emp.nameBn,
+      paymentMethod: emp.paymentMethod === 'BANK_TRANSFER' ? 'BANK' : emp.paymentMethod === 'CASH' ? 'CASH' : 'MFS'
+    });
+
+    this.staffAdvanceSalaries.unshift(newAdvance);
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'CREATE',
+      entity: 'STAFF_ADVANCE',
+      entityId: newAdvance.id,
+      descriptionBn: `অগ্রিম বেতন অনুমোদন ও প্রদান: ${emp.nameBn} | পরিমাণ: ৳${params.amount.toLocaleString()} | কিস্তি: ${params.repaymentMonths} মাস`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return newAdvance;
+  }
+
+  generateMonthlyPayroll(monthYear: string): StaffPayslip[] {
+    const activeStaff = this.staffEmployees.filter(
+      e => e.tenantId === this.currentTenantId && (e.status === 'ACTIVE' || e.status === 'ON_LEAVE')
+    );
+
+    const [year, month] = monthYear.split('-');
+    const monthNamesBn = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+    const monthIndex = parseInt(month, 10) - 1;
+    const salaryMonthBn = `${monthNamesBn[monthIndex] || month} ${year}`;
+
+    const createdPayslips: StaffPayslip[] = [];
+
+    activeStaff.forEach((emp, idx) => {
+      // Check if payslip already exists
+      const existing = this.staffPayslips.find(
+        p => p.tenantId === this.currentTenantId && p.employeeId === emp.id && p.monthYear === monthYear
+      );
+      if (existing) {
+        createdPayslips.push(existing);
+        return;
+      }
+
+      // Check active advance balance
+      const activeAdvance = this.staffAdvanceSalaries.find(
+        a => a.tenantId === this.currentTenantId && a.employeeId === emp.id && a.status === 'DISBURSED' && a.remainingBalance > 0
+      );
+      const advanceSalaryDeduction = activeAdvance ? Math.min(activeAdvance.monthlyDeductionAmount, activeAdvance.remainingBalance) : 0;
+
+      // Summary of attendance in this month
+      const monthAttendances = this.staffAttendances.filter(
+        a => a.tenantId === this.currentTenantId && a.employeeId === emp.id && a.date.startsWith(monthYear)
+      );
+      const presentDays = monthAttendances.filter(a => a.status === 'PRESENT' || a.status === 'LATE').length || 26;
+      const lateDays = monthAttendances.filter(a => a.status === 'LATE').length;
+      const leaveDays = monthAttendances.filter(a => a.status === 'LEAVE_CASUAL' || a.status === 'LEAVE_SICK').length;
+      const absentDays = monthAttendances.filter(a => a.status === 'ABSENT').length;
+
+      const workingDays = 26;
+      const dailySalary = Math.round(emp.basicSalary / 30);
+      const unpaidLeaveDeduction = absentDays > 0 ? absentDays * dailySalary : 0;
+      const lateFineDeduction = lateDays >= 3 ? Math.round(dailySalary * 0.5) : 0;
+
+      const totalEarnings = emp.basicSalary + emp.houseRentAllowance + emp.medicalAllowance + 
+                            emp.conveyanceAllowance + emp.mobileInternetAllowance;
+      const totalDeductions = emp.providentFundDeduction + emp.taxDeduction + 
+                              advanceSalaryDeduction + unpaidLeaveDeduction + lateFineDeduction;
+      const netPayable = Math.max(0, totalEarnings - totalDeductions);
+
+      const payslip: StaffPayslip = {
+        id: `pay-slip-${Date.now()}-${idx}`,
+        tenantId: this.currentTenantId,
+        payslipNo: `PAY-${year}${month}-${String(idx + 1).padStart(2, '0')}`,
+        monthYear,
+        salaryMonthBn,
+        employeeId: emp.id,
+        employeeCode: emp.employeeCode,
+        employeeNameBn: emp.nameBn,
+        designation: emp.designation,
+        department: emp.department,
+        paymentMethod: emp.paymentMethod,
+        disbursementAccount: emp.paymentMethod === 'BANK_TRANSFER' ? '১০২০: সোনালী ব্যাংক চলতি হিসাব' : '১০১০: হাতে নগদ ক্যাশ',
+        workingDays,
+        presentDays,
+        absentDays,
+        leaveDays,
+        lateDays,
+        overtimeHours: 0,
+        basicSalary: emp.basicSalary,
+        houseRent: emp.houseRentAllowance,
+        medical: emp.medicalAllowance,
+        conveyance: emp.conveyanceAllowance,
+        mobileInternet: emp.mobileInternetAllowance,
+        overtimePay: 0,
+        festivalBonus: 0,
+        performanceBonus: 0,
+        totalEarnings,
+        providentFund: emp.providentFundDeduction,
+        tax: emp.taxDeduction,
+        advanceSalaryDeduction,
+        unpaidLeaveDeduction,
+        lateFineDeduction,
+        otherDeductions: 0,
+        totalDeductions,
+        netPayable,
+        paymentStatus: 'UNPAID',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      this.staffPayslips.unshift(payslip);
+      createdPayslips.push(payslip);
+    });
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'CREATE',
+      entity: 'PAYROLL',
+      entityId: monthYear,
+      descriptionBn: `মাসিক পে-রোল শীট জেনারেট সম্পন্ন: ${salaryMonthBn} (মোট ${createdPayslips.length} জন কর্মী)`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return createdPayslips;
+  }
+
+  disburseStaffPayslip(payslipId: string, params: {
+    paymentMethod: SalaryPaymentMethod;
+    disbursementAccount: string;
+    bonus?: number;
+    remarks?: string;
+  }): StaffPayslip {
+    const payslip = this.staffPayslips.find(p => p.id === payslipId);
+    if (!payslip) throw new Error('পে-স্লিপ খুঁজে পাওয়া যায়নি');
+    if (payslip.paymentStatus === 'PAID') throw new Error('এই পে-স্লিপটি ইতিমধ্যে পরিশোধিত হয়েছে');
+
+    if (params.bonus && params.bonus > 0) {
+      payslip.performanceBonus = params.bonus;
+      payslip.totalEarnings += params.bonus;
+      payslip.netPayable += params.bonus;
+    }
+
+    payslip.paymentMethod = params.paymentMethod;
+    payslip.disbursementAccount = params.disbursementAccount;
+    payslip.paymentStatus = 'PAID';
+    payslip.paymentDate = new Date().toISOString().split('T')[0];
+    payslip.disbursedBy = this.currentUserId;
+    payslip.disbursedAt = new Date().toISOString();
+    payslip.remarks = params.remarks || `${payslip.salaryMonthBn} এর নিয়মিত মাসিক বেতন পরিশোধ`;
+
+    // 1. Generate DEBIT Voucher in General Ledger (Accounts Integration)
+    const voucher = this.createVoucher({
+      tenantId: this.currentTenantId,
+      type: 'DEBIT',
+      category: 'কর্মকর্তা-কর্মচারীদের বেতন ও ভাতাদি',
+      accountHeadCode: '4010',
+      accountHeadNameBn: 'কর্মকর্তা-কর্মচারীদের বেতন ও ভাতাদি',
+      debitAccount: '৪০১০: কর্মকর্তা-কর্মচারীদের বেতন ও ভাতাদি',
+      creditAccount: params.disbursementAccount,
+      amount: payslip.netPayable,
+      descriptionBn: `মাসিক বেতন পরিশোধ: ${payslip.employeeNameBn} (${payslip.employeeCode}) | মাস: ${payslip.salaryMonthBn} | পে-স্লিপ: ${payslip.payslipNo}`,
+      paidToOrReceivedFrom: payslip.employeeNameBn,
+      paymentMethod: params.paymentMethod === 'BANK_TRANSFER' ? 'BANK' : params.paymentMethod === 'CASH' ? 'CASH' : 'MFS'
+    });
+    payslip.voucherNo = voucher.voucherNo;
+
+    // 2. Adjust Advance Salary Balance if deducted
+    if (payslip.advanceSalaryDeduction > 0) {
+      const advance = this.staffAdvanceSalaries.find(
+        a => a.tenantId === this.currentTenantId && a.employeeId === payslip.employeeId && a.status === 'DISBURSED' && a.remainingBalance > 0
+      );
+      if (advance) {
+        advance.remainingBalance = Math.max(0, advance.remainingBalance - payslip.advanceSalaryDeduction);
+        if (advance.remainingBalance <= 0) {
+          advance.status = 'REPAID';
+        }
+        advance.updatedAt = new Date().toISOString();
+      }
+    }
+
+    // 3. Automated SMS / WhatsApp Notification
+    const employee = this.staffEmployees.find(e => e.id === payslip.employeeId);
+    if (employee && employee.phone) {
+      const notifText = `শুভেচ্ছা ${employee.nameBn}, আপনার ${payslip.salaryMonthBn} মাসের নিট বেতন ৳${payslip.netPayable.toLocaleString()} সফলভাবে ${params.paymentMethod} এর মাধ্যমে প্রদান করা হয়েছে। পে-স্লিপ নং: ${payslip.payslipNo}। হিসাব শাখা, একতা সমবায় সমিতি।`;
+      this.sendNotification({
+        recipientPhone: employee.phone,
+        recipientName: employee.nameBn,
+        channel: 'WHATSAPP',
+        event: 'STAFF_SALARY_DISBURSEMENT',
+        messageText: notifText,
+        employeeId: employee.id,
+        referenceId: payslip.payslipNo
+      });
+    }
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'UPDATE',
+      entity: 'PAYROLL',
+      entityId: payslip.id,
+      descriptionBn: `স্টাফ বেতন প্রদান সম্পন্ন: ${payslip.employeeNameBn} | মাস: ${payslip.salaryMonthBn} | নিট পরিশোধ: ৳${payslip.netPayable.toLocaleString()} | ভাউচার: ${voucher.voucherNo}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return payslip;
+  }
+
+  bulkDisburseMonthlyPayroll(monthYear: string, params: {
+    paymentMethod: SalaryPaymentMethod;
+    disbursementAccount: string;
+  }): { totalDisbursed: number; count: number } {
+    const unpaid = this.staffPayslips.filter(
+      p => p.tenantId === this.currentTenantId && p.monthYear === monthYear && p.paymentStatus === 'UNPAID'
+    );
+
+    let totalDisbursed = 0;
+    let count = 0;
+
+    for (const payslip of unpaid) {
+      this.disburseStaffPayslip(payslip.id, {
+        paymentMethod: params.paymentMethod,
+        disbursementAccount: params.disbursementAccount
+      });
+      totalDisbursed += payslip.netPayable;
+      count++;
+    }
+
+    this.save();
+    return { totalDisbursed, count };
+  }
+
+  // ====================================================
+  // MODULE 8: SMS / WHATSAPP GATEWAY & AUTOMATED NOTIFICATIONS
+  // ====================================================
+
+  updateNotificationTemplate(id: string, updates: Partial<NotificationTemplate>): NotificationTemplate {
+    const tpl = this.notificationTemplates.find(t => t.id === id);
+    if (!tpl) throw new Error('টেমপ্লেট খুঁজে পাওয়া যায়নি');
+    Object.assign(tpl, updates);
+    tpl.updatedAt = new Date().toISOString();
+    this.save();
+    return tpl;
+  }
+
+  updateSmsGatewaySettings(settings: Partial<SmsGatewaySettings>): SmsGatewaySettings {
+    Object.assign(this.smsGatewaySettings, settings);
+    this.save();
+    return this.smsGatewaySettings;
+  }
+
+  updateWhatsAppGatewaySettings(settings: Partial<WhatsAppGatewaySettings>): WhatsAppGatewaySettings {
+    Object.assign(this.whatsAppGatewaySettings, settings);
+    this.save();
+    return this.whatsAppGatewaySettings;
+  }
+
+  sendNotification(params: {
+    recipientPhone: string;
+    recipientName: string;
+    channel: ReminderChannel;
+    event: NotificationTriggerEvent;
+    messageText: string;
+    memberId?: string;
+    employeeId?: string;
+    referenceId?: string;
+  }): { success: boolean; message: string; waMeUrl?: string } {
+    const cleanPhone = params.recipientPhone.replace(/[^0-9]/g, '').slice(-11);
+    const waMeUrl = `https://wa.me/88${cleanPhone}?text=${encodeURIComponent(params.messageText)}`;
+
+    // Decrement SMS quota if local SIM or SMS gateway
+    if (params.channel === 'SMS' && this.smsGatewaySettings.balanceCount > 0) {
+      this.smsGatewaySettings.balanceCount -= 1;
+    }
+
+    const log: NotificationLog = {
+      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      tenantId: this.currentTenantId,
+      recipientMemberId: params.memberId,
+      recipientEmployeeId: params.employeeId,
+      recipientName: params.recipientName,
+      recipientPhone: cleanPhone,
+      channel: params.channel,
+      event: params.event,
+      messageText: params.messageText,
+      status: 'DELIVERED',
+      gatewayResponse: params.channel === 'WHATSAPP' 
+        ? 'Direct wa.me Instant Launcher Prepared' 
+        : `${this.smsGatewaySettings.provider} API: Message Queued`,
+      referenceId: params.referenceId,
+      sentAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      sentBy: this.currentUserId
+    };
+
+    this.notificationLogs.unshift(log);
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'CREATE',
+      entity: 'NOTIFICATION',
+      entityId: log.id,
+      descriptionBn: `নোটিফিকেশন পাঠানো হয়েছে (${params.channel}): ${params.recipientName} (${cleanPhone}) | ইভেন্ট: ${params.event}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return {
+      success: true,
+      message: 'বার্তা সফলভাবে পাঠানো হয়েছে',
+      waMeUrl
+    };
+  }
+
+  bulkSendNotifications(params: {
+    recipientList: Array<{ phone: string; name: string; memberId?: string; employeeId?: string }>;
+    channel: ReminderChannel;
+    event: NotificationTriggerEvent;
+    messageText: string;
+  }): { totalSent: number; channel: ReminderChannel } {
+    let sentCount = 0;
+    for (const r of params.recipientList) {
+      const personalMsg = params.messageText.replace(/{{memberName}}/g, r.name).replace(/{{employeeName}}/g, r.name);
+      this.sendNotification({
+        recipientPhone: r.phone,
+        recipientName: r.name,
+        channel: params.channel,
+        event: params.event,
+        messageText: personalMsg,
+        memberId: r.memberId,
+        employeeId: r.employeeId
+      });
+      sentCount++;
+    }
+    this.save();
+    return { totalSent: sentCount, channel: params.channel };
+  }
 }
 
 export const store = new DataStore();
@@ -5381,5 +6002,30 @@ export function useSamityStore() {
     disposeFixedAsset: (assetId: string, params: Parameters<typeof store.disposeFixedAsset>[1]) => store.disposeFixedAsset(assetId, params),
     createInventoryItem: (data: Parameters<typeof store.createInventoryItem>[0]) => store.createInventoryItem(data),
     recordStockMovement: (params: Parameters<typeof store.recordStockMovement>[0]) => store.recordStockMovement(params),
+
+    // Module 7: Staff Payroll, Attendance & HR Management
+    staffEmployees: store.staffEmployees.filter(e => e.tenantId === activeTenant?.id),
+    staffAttendances: store.staffAttendances.filter(a => a.tenantId === activeTenant?.id),
+    staffAdvanceSalaries: store.staffAdvanceSalaries.filter(a => a.tenantId === activeTenant?.id),
+    staffPayslips: store.staffPayslips.filter(p => p.tenantId === activeTenant?.id),
+    createStaffEmployee: (data: Parameters<typeof store.createStaffEmployee>[0]) => store.createStaffEmployee(data),
+    updateStaffEmployee: (id: string, updates: Parameters<typeof store.updateStaffEmployee>[1]) => store.updateStaffEmployee(id, updates),
+    recordStaffAttendance: (params: Parameters<typeof store.recordStaffAttendance>[0]) => store.recordStaffAttendance(params),
+    bulkRecordStaffAttendance: (date: string, records: Parameters<typeof store.bulkRecordStaffAttendance>[1]) => store.bulkRecordStaffAttendance(date, records),
+    requestStaffAdvance: (params: Parameters<typeof store.requestStaffAdvance>[0]) => store.requestStaffAdvance(params),
+    generateMonthlyPayroll: (monthYear: string) => store.generateMonthlyPayroll(monthYear),
+    disburseStaffPayslip: (payslipId: string, params: Parameters<typeof store.disburseStaffPayslip>[1]) => store.disburseStaffPayslip(payslipId, params),
+    bulkDisburseMonthlyPayroll: (monthYear: string, params: Parameters<typeof store.bulkDisburseMonthlyPayroll>[1]) => store.bulkDisburseMonthlyPayroll(monthYear, params),
+
+    // Module 8: SMS / WhatsApp Gateway & Automated Notifications
+    notificationTemplates: store.notificationTemplates.filter(t => t.tenantId === activeTenant?.id),
+    smsGatewaySettings: store.smsGatewaySettings,
+    whatsAppGatewaySettings: store.whatsAppGatewaySettings,
+    notificationLogs: store.notificationLogs.filter(l => l.tenantId === activeTenant?.id),
+    updateNotificationTemplate: (id: string, updates: Parameters<typeof store.updateNotificationTemplate>[1]) => store.updateNotificationTemplate(id, updates),
+    updateSmsGatewaySettings: (settings: Parameters<typeof store.updateSmsGatewaySettings>[0]) => store.updateSmsGatewaySettings(settings),
+    updateWhatsAppGatewaySettings: (settings: Parameters<typeof store.updateWhatsAppGatewaySettings>[0]) => store.updateWhatsAppGatewaySettings(settings),
+    sendNotification: (params: Parameters<typeof store.sendNotification>[0]) => store.sendNotification(params),
+    bulkSendNotifications: (params: Parameters<typeof store.bulkSendNotifications>[0]) => store.bulkSendNotifications(params),
   };
 }

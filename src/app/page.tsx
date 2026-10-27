@@ -36,6 +36,8 @@ import { ProjectsPortfolioView } from '@/components/projects/ProjectsPortfolioVi
 import { ShareCapitalDividendView } from '@/components/shares/ShareCapitalDividendView';
 import FixedDepositView from '@/components/fdr/FixedDepositView';
 import FixedAssetInventoryView from '@/components/assets/FixedAssetInventoryView';
+import StaffPayrollHRView from '@/components/payroll/StaffPayrollHRView';
+import NotificationGatewayView from '@/components/notifications/NotificationGatewayView';
 import { MobileMenuDrawer } from '@/components/layout/MobileMenuDrawer';
 
 import { useSamityStore } from '@/lib/store';
@@ -151,6 +153,7 @@ export default function Home() {
         {activeTab === 'shares-dividend' && <ShareCapitalDividendView />}
         {activeTab === 'fdr' && <FixedDepositView />}
         {activeTab === 'fixed-assets' && <FixedAssetInventoryView />}
+        {activeTab === 'staff-payroll' && <StaffPayrollHRView />}
         {activeTab === 'payment-gateways' && (
           <PaymentGatewaySettingsModal 
             isOpen={true} 
@@ -174,7 +177,8 @@ export default function Home() {
         )}
         {activeTab === 'accounts' && <AccountsView />}
         {activeTab === 'approvals' && <ApprovalWorkflowView />}
-        {activeTab === 'communication-hub' && <CommunicationHubView />}
+        {activeTab === 'communication-hub' && <NotificationGatewayView />}
+        {activeTab === 'gateways' && <NotificationGatewayView />}
         {activeTab === 'doc-generator' && <DocumentGeneratorView />}
         {activeTab === 'notices' && <NoticesView />}
         {activeTab === 'documents' && <DocumentsView />}
