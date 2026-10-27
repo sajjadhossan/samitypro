@@ -11,9 +11,10 @@ import {
   AuditLog, ApprovalItem, GeneratedDocument, ApprovalStatus,
   CommunicationGatewayConfig, AutoSchedulerConfig, OfflineQueueItem, ReminderChannel,
   SubscriptionPolicyConfig, LateFeeWaiverRecord, FeePaymentStatus,
-  SavingsPolicyConfig, SavingsType, PaymentMethod,
+  SavingsPolicyConfig, SavingsType, PaymentMethod, VoucherType,
   LoanPolicyConfig, LoanInterestMethod, LoanFrequency, LoanGuarantor, LoanInstallment,
-  AccountHead, GeneralLedgerEntry, TrialBalanceItem
+  AccountHead, GeneralLedgerEntry, TrialBalanceItem,
+  APP_VERSION
 } from '@/types';
 import { 
   INITIAL_TENANTS, INITIAL_USERS, INITIAL_MEMBERS, 
@@ -1689,7 +1690,7 @@ class DataStore {
 
   private updateHeadBalance(
     targetHead: AccountHead,
-    type: 'DEBIT' | 'CREDIT' | 'JOURNAL',
+    type: VoucherType,
     amount: number
   ) {
     if (type === 'DEBIT') {
@@ -1704,7 +1705,7 @@ class DataStore {
   private updatePaymentHeadBalance(
     tenantId: string,
     paymentMethod: PaymentMethod,
-    type: 'DEBIT' | 'CREDIT' | 'JOURNAL',
+    type: VoucherType,
     amount: number
   ) {
     if (paymentMethod !== 'CASH' && paymentMethod !== 'BANK') return;
@@ -1724,7 +1725,7 @@ class DataStore {
 
   private updateVoucherAccountBalances(
     tenantId: string,
-    type: 'DEBIT' | 'CREDIT' | 'JOURNAL',
+    type: VoucherType,
     accountHeadCode: string,
     paymentMethod: PaymentMethod,
     amount: number
@@ -1738,7 +1739,7 @@ class DataStore {
 
   createVoucher(params: {
     tenantId: string;
-    type: 'DEBIT' | 'CREDIT' | 'JOURNAL';
+    type: VoucherType;
     category: string;
     accountHeadCode: string;
     accountHeadNameBn: string;
@@ -2380,7 +2381,7 @@ class DataStore {
 
   exportFullBackup(): string {
     const backupData = {
-      version: '1.0.8',
+      version: APP_VERSION.replace(/^v/, ''),
       exportedAt: new Date().toISOString(),
       tenantId: this.currentTenantId,
       tenants: this.tenants.filter(t => t.id === this.currentTenantId),

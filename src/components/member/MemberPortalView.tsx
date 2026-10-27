@@ -678,9 +678,9 @@ export function MemberPortalView() {
                     <div className="text-[11px] text-slate-400 font-mono">
                       আবেদনের তারিখ: {req.requestedAt} • আবেদনকারী: {req.requestedBy}
                     </div>
-                    {req.details?.purpose && (
+                    {Boolean(req.details?.purpose) && (
                       <div className="text-[11px] text-slate-300">
-                        উদ্দেশ্য: {req.details.purpose}
+                        উদ্দেশ্য: {String(req.details?.purpose)}
                       </div>
                     )}
                     {req.rejectionReason && (

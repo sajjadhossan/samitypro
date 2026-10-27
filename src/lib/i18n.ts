@@ -101,7 +101,7 @@ export const translations = {
     filter: 'ফিল্টার',
     exportExcel: 'এক্সেলে ডাউনলোড',
     switchTenant: 'সমিতি পরিবর্তন',
-    switchRole: 'রোল পরিবর্তন (ডেমো)',
+    switchRole: 'পোর্টাল রোল পরিবর্তন',
     logOut: 'লগআউট',
 
     // Stats Labels
@@ -211,7 +211,7 @@ export const translations = {
     filter: 'Filter',
     exportExcel: 'Export Excel',
     switchTenant: 'Switch Samity',
-    switchRole: 'Switch Role (Demo)',
+    switchRole: 'Switch Portal Role',
     logOut: 'Log Out',
 
     // Stats Labels

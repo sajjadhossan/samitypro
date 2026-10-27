@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations, toBengaliNumber } from '@/lib/i18n';
-import { UserRole } from '@/types';
+import { UserRole, APP_VERSION } from '@/types';
+import { UpdateCheckModal } from '@/components/common/UpdateCheckModal';
 
 interface HeaderProps {
   onOpenApkModal: () => void;
@@ -24,6 +25,7 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
   const [showTenantDropdown, setShowTenantDropdown] = useState(false);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
   const t = translations[language];
 
@@ -66,9 +68,13 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
               <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-200 bg-clip-text text-transparent">
                 {language === 'bn' ? 'সমিতিপ্রো' : 'SamityPro'}
               </span>
-              <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                SaaS v2.5
-              </span>
+              <button
+                onClick={() => setIsUpdateModalOpen(true)}
+                className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition cursor-pointer flex items-center gap-1 active:scale-95"
+                title={language === 'bn' ? 'সফটওয়্যার আপডেট চেক করুন' : 'Check for software updates'}
+              >
+                <span>{APP_VERSION}</span>
+              </button>
             </div>
             <p className="text-xs text-slate-400 hidden sm:block truncate max-w-xs">
               {language === 'bn' ? activeTenant?.nameBn : activeTenant?.nameEn}
@@ -360,9 +366,19 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
                   </div>
 
                   {/* App Version Info */}
-                  <div className="pt-3 mt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
-                    <span>SamityPro Mobile</span>
-                    <span className="font-mono text-cyan-400 font-bold">v1.0.8</span>
+                  <div className="pt-3 mt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                    <span>{language === 'bn' ? 'অ্যাপ সংস্করণ' : 'App Version'}</span>
+                    <button
+                      onClick={() => {
+                        setShowRoleDropdown(false);
+                        setIsUpdateModalOpen(true);
+                      }}
+                      className="font-mono text-cyan-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                      title={language === 'bn' ? 'আপডেট চেক করুন' : 'Check for updates'}
+                    >
+                      <RefreshCw className="w-3 h-3 text-cyan-400" />
+                      <span>{APP_VERSION}</span>
+                    </button>
                   </div>
                 </div>
               </>
@@ -372,6 +388,12 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
         </div>
 
       </div>
+
+      <UpdateCheckModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        isManualCheck={true}
+      />
     </header>
   );
 }

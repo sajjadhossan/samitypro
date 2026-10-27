@@ -1,4 +1,4 @@
-export const APP_VERSION = 'v1.1.4';
+export const APP_VERSION = 'v1.8.0';
 
 export type Language = 'bn' | 'en';
 
@@ -810,6 +810,10 @@ export interface SamityDocument {
   descriptionBn?: string;
 }
 
+export type LogoPosition = 'LEFT' | 'CENTER' | 'RIGHT';
+export type LogoSize = 'SMALL' | 'MEDIUM' | 'LARGE';
+export type SealShape = 'ROUND' | 'OVAL' | 'RECTANGLE';
+
 export interface LetterheadConfig {
   tenantId: string;
   samityNameBn: string;
@@ -828,6 +832,10 @@ export interface LetterheadConfig {
   presidentNameBn: string;
   secretaryNameBn: string;
   treasurerNameBn: string;
+  logoPosition?: LogoPosition;
+  logoSize?: LogoSize;
+  headerBorderColor?: string;
+  headerHeight?: number;
 }
 
 export type ReminderChannel = 'SMS' | 'WHATSAPP' | 'TELEGRAM' | 'MESSENGER' | 'PUSH' | 'MANUAL';
@@ -864,6 +872,10 @@ export interface SignatureSealConfig {
   sealTextBn: string;
   showSignatureOnReceipt: boolean;
   showSealOnReceipt: boolean;
+  sealText?: string;
+  sealShape?: SealShape;
+  sealColor?: string;
+  sealRotation?: number;
 }
 
 export interface VoucherPrefixConfig {
@@ -948,7 +960,7 @@ export interface ApprovalItem {
   actionDate?: string;
   rejectionReason?: string;
   referenceId: string;
-  details?: Record<string, any>;
+  details?: Record<string, string | number | boolean | null | undefined>;
 }
 
 export type GeneratedDocType = 'MEMBERSHIP_CERTIFICATE' | 'LOAN_AGREEMENT' | 'RESOLUTION' | 'CLEARANCE_NOC';
@@ -1017,7 +1029,7 @@ export interface OfflineQueueItem {
   tenantId: string;
   entity: string;
   action: 'CREATE' | 'UPDATE' | 'DELETE';
-  payload: any;
+  payload: unknown;
   createdAt: string;
   retryCount: number;
   status: 'PENDING' | 'SYNCING' | 'FAILED';

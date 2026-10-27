@@ -3,10 +3,12 @@
 import React, { useState } from 'react';
 import { 
   Building2, Sliders, Stamp, Printer, CheckCircle2, 
-  Save, FileText, Globe, DollarSign, Calendar, Eye
+  Save, FileText, Globe, DollarSign, Calendar, Eye, RefreshCw
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
-import { PrintPaperSize, TenantType } from '@/types';
+import { PrintPaperSize, TenantType, APP_VERSION } from '@/types';
+import { LetterheadDesigner } from './LetterheadDesigner';
+import { UpdateCheckModal } from '@/components/common/UpdateCheckModal';
 
 export function SettingsView() {
   const { 
@@ -21,6 +23,7 @@ export function SettingsView() {
 
   const [activeTab, setActiveTab] = useState<'samity-setup' | 'voucher-prefix' | 'signatures' | 'letterhead'>('samity-setup');
   const [saveAlert, setSaveAlert] = useState<string | null>(null);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
   // Samity Setup Form State
   const [samityForm, setSamityForm] = useState({
@@ -110,12 +113,27 @@ export function SettingsView() {
           </p>
         </div>
 
-        {saveAlert && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold animate-pulse">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>{saveAlert}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {saveAlert && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold animate-pulse">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>{saveAlert}</span>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setIsUpdateModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-xs text-slate-300 border border-slate-700 transition cursor-pointer active:scale-95 shadow-sm"
+            title={language === 'bn' ? 'সফটওয়্যার আপডেট চেক করুন' : 'Check for software updates'}
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="font-semibold text-cyan-300">{APP_VERSION}</span>
+            <span className="text-[11px] text-slate-400 ml-1">
+              {language === 'bn' ? 'আপডেট চেক' : 'Check Update'}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Settings Navigation Tabs */}
@@ -584,107 +602,17 @@ export function SettingsView() {
         </form>
       )}
 
-      {/* TAB 4: Letterhead & Print Template */}
+      {/* TAB 4: Letterhead & Print Template Designer */}
       {activeTab === 'letterhead' && (
-        <form onSubmit={handleSavePrefix} className="glass-card rounded-2xl p-5 sm:p-6 border border-slate-800 space-y-6">
-          <div className="border-b border-slate-800/80 pb-3 flex items-center justify-between">
-            <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Printer className="w-4 h-4 text-emerald-400" />
-                <span>{language === 'bn' ? 'লেটারহেড প্যাড ও প্রিন্ট টেমপ্লেট কাস্টমাইজার' : 'Letterhead & Print Layout'}</span>
-              </h3>
-              <p className="text-xs text-slate-400">
-                {language === 'bn' ? 'কাগজের সাইজ (A4/A5/Thermal), ওয়াটারমার্ক ও পাদটিকা' : 'Paper size, watermark and footer note on printed receipts'}
-              </p>
-            </div>
-            <button
-              type="submit"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-500/20 transition"
-            >
-              <Save className="w-4 h-4" />
-              <span>{language === 'bn' ? 'টেমপ্লেট সংরক্ষণ' : 'Save Template'}</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs">
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">
-                {language === 'bn' ? 'প্রিন্ট পেপার সাইজ (Print Paper Size)' : 'Paper Size'}
-              </label>
-              <select
-                value={prefixForm.paperSize}
-                onChange={e => setPrefixForm({ ...prefixForm, paperSize: e.target.value as PrintPaperSize })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-medium"
-              >
-                <option value="A4">A4 (স্ট্যান্ডার্ড অফিস সাইজ - ২১০ × ২৯৭ মিমি)</option>
-                <option value="A5">A5 (কমপ্যাক্ট মানি রসিদ - ১৪৮ × ২১০ মিমি)</option>
-                <option value="THERMAL_80MM">৮০ মিমি POS থার্মাল প্রিন্টার (Thermal Slip)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">
-                {language === 'bn' ? 'ওয়াটারমার্ক ব্যাকগ্রাউন্ড (Watermark Text)' : 'Watermark Text'}
-              </label>
-              <input
-                type="text"
-                value={prefixForm.watermarkTextBn}
-                onChange={e => setPrefixForm({ ...prefixForm, watermarkTextBn: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-slate-300 font-semibold mb-1">
-                {language === 'bn' ? 'রসিদের পাদটিকা নোট (Footer Disclaimer Note)' : 'Receipt Footer Note'}
-              </label>
-              <textarea
-                rows={2}
-                value={prefixForm.footerNoteBn}
-                onChange={e => setPrefixForm({ ...prefixForm, footerNoteBn: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white"
-              />
-            </div>
-
-            <div className="sm:col-span-2 flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="enableWatermark"
-                checked={prefixForm.enableWatermark}
-                onChange={e => setPrefixForm({ ...prefixForm, enableWatermark: e.target.checked })}
-                className="w-4 h-4 accent-emerald-500 rounded"
-              />
-              <label htmlFor="enableWatermark" className="text-slate-300 cursor-pointer">
-                {language === 'bn' ? 'রসিদের ব্যাকগ্রাউন্ডে ওয়াটারমার্ক সক্রিয় রাখুন' : 'Enable background watermark on printed receipts'}
-              </label>
-            </div>
-          </div>
-
-          {/* Live Preview Box */}
-          <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-              <Eye className="w-4 h-4 text-emerald-400" />
-              <span>{language === 'bn' ? 'লাইভ প্যাড প্রিভিউ (Live Header Pad Preview)' : 'Live Letterhead Preview'}</span>
-            </div>
-            <div className="bg-white text-slate-900 p-4 rounded-lg shadow text-center relative overflow-hidden">
-              {prefixForm.enableWatermark && (
-                <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none text-3xl font-black rotate-[-15deg] select-none text-slate-950">
-                  {prefixForm.watermarkTextBn}
-                </div>
-              )}
-              <h2 className="text-base font-extrabold text-slate-900">{samityForm.nameBn}</h2>
-              <p className="text-[10px] text-slate-600">{samityForm.nameEn}</p>
-              <div className="text-[10px] text-slate-500 mt-1 border-b pb-2">
-                {samityForm.registrationNo} • {samityForm.address}
-              </div>
-              <div className="text-[9px] text-slate-400 mt-2 italic">
-                {prefixForm.footerNoteBn}
-              </div>
-            </div>
-          </div>
-
-        </form>
+        <LetterheadDesigner />
       )}
+
+      {/* In-App Version Update Checker Modal */}
+      <UpdateCheckModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        isManualCheck={true}
+      />
 
     </div>
   );
