@@ -931,6 +931,9 @@ export type AuditEntity =
   | 'PROJECT_TRANSACTION' 
   | 'SHARE_CAPITAL' 
   | 'DIVIDEND' 
+  | 'FDR'
+  | 'FIXED_ASSET'
+  | 'INVENTORY'
   | 'OTHER';
 
 export type ReportType = 
@@ -1363,6 +1366,193 @@ export interface MemberDividendItem {
   voucherNo?: string;
   creditedAt?: string;
 }
+
+// ----------------------------------------------------
+// MODULE 5: FIXED DEPOSIT (FDR) & DOUBLE GROWTH SCHEME
+// ----------------------------------------------------
+export type FDRProfitPayoutFrequency = 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'AT_MATURITY';
+export type FDRStatus = 'ACTIVE' | 'MATURED' | 'CLOSED_PREMATURE' | 'SETTLED';
+
+export interface FDRTenureScheme {
+  id: string;
+  tenantId: string;
+  nameBn: string;
+  nameEn: string;
+  tenureMonths: number;
+  annualProfitRatePercent: number;
+  profitPayoutFrequency: FDRProfitPayoutFrequency;
+  isDoubleScheme: boolean;
+  minDepositAmount: number;
+  maxDepositAmount: number;
+  prematureProfitRatePercent: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  descriptionBn: string;
+}
+
+export interface FixedDepositAccount {
+  id: string;
+  tenantId: string;
+  fdrNumber: string;
+  certificateNo: string;
+  memberId: string;
+  memberCode: string;
+  memberNameBn: string;
+  memberPhone: string;
+  nomineeNameBn: string;
+  nomineeRelation: string;
+  nomineeNidOrPhone: string;
+  schemeId: string;
+  schemeNameBn: string;
+  tenureMonths: number;
+  principalAmount: number;
+  annualProfitRatePercent: number;
+  profitPayoutFrequency: FDRProfitPayoutFrequency;
+  isDoubleScheme: boolean;
+  totalExpectedProfit: number;
+  maturityAmount: number;
+  openingDate: string;
+  maturityDate: string;
+  paymentMethod: PaymentMethod;
+  autoRenewal: boolean;
+  status: FDRStatus;
+  totalProfitPaid: number;
+  lastProfitPaymentDate?: string;
+  nextProfitPaymentDate?: string;
+  closedDate?: string;
+  closedAmount?: number;
+  voucherId?: string;
+  voucherNo?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FDRProfitPayment {
+  id: string;
+  tenantId: string;
+  fdrId: string;
+  fdrNumber: string;
+  memberId: string;
+  memberNameBn: string;
+  paymentDate: string;
+  periodLabel: string;
+  profitAmount: number;
+  taxOrFee: number;
+  netPaidAmount: number;
+  payoutDestination: 'CREDIT_SAVINGS' | 'CASH_PAYOUT';
+  savingsTransactionId?: string;
+  voucherNo: string;
+  notes?: string;
+  createdAt: string;
+}
+
+// ----------------------------------------------------
+// MODULE 6: FIXED ASSET & INVENTORY STOCK REGISTER
+// ----------------------------------------------------
+export type FixedAssetCategory = 
+  | 'LAND_BUILDING' 
+  | 'FURNITURE_FIXTURE' 
+  | 'COMPUTER_IT' 
+  | 'OFFICE_APPLIANCES' 
+  | 'VEHICLE' 
+  | 'OTHER';
+
+export type AssetDepreciationMethod = 'STRAIGHT_LINE' | 'REDUCING_BALANCE';
+export type AssetStatus = 'ACTIVE' | 'UNDER_MAINTENANCE' | 'DISPOSED' | 'SCRAPPED';
+
+export interface FixedAsset {
+  id: string;
+  tenantId: string;
+  assetCode: string;
+  nameBn: string;
+  nameEn: string;
+  category: FixedAssetCategory;
+  purchaseDate: string;
+  purchasePrice: number;
+  salvageValue: number;
+  usefulLifeYears: number;
+  depreciationMethod: AssetDepreciationMethod;
+  annualDepreciationRatePercent: number;
+  accumulatedDepreciation: number;
+  currentBookValue: number;
+  lastDepreciationDate?: string;
+  location: string;
+  custodianOfficer: string;
+  serialNumber?: string;
+  vendorOrSupplier?: string;
+  warrantyExpiryDate?: string;
+  status: AssetStatus;
+  disposedDate?: string;
+  disposalAmount?: number;
+  disposalVoucherNo?: string;
+  voucherNo?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AssetDepreciationLog {
+  id: string;
+  tenantId: string;
+  assetId: string;
+  assetCode: string;
+  assetNameBn: string;
+  nameBn?: string;
+  financialYear: string;
+  depreciationDate: string;
+  openingBookValue: number;
+  depreciationAmount: number;
+  closingBookValue: number;
+  voucherNo: string;
+  calculatedBy: string;
+  createdAt: string;
+}
+
+export type InventoryItemCategory = 
+  | 'PASSBOOK' 
+  | 'LOAN_FORM' 
+  | 'VOUCHER_PAD' 
+  | 'STATIONERY' 
+  | 'IT_ACCESSORY';
+
+export interface InventoryItem {
+  id: string;
+  tenantId: string;
+  itemCode: string;
+  nameBn: string;
+  nameEn: string;
+  category: InventoryItemCategory;
+  unit: string;
+  currentStock: number;
+  reorderLevel: number;
+  unitCost: number;
+  totalStockValue: number;
+  location: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type InventoryMovementType = 'STOCK_IN' | 'STOCK_OUT' | 'ADJUSTMENT';
+
+export interface InventoryMovement {
+  id: string;
+  tenantId: string;
+  itemId: string;
+  itemCode: string;
+  itemNameBn: string;
+  type: InventoryMovementType;
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
+  date: string;
+  recipientOrSource: string;
+  referenceNo: string;
+  purpose: string;
+  performedBy: string;
+  createdAt: string;
+}
+
 
 
 

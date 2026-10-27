@@ -34,6 +34,8 @@ import { OnlinePaymentCheckoutModal } from '@/components/payment/OnlinePaymentCh
 import { PaymentGatewaySettingsModal } from '@/components/payment/PaymentGatewaySettingsModal';
 import { ProjectsPortfolioView } from '@/components/projects/ProjectsPortfolioView';
 import { ShareCapitalDividendView } from '@/components/shares/ShareCapitalDividendView';
+import FixedDepositView from '@/components/fdr/FixedDepositView';
+import FixedAssetInventoryView from '@/components/assets/FixedAssetInventoryView';
 import { MobileMenuDrawer } from '@/components/layout/MobileMenuDrawer';
 
 import { useSamityStore } from '@/lib/store';
@@ -99,6 +101,8 @@ export default function Home() {
         return <ProjectsPortfolioView />;
       case 'shares-dividend':
         return <ShareCapitalDividendView />;
+      case 'fdr':
+        return <FixedDepositView />;
       case 'loans':
       case 'member-loans':
         return <LoansView onOpenCollectInstallment={handleOpenCollectLoan} />;
@@ -145,6 +149,8 @@ export default function Home() {
         {activeTab === 'field-collection' && <FieldCollectionDeskView />}
         {activeTab === 'projects' && <ProjectsPortfolioView />}
         {activeTab === 'shares-dividend' && <ShareCapitalDividendView />}
+        {activeTab === 'fdr' && <FixedDepositView />}
+        {activeTab === 'fixed-assets' && <FixedAssetInventoryView />}
         {activeTab === 'payment-gateways' && (
           <PaymentGatewaySettingsModal 
             isOpen={true} 

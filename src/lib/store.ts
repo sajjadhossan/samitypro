@@ -19,6 +19,9 @@ import {
   SamityProject, ProjectMemberInvestment, ProjectTransaction,
   ShareCapitalConfig, MemberShareRecord, DividendSession, MemberDividendItem,
   DividendDistributionBasis, DividendSessionStatus,
+  FDRTenureScheme, FixedDepositAccount, FDRProfitPayment, FDRProfitPayoutFrequency, FDRStatus,
+  FixedAssetCategory, AssetDepreciationMethod, AssetStatus, FixedAsset, AssetDepreciationLog,
+  InventoryItemCategory, InventoryItem, InventoryMovementType, InventoryMovement,
   APP_VERSION
 } from '@/types';
 import { 
@@ -36,7 +39,9 @@ import {
   INITIAL_PAYMENT_GATEWAY_CONFIG, INITIAL_ONLINE_PAYMENTS,
   INITIAL_FIELD_COLLECTIONS, INITIAL_FIELD_DAY_ENDS, INITIAL_THERMAL_PRINTER_CONFIG,
   INITIAL_PROJECTS, INITIAL_PROJECT_INVESTMENTS, INITIAL_PROJECT_TRANSACTIONS,
-  INITIAL_SHARE_CONFIG, INITIAL_MEMBER_SHARES, INITIAL_DIVIDEND_SESSIONS, INITIAL_DIVIDEND_ITEMS
+  INITIAL_SHARE_CONFIG, INITIAL_MEMBER_SHARES, INITIAL_DIVIDEND_SESSIONS, INITIAL_DIVIDEND_ITEMS,
+  INITIAL_FDR_SCHEMES, INITIAL_FDR_ACCOUNTS, INITIAL_FDR_PROFIT_PAYMENTS,
+  INITIAL_FIXED_ASSETS, INITIAL_ASSET_DEPRECIATIONS, INITIAL_INVENTORY_ITEMS, INITIAL_INVENTORY_MOVEMENTS
 } from './db';
 
 const STORAGE_KEYS = {
@@ -82,6 +87,13 @@ const STORAGE_KEYS = {
   MEMBER_SHARES: 'samitypro_member_shares',
   DIVIDEND_SESSIONS: 'samitypro_dividend_sessions',
   DIVIDEND_ITEMS: 'samitypro_dividend_items',
+  FDR_SCHEMES: 'samitypro_fdr_schemes',
+  FDR_ACCOUNTS: 'samitypro_fdr_accounts',
+  FDR_PAYMENTS: 'samitypro_fdr_payments',
+  FIXED_ASSETS: 'samitypro_fixed_assets',
+  ASSET_DEPRECIATIONS: 'samitypro_asset_depreciations',
+  INVENTORY_ITEMS: 'samitypro_inventory_items',
+  INVENTORY_MOVEMENTS: 'samitypro_inventory_movements',
   CURRENT_TENANT_ID: 'samitypro_active_tenant',
   CURRENT_USER_ID: 'samitypro_active_user',
   LANGUAGE: 'samitypro_language'
@@ -115,7 +127,9 @@ type StoreCollectionKey =
   | 'paymentGatewayConfig' | 'onlinePayments'
   | 'fieldCollections' | 'fieldDayEnds' | 'thermalPrinterConfig'
   | 'projects' | 'projectInvestments' | 'projectTransactions'
-  | 'shareConfig' | 'memberShares' | 'dividendSessions' | 'dividendItems';
+  | 'shareConfig' | 'memberShares' | 'dividendSessions' | 'dividendItems'
+  | 'fdrSchemes' | 'fdrAccounts' | 'fdrProfitPayments'
+  | 'fixedAssets' | 'assetDepreciations' | 'inventoryItems' | 'inventoryMovements';
 
 const STORE_STORAGE_MAPPINGS: [string, StoreCollectionKey][] = [
   [STORAGE_KEYS.TENANTS, 'tenants'],
@@ -159,6 +173,13 @@ const STORE_STORAGE_MAPPINGS: [string, StoreCollectionKey][] = [
   [STORAGE_KEYS.MEMBER_SHARES, 'memberShares'],
   [STORAGE_KEYS.DIVIDEND_SESSIONS, 'dividendSessions'],
   [STORAGE_KEYS.DIVIDEND_ITEMS, 'dividendItems'],
+  [STORAGE_KEYS.FDR_SCHEMES, 'fdrSchemes'],
+  [STORAGE_KEYS.FDR_ACCOUNTS, 'fdrAccounts'],
+  [STORAGE_KEYS.FDR_PAYMENTS, 'fdrProfitPayments'],
+  [STORAGE_KEYS.FIXED_ASSETS, 'fixedAssets'],
+  [STORAGE_KEYS.ASSET_DEPRECIATIONS, 'assetDepreciations'],
+  [STORAGE_KEYS.INVENTORY_ITEMS, 'inventoryItems'],
+  [STORAGE_KEYS.INVENTORY_MOVEMENTS, 'inventoryMovements'],
 ];
 
 // In-memory fallback / cache
@@ -205,6 +226,13 @@ class DataStore {
   memberShares: MemberShareRecord[] = INITIAL_MEMBER_SHARES;
   dividendSessions: DividendSession[] = INITIAL_DIVIDEND_SESSIONS;
   dividendItems: MemberDividendItem[] = INITIAL_DIVIDEND_ITEMS;
+  fdrSchemes: FDRTenureScheme[] = INITIAL_FDR_SCHEMES;
+  fdrAccounts: FixedDepositAccount[] = INITIAL_FDR_ACCOUNTS;
+  fdrProfitPayments: FDRProfitPayment[] = INITIAL_FDR_PROFIT_PAYMENTS;
+  fixedAssets: FixedAsset[] = INITIAL_FIXED_ASSETS;
+  assetDepreciations: AssetDepreciationLog[] = INITIAL_ASSET_DEPRECIATIONS;
+  inventoryItems: InventoryItem[] = INITIAL_INVENTORY_ITEMS;
+  inventoryMovements: InventoryMovement[] = INITIAL_INVENTORY_MOVEMENTS;
 
   currentTenantId: string = 'samity-ekota';
   currentUserId: string = 'user-rafiq';
@@ -4538,6 +4566,631 @@ class DataStore {
     this.save();
     return { session, items: generatedItems };
   }
+
+  // --------------------------------------------------------------------------
+  // MODULE 5: FIXED DEPOSIT (FDR) & DOUBLE GROWTH SCHEME METHODS
+  // --------------------------------------------------------------------------
+  createFDRScheme(scheme: Omit<FDRTenureScheme, 'id' | 'tenantId'>): FDRTenureScheme {
+    const newScheme: FDRTenureScheme = {
+      ...scheme,
+      id: `fdr-sch-${Date.now()}`,
+      tenantId: this.currentTenantId
+    };
+    this.fdrSchemes.push(newScheme);
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'CREATE',
+      entity: 'FDR',
+      entityId: newScheme.id,
+      descriptionBn: `নতুন মেয়াদী আমানত স্কিম তৈরি: ${newScheme.nameBn} (${newScheme.tenureMonths} মাস, ${newScheme.annualProfitRatePercent}%)`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+    this.save();
+    return newScheme;
+  }
+
+  updateFDRScheme(schemeId: string, updates: Partial<FDRTenureScheme>): FDRTenureScheme | null {
+    const scheme = this.fdrSchemes.find(s => s.id === schemeId);
+    if (!scheme) return null;
+    Object.assign(scheme, updates);
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'UPDATE',
+      entity: 'FDR',
+      entityId: schemeId,
+      descriptionBn: `মেয়াদী আমানত স্কিম হালনাগাদ: ${scheme.nameBn}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+    this.save();
+    return scheme;
+  }
+
+  openFDRAccount(params: {
+    memberId: string;
+    schemeId: string;
+    principalAmount: number;
+    nomineeNameBn: string;
+    nomineeRelation: string;
+    nomineeNidOrPhone: string;
+    paymentMethod: PaymentMethod;
+    autoRenewal: boolean;
+    notes?: string;
+  }): FixedDepositAccount {
+    const member = this.members.find(m => m.id === params.memberId);
+    const scheme = this.fdrSchemes.find(s => s.id === params.schemeId);
+    if (!member) throw new Error('সদস্য পাওয়া যায়নি');
+    if (!scheme) throw new Error('এফডিআর স্কিম পাওয়া যায়নি');
+
+    const today = new Date().toISOString().split('T')[0];
+    const openDateObj = new Date();
+    const matDateObj = new Date(openDateObj);
+    matDateObj.setMonth(matDateObj.getMonth() + scheme.tenureMonths);
+    const maturityDate = matDateObj.toISOString().split('T')[0];
+
+    const fdrCount = this.fdrAccounts.length + 1;
+    const fdrNumber = `FDR-${new Date().getFullYear()}-${String(fdrCount).padStart(3, '0')}`;
+    const certificateNo = `CERT-FDR-${Math.floor(10000 + Math.random() * 90000)}`;
+
+    let totalExpectedProfit = 0;
+    let maturityAmount = 0;
+    if (scheme.isDoubleScheme) {
+      totalExpectedProfit = params.principalAmount;
+      maturityAmount = params.principalAmount * 2;
+    } else {
+      totalExpectedProfit = Math.round((params.principalAmount * scheme.annualProfitRatePercent * (scheme.tenureMonths / 12)) / 100);
+      maturityAmount = params.principalAmount + totalExpectedProfit;
+    }
+
+    const voucher = this.createVoucher({
+      tenantId: this.currentTenantId,
+      type: 'CREDIT',
+      category: 'স্থায়ী আমানত (FDR) মূলধন প্রাপ্তি',
+      accountHeadCode: '2030',
+      accountHeadNameBn: 'স্থায়ী আমানত (FDR) দায় তহবিল',
+      debitAccount: params.paymentMethod === 'BANK' ? '১০২০: ব্যাংক চলতি হিসাব' : '১০১০: হাতে নগদ ক্যাশ',
+      creditAccount: '২০৩০: স্থায়ী আমানত (FDR) দায় তহবিল',
+      amount: params.principalAmount,
+      descriptionBn: `স্থায়ী আমানত (FDR) হিসাব খোলা: ${member.nameBn} (${member.memberCode}) | স্কিম: ${scheme.nameBn} | সনদ নং: ${certificateNo}`,
+      paidToOrReceivedFrom: member.nameBn,
+      paymentMethod: params.paymentMethod
+    });
+
+    const newFDR: FixedDepositAccount = {
+      id: `fdr-acc-${Date.now()}`,
+      tenantId: this.currentTenantId,
+      fdrNumber,
+      certificateNo,
+      memberId: member.id,
+      memberCode: member.memberCode,
+      memberNameBn: member.nameBn,
+      memberPhone: member.phone,
+      nomineeNameBn: params.nomineeNameBn,
+      nomineeRelation: params.nomineeRelation,
+      nomineeNidOrPhone: params.nomineeNidOrPhone,
+      schemeId: scheme.id,
+      schemeNameBn: scheme.nameBn,
+      tenureMonths: scheme.tenureMonths,
+      principalAmount: params.principalAmount,
+      annualProfitRatePercent: scheme.annualProfitRatePercent,
+      profitPayoutFrequency: scheme.profitPayoutFrequency,
+      isDoubleScheme: scheme.isDoubleScheme,
+      totalExpectedProfit,
+      maturityAmount,
+      openingDate: today,
+      maturityDate,
+      paymentMethod: params.paymentMethod,
+      autoRenewal: params.autoRenewal,
+      status: 'ACTIVE',
+      totalProfitPaid: 0,
+      voucherId: voucher.id,
+      voucherNo: voucher.voucherNo,
+      notes: params.notes,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    this.fdrAccounts.unshift(newFDR);
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'CREATE',
+      entity: 'FDR',
+      entityId: newFDR.id,
+      descriptionBn: `নতুন এফডিআর খোলা হয়েছে: ${fdrNumber} | গ্রাহক: ${member.nameBn} | মূল আমানত: ৳${params.principalAmount.toLocaleString()}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return newFDR;
+  }
+
+  disburseFDRProfit(fdrId: string, params: {
+    profitAmount: number;
+    periodLabel: string;
+    payoutDestination: 'CREDIT_SAVINGS' | 'CASH_PAYOUT';
+    notes?: string;
+  }): FDRProfitPayment {
+    const fdr = this.fdrAccounts.find(a => a.id === fdrId);
+    if (!fdr) throw new Error('এফডিআর হিসাব পাওয়া যায়নি');
+
+    const today = new Date().toISOString().split('T')[0];
+    const voucherNo = `VR-FDR-PAY-${Date.now().toString().slice(-4)}`;
+
+    let savingsTxId: string | undefined = undefined;
+    if (params.payoutDestination === 'CREDIT_SAVINGS') {
+      const genSavings = this.savingsAccounts.find(s => s.memberId === fdr.memberId && s.type === 'GENERAL_SAVINGS');
+      if (genSavings) {
+        const tx = this.recordSavingsDeposit({
+          tenantId: this.currentTenantId,
+          memberId: fdr.memberId,
+          accountId: genSavings.id,
+          amount: params.profitAmount,
+          paymentMethod: 'CASH',
+          notes: `এফডিআর মুনাফা ক্রেডিট (${fdr.fdrNumber} - ${params.periodLabel})`
+        });
+        savingsTxId = tx.id;
+      }
+    }
+
+    this.createVoucher({
+      tenantId: this.currentTenantId,
+      type: 'DEBIT',
+      category: 'স্থায়ী আমানত (FDR) মুনাফা প্রদান',
+      accountHeadCode: '4070',
+      accountHeadNameBn: 'স্থায়ী আমানত (FDR) মুনাফা প্রদান ব্যয়',
+      debitAccount: '৪০৭০: স্থায়ী আমানত (FDR) মুনাফা প্রদান ব্যয়',
+      creditAccount: params.payoutDestination === 'CREDIT_SAVINGS' ? '২০১০: সদস্যদের সাধারণ সঞ্চয় আমানত' : '১০১০: হাতে নগদ ক্যাশ',
+      amount: params.profitAmount,
+      descriptionBn: `এফডিআর মুনাফা প্রদান: ${fdr.memberNameBn} (${fdr.fdrNumber}) | সময়কাল: ${params.periodLabel} | মাধ্যম: ${params.payoutDestination === 'CREDIT_SAVINGS' ? 'সঞ্চয় হিসেবে জমা' : 'ক্যাশ উত্তোলন'}`,
+      paidToOrReceivedFrom: fdr.memberNameBn,
+      paymentMethod: params.payoutDestination === 'CREDIT_SAVINGS' ? 'BANK' : 'CASH'
+    });
+
+    const paymentRecord: FDRProfitPayment = {
+      id: `fdr-pay-${Date.now()}`,
+      tenantId: this.currentTenantId,
+      fdrId: fdr.id,
+      fdrNumber: fdr.fdrNumber,
+      memberId: fdr.memberId,
+      memberNameBn: fdr.memberNameBn,
+      paymentDate: today,
+      periodLabel: params.periodLabel,
+      profitAmount: params.profitAmount,
+      taxOrFee: 0,
+      netPaidAmount: params.profitAmount,
+      payoutDestination: params.payoutDestination,
+      savingsTransactionId: savingsTxId,
+      voucherNo,
+      notes: params.notes,
+      createdAt: new Date().toISOString()
+    };
+
+    fdr.totalProfitPaid += params.profitAmount;
+    fdr.lastProfitPaymentDate = today;
+    fdr.updatedAt = new Date().toISOString();
+
+    this.fdrProfitPayments.unshift(paymentRecord);
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'DISBURSE',
+      entity: 'FDR',
+      entityId: fdr.id,
+      descriptionBn: `এফডিআর মুনাফা প্রদান: ${fdr.fdrNumber} | গ্রাহক: ${fdr.memberNameBn} | পরিমাণ: ৳${params.profitAmount.toLocaleString()} (${params.periodLabel})`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return paymentRecord;
+  }
+
+  settleOrCloseFDR(fdrId: string, params: {
+    isPremature: boolean;
+    settlementAmount: number;
+    remarks?: string;
+    payoutDestination: 'CREDIT_SAVINGS' | 'CASH_PAYOUT';
+  }): FixedDepositAccount {
+    const fdr = this.fdrAccounts.find(a => a.id === fdrId);
+    if (!fdr) throw new Error('এফডিআর হিসাব পাওয়া যায়নি');
+
+    const today = new Date().toISOString().split('T')[0];
+
+    if (params.payoutDestination === 'CREDIT_SAVINGS') {
+      const genSavings = this.savingsAccounts.find(s => s.memberId === fdr.memberId && s.type === 'GENERAL_SAVINGS');
+      if (genSavings) {
+        this.recordSavingsDeposit({
+          tenantId: this.currentTenantId,
+          memberId: fdr.memberId,
+          accountId: genSavings.id,
+          amount: params.settlementAmount,
+          paymentMethod: 'CASH',
+          notes: `এফডিআর হিসাব ক্লোজার নিষ্পত্তি (${fdr.fdrNumber})`
+        });
+      }
+    }
+
+    this.createVoucher({
+      tenantId: this.currentTenantId,
+      type: 'DEBIT',
+      category: params.isPremature ? 'স্থায়ী আমানত (FDR) অকাল উত্তোলন ও মেয়াদপূর্ব সমাপ্তি' : 'স্থায়ী আমানত (FDR) পূর্ণ মেয়াদান্তে আসল ও লভ্যাংশ নিষ্পত্তি',
+      accountHeadCode: '2030',
+      accountHeadNameBn: 'স্থায়ী আমানত (FDR) দায় তহবিল',
+      debitAccount: '২০৩০: স্থায়ী আমানত (FDR) দায় তহবিল',
+      creditAccount: params.payoutDestination === 'CREDIT_SAVINGS' ? '২০১০: সদস্যদের সাধারণ সঞ্চয় আমানত' : '১০১০: হাতে নগদ ক্যাশ',
+      amount: params.settlementAmount,
+      descriptionBn: `এফডিআর সমাপ্তি: ${fdr.memberNameBn} (${fdr.fdrNumber}) | আসল: ৳${fdr.principalAmount.toLocaleString()} | মোট পরিশোধ: ৳${params.settlementAmount.toLocaleString()} ${params.isPremature ? '(মেয়াদপূর্ব ভাঙা)' : '(মেয়াদোত্তীর্ণ)'}`,
+      paidToOrReceivedFrom: fdr.memberNameBn,
+      paymentMethod: params.payoutDestination === 'CREDIT_SAVINGS' ? 'BANK' : 'CASH'
+    });
+
+    fdr.status = params.isPremature ? 'CLOSED_PREMATURE' : 'SETTLED';
+    fdr.closedDate = today;
+    fdr.closedAmount = params.settlementAmount;
+    fdr.updatedAt = new Date().toISOString();
+    if (params.remarks) {
+      fdr.notes = (fdr.notes ? fdr.notes + ' | ' : '') + params.remarks;
+    }
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'UPDATE',
+      entity: 'FDR',
+      entityId: fdr.id,
+      descriptionBn: `এফডিআর নিষ্পত্তি সম্পন্ন: ${fdr.fdrNumber} | স্ট্যাটাস: ${fdr.status} | পরিশোধিত অঙ্ক: ৳${params.settlementAmount.toLocaleString()}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return fdr;
+  }
+
+  // --------------------------------------------------------------------------
+  // MODULE 6: FIXED ASSET & INVENTORY STOCK REGISTER METHODS
+  // --------------------------------------------------------------------------
+  createFixedAsset(data: {
+    nameBn: string;
+    nameEn?: string;
+    category: FixedAssetCategory;
+    purchaseDate: string;
+    purchasePrice: number;
+    salvageValue: number;
+    usefulLifeYears: number;
+    depreciationMethod: AssetDepreciationMethod;
+    annualDepreciationRatePercent?: number;
+    location: string;
+    custodianOfficer: string;
+    serialNumber?: string;
+    vendorOrSupplier?: string;
+    warrantyExpiryDate?: string;
+    notes?: string;
+  }): FixedAsset {
+    const assetCode = `AST-${new Date().getFullYear()}-${String(this.fixedAssets.length + 1).padStart(3, '0')}`;
+    const rate = data.annualDepreciationRatePercent || Math.round((100 / (data.usefulLifeYears || 5)) * 10) / 10;
+
+    const voucher = this.createVoucher({
+      tenantId: this.currentTenantId,
+      type: 'DEBIT',
+      category: 'স্থাবর সম্পদ ও অফিস সরঞ্জাম ক্রয়',
+      accountHeadCode: '1040',
+      accountHeadNameBn: 'অফিস আসবাবপত্র ও কম্পিউটার সরঞ্জাম',
+      debitAccount: '১০৪০: অফিস আসবাবপত্র ও কম্পিউটার সরঞ্জাম',
+      creditAccount: '১০১০: হাতে নগদ ক্যাশ',
+      amount: data.purchasePrice,
+      descriptionBn: `স্থায়ী সম্পদ অন্তর্ভুক্তি: ${data.nameBn} (${assetCode}) | সরবরাহকারী: ${data.vendorOrSupplier || 'স্থানীয় বাজার'}`,
+      paidToOrReceivedFrom: data.vendorOrSupplier || 'সরবরাহকারী',
+      paymentMethod: 'CASH'
+    });
+
+    const newAsset: FixedAsset = {
+      id: `ast-${Date.now()}`,
+      tenantId: this.currentTenantId,
+      assetCode,
+      nameBn: data.nameBn,
+      nameEn: data.nameEn || '',
+      category: data.category,
+      purchaseDate: data.purchaseDate,
+      purchasePrice: data.purchasePrice,
+      salvageValue: data.salvageValue,
+      usefulLifeYears: data.usefulLifeYears,
+      depreciationMethod: data.depreciationMethod,
+      annualDepreciationRatePercent: rate,
+      accumulatedDepreciation: 0,
+      currentBookValue: data.purchasePrice,
+      location: data.location,
+      custodianOfficer: data.custodianOfficer,
+      serialNumber: data.serialNumber,
+      vendorOrSupplier: data.vendorOrSupplier,
+      warrantyExpiryDate: data.warrantyExpiryDate,
+      status: 'ACTIVE',
+      voucherNo: voucher.voucherNo,
+      notes: data.notes,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    this.fixedAssets.unshift(newAsset);
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'CREATE',
+      entity: 'FIXED_ASSET',
+      entityId: newAsset.id,
+      descriptionBn: `নতুন স্থায়ী সম্পদ নিবন্ধন: ${newAsset.nameBn} (${assetCode}) | মূল্য: ৳${data.purchasePrice.toLocaleString()}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return newAsset;
+  }
+
+  runAssetDepreciation(financialYear: string, selectedAssetIds?: string[]): {
+    totalDepreciation: number;
+    processedAssetsCount: number;
+    voucherNo: string;
+  } {
+    const today = new Date().toISOString().split('T')[0];
+    const eligibleAssets = this.fixedAssets.filter(a => 
+      a.tenantId === this.currentTenantId &&
+      a.status === 'ACTIVE' &&
+      a.currentBookValue > a.salvageValue &&
+      (!selectedAssetIds || selectedAssetIds.includes(a.id))
+    );
+
+    let totalDepreciation = 0;
+    const voucherNo = `VR-DEP-${Date.now().toString().slice(-4)}`;
+
+    eligibleAssets.forEach(asset => {
+      let annualDep = 0;
+      if (asset.depreciationMethod === 'STRAIGHT_LINE') {
+        const depreciableBase = Math.max(0, asset.purchasePrice - asset.salvageValue);
+        annualDep = Math.max(0, Math.round(depreciableBase / (asset.usefulLifeYears || 5)));
+      } else {
+        annualDep = Math.max(0, Math.round((asset.currentBookValue * (asset.annualDepreciationRatePercent || 10)) / 100));
+      }
+
+      const maxAllowedDep = Math.max(0, asset.currentBookValue - asset.salvageValue);
+      const finalDep = Math.min(annualDep, maxAllowedDep);
+
+      if (finalDep > 0) {
+        const openingBookValue = asset.currentBookValue;
+        asset.accumulatedDepreciation += finalDep;
+        asset.currentBookValue -= finalDep;
+        asset.lastDepreciationDate = today;
+        asset.updatedAt = new Date().toISOString();
+        totalDepreciation += finalDep;
+
+        const depLog: AssetDepreciationLog = {
+          id: `ast-dep-${Date.now()}-${asset.id}`,
+          tenantId: this.currentTenantId,
+          assetId: asset.id,
+          assetCode: asset.assetCode,
+          assetNameBn: asset.nameBn,
+          nameBn: asset.nameBn,
+          financialYear,
+          depreciationDate: today,
+          openingBookValue,
+          depreciationAmount: finalDep,
+          closingBookValue: asset.currentBookValue,
+          voucherNo,
+          calculatedBy: this.users.find(u => u.id === this.currentUserId)?.nameBn || 'হিসাবরক্ষক',
+          createdAt: new Date().toISOString()
+        };
+        this.assetDepreciations.unshift(depLog);
+      }
+    });
+
+    if (totalDepreciation > 0) {
+      this.createVoucher({
+        tenantId: this.currentTenantId,
+        type: 'JOURNAL',
+        category: 'বার্ষিক স্থাবর সম্পদ অবচয় ধার্যকরণ',
+        accountHeadCode: '4080',
+        accountHeadNameBn: 'স্থাবর ও অফিস সম্পদের বার্ষিক অবচয় ব্যয়',
+        debitAccount: '৪০৮০: স্থাবর ও অফিস সম্পদের বার্ষিক অবচয় ব্যয়',
+        creditAccount: '১০৫০: পুঞ্জীভূত অবচয় সঞ্চিতি তহবিল',
+        amount: totalDepreciation,
+        descriptionBn: `অর্থবছর ${financialYear}-এর স্থায়ী সম্পদের বার্ষিক অবচয় কার্যকর করা হয়েছে (${eligibleAssets.length}টি সম্পদ)`,
+        paidToOrReceivedFrom: 'অভ্যন্তরীণ হিসাব সামঞ্জস্য',
+        paymentMethod: 'CASH'
+      });
+
+      this.addAuditLog({
+        tenantId: this.currentTenantId,
+        action: 'UPDATE',
+        entity: 'FIXED_ASSET',
+        entityId: voucherNo,
+        descriptionBn: `বার্ষিক অবচয় গণনা ও জাবেদা ভাউচার কার্যকর: অর্থবছর ${financialYear} | মোট অবচয়: ৳${totalDepreciation.toLocaleString()}`,
+        performedBy: this.currentUserId,
+        performedByRole: 'ADMIN'
+      });
+    }
+
+    this.save();
+    return {
+      totalDepreciation,
+      processedAssetsCount: eligibleAssets.length,
+      voucherNo
+    };
+  }
+
+  disposeFixedAsset(assetId: string, params: {
+    disposalDate: string;
+    disposalAmount: number;
+    reason: string;
+    disposalType: 'SOLD' | 'SCRAPPED';
+    buyerName?: string;
+  }): FixedAsset {
+    const asset = this.fixedAssets.find(a => a.id === assetId);
+    if (!asset) throw new Error('সম্পদ পাওয়া যায়নি');
+
+    const voucherNo = `VR-AST-DISP-${Date.now().toString().slice(-4)}`;
+    const gainOrLoss = params.disposalAmount - asset.currentBookValue;
+
+    if (params.disposalAmount > 0) {
+      this.createVoucher({
+        tenantId: this.currentTenantId,
+        type: 'CREDIT',
+        category: 'স্থাবর সম্পদ বিক্রয় বা নিষ্পত্তি প্রাপ্তি',
+        accountHeadCode: '1040',
+        accountHeadNameBn: 'অফিস আসবাবপত্র ও কম্পিউটার সরঞ্জাম',
+        debitAccount: '১০১০: হাতে নগদ ক্যাশ',
+        creditAccount: '১০৪০: অফিস আসবাবপত্র ও কম্পিউটার সরঞ্জাম',
+        amount: params.disposalAmount,
+        descriptionBn: `সম্পদ নিষ্পত্তি বিক্রয়: ${asset.nameBn} (${asset.assetCode}) | ক্রেতা: ${params.buyerName || 'সাধারণ ক্রেতা'} | পুস্তক মূল্য: ৳${asset.currentBookValue.toLocaleString()} | লাভ/ক্ষতি: ৳${gainOrLoss.toLocaleString()}`,
+        paidToOrReceivedFrom: params.buyerName || 'ক্রেতা',
+        paymentMethod: 'CASH'
+      });
+    }
+
+    asset.status = params.disposalType === 'SOLD' ? 'DISPOSED' : 'SCRAPPED';
+    asset.disposedDate = params.disposalDate;
+    asset.disposalAmount = params.disposalAmount;
+    asset.disposalVoucherNo = voucherNo;
+    asset.notes = (asset.notes ? asset.notes + ' | ' : '') + `নিষ্পত্তি কারণ: ${params.reason}`;
+    asset.updatedAt = new Date().toISOString();
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'DELETE',
+      entity: 'FIXED_ASSET',
+      entityId: asset.id,
+      descriptionBn: `স্থায়ী সম্পদ নিষ্পত্তি সম্পন্ন: ${asset.nameBn} (${asset.assetCode}) | প্রকার: ${params.disposalType} | বিক্রয় মূল্য: ৳${params.disposalAmount.toLocaleString()}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return asset;
+  }
+
+  createInventoryItem(data: {
+    nameBn: string;
+    nameEn?: string;
+    category: InventoryItemCategory;
+    unit: string;
+    currentStock: number;
+    reorderLevel: number;
+    unitCost: number;
+    location: string;
+    notes?: string;
+  }): InventoryItem {
+    const itemCode = `INV-${new Date().getFullYear()}-${String(this.inventoryItems.length + 1).padStart(2, '0')}`;
+    const newItem: InventoryItem = {
+      id: `inv-item-${Date.now()}`,
+      tenantId: this.currentTenantId,
+      itemCode,
+      nameBn: data.nameBn,
+      nameEn: data.nameEn || '',
+      category: data.category,
+      unit: data.unit,
+      currentStock: data.currentStock,
+      reorderLevel: data.reorderLevel,
+      unitCost: data.unitCost,
+      totalStockValue: data.currentStock * data.unitCost,
+      location: data.location,
+      notes: data.notes,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    this.inventoryItems.unshift(newItem);
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'CREATE',
+      entity: 'INVENTORY',
+      entityId: newItem.id,
+      descriptionBn: `নতুন ইনভেন্টরি পণ্য নথিভুক্ত: ${newItem.nameBn} (${itemCode}) | প্রারম্ভিক স্টক: ${data.currentStock} ${data.unit}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return newItem;
+  }
+
+  recordStockMovement(params: {
+    itemId: string;
+    type: InventoryMovementType;
+    quantity: number;
+    unitCost?: number;
+    date: string;
+    recipientOrSource: string;
+    referenceNo: string;
+    purpose: string;
+    performedBy: string;
+  }): InventoryMovement {
+    const item = this.inventoryItems.find(i => i.id === params.itemId);
+    if (!item) throw new Error('ইনভেন্টরি পণ্য পাওয়া যায়নি');
+
+    const effectiveUnitCost = params.unitCost !== undefined ? params.unitCost : item.unitCost;
+    const totalCost = params.quantity * effectiveUnitCost;
+
+    if (params.type === 'STOCK_IN') {
+      item.currentStock += params.quantity;
+      if (params.unitCost) item.unitCost = params.unitCost;
+      item.totalStockValue = item.currentStock * item.unitCost;
+
+      this.createVoucher({
+        tenantId: this.currentTenantId,
+        type: 'DEBIT',
+        category: 'প্রিন্টিং ও অফিস স্টেশনারি ইনভেন্টরি ক্রয়',
+        accountHeadCode: '4040',
+        accountHeadNameBn: 'প্রিন্টিং, স্টেশনারি ও পাসবুক প্রকাশনা',
+        debitAccount: '৪০৪০: প্রিন্টিং, স্টেশনারি ও পাসবুক প্রকাশনা',
+        creditAccount: '১০১০: হাতে নগদ ক্যাশ',
+        amount: totalCost,
+        descriptionBn: `ইনভেন্টরি স্টক গ্রহণ: ${item.nameBn} (${params.quantity} ${item.unit}) | চালান/বিল নং: ${params.referenceNo}`,
+        paidToOrReceivedFrom: params.recipientOrSource,
+        paymentMethod: 'CASH'
+      });
+    } else if (params.type === 'STOCK_OUT') {
+      if (item.currentStock < params.quantity) {
+        throw new Error(`অপর্যাপ্ত স্টক! বর্তমান স্টক মাত্র ${item.currentStock} ${item.unit}`);
+      }
+      item.currentStock -= params.quantity;
+      item.totalStockValue = item.currentStock * item.unitCost;
+    } else if (params.type === 'ADJUSTMENT') {
+      item.currentStock = params.quantity;
+      item.totalStockValue = item.currentStock * item.unitCost;
+    }
+
+    item.updatedAt = new Date().toISOString();
+
+    const movement: InventoryMovement = {
+      id: `inv-mov-${Date.now()}`,
+      tenantId: this.currentTenantId,
+      itemId: item.id,
+      itemCode: item.itemCode,
+      itemNameBn: item.nameBn,
+      type: params.type,
+      quantity: params.quantity,
+      unitCost: effectiveUnitCost,
+      totalCost,
+      date: params.date,
+      recipientOrSource: params.recipientOrSource,
+      referenceNo: params.referenceNo,
+      purpose: params.purpose,
+      performedBy: params.performedBy,
+      createdAt: new Date().toISOString()
+    };
+
+    this.inventoryMovements.unshift(movement);
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: params.type === 'STOCK_IN' ? 'CREATE' : 'UPDATE',
+      entity: 'INVENTORY',
+      entityId: movement.id,
+      descriptionBn: `স্টক মুভমেন্ট (${params.type}): ${item.nameBn} | পরিমাণ: ${params.quantity} ${item.unit} | অবশিষ্ট স্টক: ${item.currentStock} ${item.unit}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return movement;
+  }
 }
 
 export const store = new DataStore();
@@ -4707,5 +5360,26 @@ export function useSamityStore() {
     issueSharesToMember: (params: Parameters<typeof store.issueSharesToMember>[0]) => store.issueSharesToMember(params),
     calculateDividendPreview: (params: Parameters<typeof store.calculateDividendPreview>[0]) => store.calculateDividendPreview(params),
     createAndDisburseDividendSession: (params: Parameters<typeof store.createAndDisburseDividendSession>[0]) => store.createAndDisburseDividendSession(params),
+
+    // Module 5: Fixed Deposit (FDR) & Double Growth Scheme
+    fdrSchemes: store.fdrSchemes.filter(s => s.tenantId === activeTenant?.id),
+    fdrAccounts: store.fdrAccounts.filter(a => a.tenantId === activeTenant?.id),
+    fdrProfitPayments: store.fdrProfitPayments.filter(p => p.tenantId === activeTenant?.id),
+    createFDRScheme: (scheme: Parameters<typeof store.createFDRScheme>[0]) => store.createFDRScheme(scheme),
+    updateFDRScheme: (schemeId: string, updates: Parameters<typeof store.updateFDRScheme>[1]) => store.updateFDRScheme(schemeId, updates),
+    openFDRAccount: (params: Parameters<typeof store.openFDRAccount>[0]) => store.openFDRAccount(params),
+    disburseFDRProfit: (fdrId: string, params: Parameters<typeof store.disburseFDRProfit>[1]) => store.disburseFDRProfit(fdrId, params),
+    settleOrCloseFDR: (fdrId: string, params: Parameters<typeof store.settleOrCloseFDR>[1]) => store.settleOrCloseFDR(fdrId, params),
+
+    // Module 6: Fixed Asset & Inventory Stock Register
+    fixedAssets: store.fixedAssets.filter(a => a.tenantId === activeTenant?.id),
+    assetDepreciations: store.assetDepreciations.filter(d => d.tenantId === activeTenant?.id),
+    inventoryItems: store.inventoryItems.filter(i => i.tenantId === activeTenant?.id),
+    inventoryMovements: store.inventoryMovements.filter(m => m.tenantId === activeTenant?.id),
+    createFixedAsset: (data: Parameters<typeof store.createFixedAsset>[0]) => store.createFixedAsset(data),
+    runAssetDepreciation: (financialYear: string, selectedAssetIds?: string[]) => store.runAssetDepreciation(financialYear, selectedAssetIds),
+    disposeFixedAsset: (assetId: string, params: Parameters<typeof store.disposeFixedAsset>[1]) => store.disposeFixedAsset(assetId, params),
+    createInventoryItem: (data: Parameters<typeof store.createInventoryItem>[0]) => store.createInventoryItem(data),
+    recordStockMovement: (params: Parameters<typeof store.recordStockMovement>[0]) => store.recordStockMovement(params),
   };
 }

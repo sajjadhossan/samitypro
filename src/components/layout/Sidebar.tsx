@@ -7,7 +7,7 @@ import {
   CreditCard, MessageSquare, BookOpen, Bell,
   BadgePercent, Building2, FolderLock, Sliders,
   ScrollText, ShieldCheck, History, Database, Zap, Smartphone,
-  Briefcase, Award
+  Briefcase, Award, Percent, Layers
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations } from '@/lib/i18n';
@@ -39,6 +39,8 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'field-collection', labelBn: 'মাঠ কালেকশন ও POS রসিদ', labelEn: 'Field Collection & POS', icon: Smartphone },
     { id: 'projects', labelBn: 'প্রকল্প ও যৌথ বিনিয়োগ', labelEn: 'Project & Portfolio', icon: Briefcase },
     { id: 'shares-dividend', labelBn: 'শেয়ার মূলধন ও লভ্যাংশ', labelEn: 'Shares & Dividend', icon: Award },
+    { id: 'fdr', labelBn: 'এফডিআর ও দ্বিগুণ বৃদ্ধি (মডিউল ৫)', labelEn: 'FDR & Term Deposits (Mod 5)', icon: Percent },
+    { id: 'fixed-assets', labelBn: 'স্থাবর সম্পদ ও ইনভেন্টরি (মডিউল ৬)', labelEn: 'Fixed Assets & Inventory (Mod 6)', icon: Layers },
     { id: 'samity-setup', labelBn: 'সমিতি সেটআপ (মডিউল ১)', labelEn: 'Samity Setup (Mod 1)', icon: Building2 },
     { id: 'members', labelBn: 'সদস্য ব্যবস্থাপনা (মডিউল ২)', labelEn: 'Members & KYC (Mod 2)', icon: Users },
     { id: 'subscriptions-due', labelBn: 'চাঁদা ও বকেয়া পলিসি (মডিউল ৩)', labelEn: 'Fees & Policy (Mod 3)', icon: BadgePercent },
@@ -50,7 +52,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'communication-hub', labelBn: 'মেসেজিং ও গেটওয়ে হাব', labelEn: 'Communication Hub', icon: Zap },
     { id: 'doc-generator', labelBn: 'প্রত্যয়ন ও চুক্তিপত্র', labelEn: 'Doc Generator', icon: ScrollText },
     { id: 'accounts', labelBn: 'হিসাব ও ভাউচার (মডিউল ৬)', labelEn: 'Accounts & Vouchers (Mod 6)', icon: ReceiptText },
-    { id: 'notices', labelBn: 'ডিজিটাল নোটিশ বোর্ড', labelEn: 'Notice Board', icon: Bell },
+    { id: 'notices', labelBn: 'ডিজিタル নোটিশ বোর্ড', labelEn: 'Notice Board', icon: Bell },
     { id: 'meetings', labelBn: 'সভা ও রেজোলিউশন (মডিউল ৭)', labelEn: 'Meetings & Minutes (Mod 7)', icon: CalendarCheck },
     { id: 'documents', labelBn: 'নথি ও দলিল ভল্ট', labelEn: 'Documents Vault', icon: FolderLock },
     { id: 'elections', labelBn: 'নির্বাচন ও ভোট (মডিউল ৮)', labelEn: 'Elections & Voting (Mod 8)', icon: Vote },
@@ -65,6 +67,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const memberNav = [
     { id: 'member-passbook', labelBn: 'আমার ডিজিটাল পাসবই (মডিউল ১০)', labelEn: 'My Passbook (Mod 10)', icon: BookOpen },
     { id: 'online-payment', labelBn: 'অনলাইন পেমেন্ট (bKash/নগদ)', labelEn: 'Pay Online (bKash/Nagad)', icon: CreditCard },
+    { id: 'fdr', labelBn: 'আমার স্থায়ী আমানত (FDR)', labelEn: 'My Fixed Deposits', icon: Percent },
     { id: 'projects', labelBn: 'আমার প্রকল্প বিনিয়োগ', labelEn: 'My Project Shares', icon: Briefcase },
     { id: 'shares-dividend', labelBn: 'আমার শেয়ার ও লভ্যাংশ', labelEn: 'My Shares & Dividend', icon: Award },
     { id: 'subscriptions-due', labelBn: 'আমার চাঁদা ও রসিদ', labelEn: 'My Fees & Receipts', icon: BadgePercent },
