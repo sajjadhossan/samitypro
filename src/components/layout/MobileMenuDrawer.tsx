@@ -6,7 +6,8 @@ import {
   PiggyBank, HandCoins, ReceiptText, ShieldCheck, Zap, 
   ScrollText, Bell, FolderLock, CalendarCheck, Vote, 
   FileBarChart, History, Database, Sliders, Smartphone, 
-  Globe, ArrowRightLeft, Check, AlertTriangle, BookOpen
+  Globe, ArrowRightLeft, Check, AlertTriangle, BookOpen,
+  Briefcase, Award
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { UserRole, APP_VERSION } from '@/types';
@@ -132,6 +133,36 @@ export function MobileMenuDrawer({
                     <span>ড্যাশবোর্ড (Dashboard)</span>
                   </div>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">লাইভ</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('projects')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'projects'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Briefcase className="w-4 h-4 text-emerald-400" />
+                    <span>প্রকল্প ও যৌথ বিনিয়োগ (Projects)</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">মডিউল ৩</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavigate('shares-dividend')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                    activeTab === 'shares-dividend'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                      : 'text-slate-300 hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Award className="w-4 h-4 text-teal-400" />
+                    <span>শেয়ার মূলধন ও লভ্যাংশ (Shares & Dividend)</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-300 font-semibold">মডিউল ৪</span>
                 </button>
 
                 <button

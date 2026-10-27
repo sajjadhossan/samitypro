@@ -906,8 +906,32 @@ export interface BulkDepositItem {
   category: string;
 }
 
-export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'EXPORT' | 'IMPORT' | 'RESTORE' | 'LOGIN';
-export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'SETTINGS' | 'DOCUMENT' | 'BACKUP' | 'TENANT' | 'SUBSCRIPTION' | 'SAVINGS_ACCOUNT' | 'MEETING' | 'NOTICE' | 'ELECTION' | 'REPORT' | 'PAYMENT' | 'FIELD_COLLECTION' | 'FIELD_DAY_END' | 'OTHER';
+export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'EXPORT' | 'IMPORT' | 'RESTORE' | 'LOGIN' | 'DISBURSE';
+export type AuditEntity = 
+  | 'MEMBER' 
+  | 'DEPOSIT' 
+  | 'LOAN' 
+  | 'EXPENSE' 
+  | 'RECEIPT' 
+  | 'SETTING' 
+  | 'SETTINGS' 
+  | 'DOCUMENT' 
+  | 'BACKUP' 
+  | 'TENANT' 
+  | 'SUBSCRIPTION' 
+  | 'SAVINGS_ACCOUNT' 
+  | 'MEETING' 
+  | 'NOTICE' 
+  | 'ELECTION' 
+  | 'REPORT' 
+  | 'PAYMENT' 
+  | 'FIELD_COLLECTION' 
+  | 'FIELD_DAY_END' 
+  | 'PROJECT' 
+  | 'PROJECT_TRANSACTION' 
+  | 'SHARE_CAPITAL' 
+  | 'DIVIDEND' 
+  | 'OTHER';
 
 export type ReportType = 
   | 'COLLECTION_SHEET' 
@@ -1174,5 +1198,171 @@ export interface ThermalPrinterConfig {
   autoCut: boolean;
   bluetoothDeviceName?: string;
 }
+
+// ----------------------------------------------------
+// MODULE 3: PROJECT & JOINT INVESTMENT PORTFOLIO
+// ----------------------------------------------------
+export type ProjectStatus = 'PLANNING' | 'ACTIVE' | 'HARVESTING' | 'COMPLETED' | 'CANCELLED';
+
+export type ProjectCategory = 
+  | 'AGRO'           // সমন্বিত কৃষি ও শস্য
+  | 'FISHERIES'      // মৎস্য খামার ও পোনা উৎপাদন
+  | 'LIVESTOCK'      // ডেইরি, গবাদিপশু ও পোল্ট্রি
+  | 'REAL_ESTATE'    // আবাসন ও জমি ক্রয়-বিক্রয়
+  | 'COMMERCIAL'     // পাইকারি ট্রেডিং ও ব্যবসা
+  | 'TRANSPORT'      // পরিবহন ও লজিস্টিকস
+  | 'OTHER';         // অন্যান্য সমবায় প্রকল্প
+
+export interface SamityProject {
+  id: string;
+  tenantId: string;
+  code: string; // e.g. PRJ-2026-01
+  nameBn: string;
+  nameEn: string;
+  category: ProjectCategory;
+  location: string;
+  estimatedBudget: number;
+  totalCapitalInvested: number;
+  totalIncome: number;
+  totalExpense: number;
+  netProfitOrLoss: number;
+  targetRoiPercent: number; // e.g. 20%
+  actualRoiPercent: number;
+  startDate: string;
+  expectedEndDate: string;
+  actualEndDate?: string;
+  managerName: string;
+  managerPhone: string;
+  status: ProjectStatus;
+  descriptionBn: string;
+  totalShareUnits: number;
+  unitPrice: number;
+  distributedProfit: number;
+  isSynced: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectMemberInvestment {
+  id: string;
+  tenantId: string;
+  projectId: string;
+  projectNameBn: string;
+  memberId: string;
+  memberCode: string;
+  memberNameBn: string;
+  memberPhone: string;
+  unitsCount: number;
+  unitPrice: number;
+  totalAmount: number;
+  paymentMethod: PaymentMethod;
+  investmentDate: string;
+  certificateNo: string;
+  profitEarned: number;
+  status: 'ACTIVE' | 'REFUNDED' | 'SETTLED';
+  notes?: string;
+  voucherId?: string;
+  createdAt: string;
+}
+
+export interface ProjectTransaction {
+  id: string;
+  tenantId: string;
+  projectId: string;
+  type: 'INCOME' | 'EXPENSE';
+  category: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  transactionDate: string;
+  voucherNo: string;
+  descriptionBn: string;
+  receivedFromOrPaidTo: string;
+  recordedBy: string;
+  createdAt: string;
+}
+
+// ----------------------------------------------------
+// MODULE 4: SHARE CAPITAL & DIVIDEND DISTRIBUTION ENGINE
+// ----------------------------------------------------
+export interface ShareCapitalConfig {
+  tenantId: string;
+  faceValue: number;               // প্রতি শেয়ারের মূল্যমান (e.g. ৳১,০০০)
+  authorizedSharesCount: number;   // মোট অনুমোদিত শেয়ার সংখ্যা (e.g. ১০,০০০)
+  minSharesPerMember: number;      // সর্বনিম্ন শেয়ার সীমা (e.g. ১)
+  maxSharesPerMember: number;      // সর্বোচ্চ শেয়ার সীমা (e.g. ১,০০০)
+  compulsoryReservePercent: number;// সংবিধিবদ্ধ সাধারণ সঞ্চিতি তহবিল % (e.g. 15%)
+  developmentFundPercent: number;  // সমবায় উন্নয়ন তহবিল % (e.g. 3%)
+}
+
+export interface MemberShareRecord {
+  id: string;
+  tenantId: string;
+  memberId: string;
+  memberCode: string;
+  memberNameBn: string;
+  memberPhone: string;
+  numberOfShares: number;
+  faceValue: number;
+  totalShareCapital: number;
+  certificateNo: string;
+  shareNumbersRange: string; // e.g. "0001 - 0050"
+  issueDate: string;
+  paymentMethod: PaymentMethod;
+  status: 'ACTIVE' | 'TRANSFERRED' | 'SURRENDERED';
+  voucherId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DividendDistributionBasis = 'SHARE_RATIO' | 'SAVINGS_RATIO' | 'HYBRID_50_50';
+export type DividendSessionStatus = 'CALCULATED' | 'DISBURSED' | 'CANCELLED';
+
+export interface DividendSession {
+  id: string;
+  tenantId: string;
+  financialYear: string;           // e.g. '২০২৫-২০২৬'
+  totalNetProfit: number;          // মোট ঘোষিত নিট মুনাফা (e.g. ৳৫,০০,০০০)
+  reserveFundPercent: number;      // e.g. 15%
+  reserveFundAmount: number;       // e.g. ৳৭৫,০০০
+  developmentFundPercent: number;  // e.g. 3%
+  developmentFundAmount: number;   // e.g. ৳১৫,০০০
+  distributableProfit: number;     // বণ্টনযোগ্য নিট মুনাফা (e.g. ৳৪,১০,০০০)
+  distributionBasis: DividendDistributionBasis;
+  totalSharesEligible: number;
+  totalSavingsEligible: number;
+  dividendRatePerShare?: number;
+  totalMembersBenefited: number;
+  status: DividendSessionStatus;
+  calculationDate: string;
+  disbursedDate?: string;
+  disbursedBy?: string;
+  disbursementMethod: 'CREDIT_TO_SAVINGS' | 'CASH_VOUCHER';
+  voucherId?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface MemberDividendItem {
+  id: string;
+  tenantId: string;
+  sessionId: string;
+  memberId: string;
+  memberCode: string;
+  memberNameBn: string;
+  memberPhone: string;
+  shareCount: number;
+  shareCapital: number;
+  savingsBalance: number;
+  dividendFromShare: number;
+  dividendFromSavings: number;
+  grossDividend: number;
+  taxOrDeduction: number;
+  netDividendPayable: number;
+  disbursementStatus: 'PENDING' | 'CREDITED_TO_SAVINGS' | 'PAID_CASH';
+  savingsTransactionId?: string;
+  voucherNo?: string;
+  creditedAt?: string;
+}
+
 
 

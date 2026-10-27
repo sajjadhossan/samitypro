@@ -16,6 +16,9 @@ import {
   AccountHead, GeneralLedgerEntry, TrialBalanceItem,
   PaymentGatewayProvider, PaymentPurpose, OnlinePaymentTransaction, PaymentGatewayConfig,
   FieldCollectorDailyCollection, FieldDayEndSummary, ThermalPrinterConfig,
+  SamityProject, ProjectMemberInvestment, ProjectTransaction,
+  ShareCapitalConfig, MemberShareRecord, DividendSession, MemberDividendItem,
+  DividendDistributionBasis, DividendSessionStatus,
   APP_VERSION
 } from '@/types';
 import { 
@@ -31,7 +34,9 @@ import {
   INITIAL_SUBSCRIPTION_POLICY, INITIAL_LATE_FEE_WAIVERS, INITIAL_SAVINGS_POLICY,
   INITIAL_LOAN_POLICY, INITIAL_CHART_OF_ACCOUNTS,
   INITIAL_PAYMENT_GATEWAY_CONFIG, INITIAL_ONLINE_PAYMENTS,
-  INITIAL_FIELD_COLLECTIONS, INITIAL_FIELD_DAY_ENDS, INITIAL_THERMAL_PRINTER_CONFIG
+  INITIAL_FIELD_COLLECTIONS, INITIAL_FIELD_DAY_ENDS, INITIAL_THERMAL_PRINTER_CONFIG,
+  INITIAL_PROJECTS, INITIAL_PROJECT_INVESTMENTS, INITIAL_PROJECT_TRANSACTIONS,
+  INITIAL_SHARE_CONFIG, INITIAL_MEMBER_SHARES, INITIAL_DIVIDEND_SESSIONS, INITIAL_DIVIDEND_ITEMS
 } from './db';
 
 const STORAGE_KEYS = {
@@ -70,6 +75,13 @@ const STORAGE_KEYS = {
   FIELD_COLLECTIONS: 'samitypro_field_collections',
   FIELD_DAY_ENDS: 'samitypro_field_day_ends',
   THERMAL_CONFIG: 'samitypro_thermal_cfg',
+  PROJECTS: 'samitypro_projects',
+  PROJECT_INVESTMENTS: 'samitypro_project_investments',
+  PROJECT_TRANSACTIONS: 'samitypro_project_transactions',
+  SHARE_CONFIG: 'samitypro_share_config',
+  MEMBER_SHARES: 'samitypro_member_shares',
+  DIVIDEND_SESSIONS: 'samitypro_dividend_sessions',
+  DIVIDEND_ITEMS: 'samitypro_dividend_items',
   CURRENT_TENANT_ID: 'samitypro_active_tenant',
   CURRENT_USER_ID: 'samitypro_active_user',
   LANGUAGE: 'samitypro_language'
@@ -101,7 +113,9 @@ type StoreCollectionKey =
   | 'gatewayConfig' | 'schedulerConfig' | 'offlineQueue'
   | 'subscriptionPolicies' | 'lateFeeWaivers'
   | 'paymentGatewayConfig' | 'onlinePayments'
-  | 'fieldCollections' | 'fieldDayEnds' | 'thermalPrinterConfig';
+  | 'fieldCollections' | 'fieldDayEnds' | 'thermalPrinterConfig'
+  | 'projects' | 'projectInvestments' | 'projectTransactions'
+  | 'shareConfig' | 'memberShares' | 'dividendSessions' | 'dividendItems';
 
 const STORE_STORAGE_MAPPINGS: [string, StoreCollectionKey][] = [
   [STORAGE_KEYS.TENANTS, 'tenants'],
@@ -138,6 +152,13 @@ const STORE_STORAGE_MAPPINGS: [string, StoreCollectionKey][] = [
   [STORAGE_KEYS.FIELD_COLLECTIONS, 'fieldCollections'],
   [STORAGE_KEYS.FIELD_DAY_ENDS, 'fieldDayEnds'],
   [STORAGE_KEYS.THERMAL_CONFIG, 'thermalPrinterConfig'],
+  [STORAGE_KEYS.PROJECTS, 'projects'],
+  [STORAGE_KEYS.PROJECT_INVESTMENTS, 'projectInvestments'],
+  [STORAGE_KEYS.PROJECT_TRANSACTIONS, 'projectTransactions'],
+  [STORAGE_KEYS.SHARE_CONFIG, 'shareConfig'],
+  [STORAGE_KEYS.MEMBER_SHARES, 'memberShares'],
+  [STORAGE_KEYS.DIVIDEND_SESSIONS, 'dividendSessions'],
+  [STORAGE_KEYS.DIVIDEND_ITEMS, 'dividendItems'],
 ];
 
 // In-memory fallback / cache
@@ -177,6 +198,13 @@ class DataStore {
   fieldCollections: FieldCollectorDailyCollection[] = INITIAL_FIELD_COLLECTIONS;
   fieldDayEnds: FieldDayEndSummary[] = INITIAL_FIELD_DAY_ENDS;
   thermalPrinterConfig: ThermalPrinterConfig = INITIAL_THERMAL_PRINTER_CONFIG;
+  projects: SamityProject[] = INITIAL_PROJECTS;
+  projectInvestments: ProjectMemberInvestment[] = INITIAL_PROJECT_INVESTMENTS;
+  projectTransactions: ProjectTransaction[] = INITIAL_PROJECT_TRANSACTIONS;
+  shareConfig: ShareCapitalConfig = INITIAL_SHARE_CONFIG;
+  memberShares: MemberShareRecord[] = INITIAL_MEMBER_SHARES;
+  dividendSessions: DividendSession[] = INITIAL_DIVIDEND_SESSIONS;
+  dividendItems: MemberDividendItem[] = INITIAL_DIVIDEND_ITEMS;
 
   currentTenantId: string = 'samity-ekota';
   currentUserId: string = 'user-rafiq';
@@ -3896,6 +3924,620 @@ class DataStore {
     this.save();
     return summary;
   }
+
+  // ----------------------------------------------------
+  // MODULE 3: PROJECT & JOINT INVESTMENTS METHODS
+  // ----------------------------------------------------
+  createProject(data: Partial<SamityProject>): SamityProject {
+    const tenantId = data.tenantId || this.currentTenantId;
+    const now = new Date();
+    const projectCode = data.code || `PRJ-${now.getFullYear()}-${String(this.projects.filter(p => p.tenantId === tenantId).length + 1).padStart(2, '0')}`;
+    
+    const newProject: SamityProject = {
+      id: `prj-${Date.now()}`,
+      tenantId,
+      code: projectCode,
+      nameBn: data.nameBn || 'নতুন সমবায় প্রকল্প',
+      nameEn: data.nameEn || 'New Co-operative Project',
+      category: data.category || 'AGRO',
+      location: data.location || 'সমিতির আওতাধীন এলাকা',
+      estimatedBudget: Number(data.estimatedBudget) || 100000,
+      totalCapitalInvested: 0,
+      totalIncome: 0,
+      totalExpense: 0,
+      netProfitOrLoss: 0,
+      targetRoiPercent: Number(data.targetRoiPercent) || 15,
+      actualRoiPercent: 0,
+      startDate: data.startDate || now.toISOString().split('T')[0],
+      expectedEndDate: data.expectedEndDate || `${now.getFullYear()}-12-31`,
+      managerName: data.managerName || 'প্রকল্প ব্যবস্থাপক',
+      managerPhone: data.managerPhone || '01700000000',
+      status: data.status || 'PLANNING',
+      descriptionBn: data.descriptionBn || '',
+      totalShareUnits: Number(data.totalShareUnits) || 50,
+      unitPrice: Number(data.unitPrice) || 10000,
+      distributedProfit: 0,
+      isSynced: true,
+      createdAt: now.toISOString().split('T')[0],
+      updatedAt: now.toISOString().split('T')[0]
+    };
+
+    this.projects.unshift(newProject);
+
+    this.addAuditLog({
+      tenantId,
+      action: 'CREATE',
+      entity: 'PROJECT',
+      entityId: newProject.id,
+      descriptionBn: `নতুন সমবায় প্রকল্প তৈরি করা হয়েছে: [${newProject.code}] ${newProject.nameBn} (বাজেট: ৳${newProject.estimatedBudget.toLocaleString()})`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return newProject;
+  }
+
+  updateProject(projectId: string, updates: Partial<SamityProject>): SamityProject {
+    const project = this.projects.find(p => p.id === projectId);
+    if (!project) throw new Error('প্রকল্প খুঁজে পাওয়া যায়নি');
+
+    Object.assign(project, updates, {
+      updatedAt: new Date().toISOString().split('T')[0]
+    });
+
+    // Recalculate financial metrics
+    project.netProfitOrLoss = project.totalIncome - project.totalExpense;
+    project.actualRoiPercent = project.totalCapitalInvested > 0
+      ? Number(((project.netProfitOrLoss / project.totalCapitalInvested) * 100).toFixed(2))
+      : 0;
+
+    this.addAuditLog({
+      tenantId: project.tenantId,
+      action: 'UPDATE',
+      entity: 'PROJECT',
+      entityId: project.id,
+      descriptionBn: `প্রকল্প তথ্য হালনাগাদ: [${project.code}] ${project.nameBn} (স্ট্যাটাস: ${project.status})`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return project;
+  }
+
+  recordProjectInvestment(params: {
+    projectId: string;
+    memberId: string;
+    unitsCount: number;
+    paymentMethod: PaymentMethod;
+    notes?: string;
+  }): ProjectMemberInvestment {
+    const project = this.projects.find(p => p.id === params.projectId);
+    if (!project) throw new Error('প্রকল্প খুঁজে পাওয়া যায়নি');
+
+    const member = this.members.find(m => m.id === params.memberId);
+    if (!member) throw new Error('সদস্য খুঁজে পাওয়া যায়নি');
+
+    const totalAmount = params.unitsCount * project.unitPrice;
+    const certSerial = String(this.projectInvestments.filter(i => i.tenantId === project.tenantId).length + 1).padStart(3, '0');
+    const certificateNo = `PRJ-INV-${new Date().getFullYear()}-${certSerial}`;
+
+    const investment: ProjectMemberInvestment = {
+      id: `pmi-${Date.now()}`,
+      tenantId: project.tenantId,
+      projectId: project.id,
+      projectNameBn: project.nameBn,
+      memberId: member.id,
+      memberCode: member.memberCode,
+      memberNameBn: member.nameBn,
+      memberPhone: member.phone,
+      unitsCount: params.unitsCount,
+      unitPrice: project.unitPrice,
+      totalAmount,
+      paymentMethod: params.paymentMethod,
+      investmentDate: new Date().toISOString().split('T')[0],
+      certificateNo,
+      profitEarned: 0,
+      status: 'ACTIVE',
+      notes: params.notes,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    this.projectInvestments.unshift(investment);
+
+    // Update project invested capital
+    project.totalCapitalInvested += totalAmount;
+    project.actualRoiPercent = project.totalCapitalInvested > 0
+      ? Number(((project.netProfitOrLoss / project.totalCapitalInvested) * 100).toFixed(2))
+      : 0;
+    project.updatedAt = new Date().toISOString().split('T')[0];
+
+    // Double-entry general ledger voucher
+    const voucher = this.createVoucher({
+      tenantId: project.tenantId,
+      type: 'CREDIT',
+      category: 'প্রকল্প অংশীদারিত্ব বিনিয়োগ',
+      accountHeadCode: '1040',
+      accountHeadNameBn: 'প্রকল্প মূলধন বিনিয়োগ',
+      debitAccount: params.paymentMethod === 'CASH' ? '১০১০: ক্যাশ ইন হ্যান্ড' : '১০২০: ব্যাংক ও মোবাইল ওয়ালেট',
+      creditAccount: '১০৪০: প্রকল্প মূলধন বিনিয়োগ তহবিল',
+      amount: totalAmount,
+      descriptionBn: `প্রকল্প [${project.code}] ${project.nameBn}-এ সদস্য ${member.nameBn} (${member.memberCode}) এর ${params.unitsCount} ইউনিট বিনিয়োগ প্রাপ্তি। সনদ নং: ${certificateNo}`,
+      paidToOrReceivedFrom: member.nameBn,
+      paymentMethod: params.paymentMethod
+    });
+    investment.voucherId = voucher.id;
+
+    this.addAuditLog({
+      tenantId: project.tenantId,
+      action: 'CREATE',
+      entity: 'PROJECT',
+      entityId: investment.id,
+      descriptionBn: `প্রকল্প বিনিয়োগ গ্রহণ: ${member.nameBn} -> [${project.code}] ${project.nameBn} | পরিমাণ: ৳${totalAmount.toLocaleString()} (${params.unitsCount} ইউনিট) | সনদ: ${certificateNo}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return investment;
+  }
+
+  recordProjectTransaction(params: {
+    projectId: string;
+    type: 'INCOME' | 'EXPENSE';
+    category: string;
+    amount: number;
+    paymentMethod: PaymentMethod;
+    descriptionBn: string;
+    receivedFromOrPaidTo: string;
+  }): ProjectTransaction {
+    const project = this.projects.find(p => p.id === params.projectId);
+    if (!project) throw new Error('প্রকল্প খুঁজে পাওয়া যায়নি');
+
+    const txSerial = String(this.projectTransactions.filter(t => t.projectId === project.id).length + 1).padStart(3, '0');
+    const voucherNo = `${params.type === 'INCOME' ? 'RV' : 'PV'}-PRJ-${new Date().getFullYear()}-${txSerial}`;
+
+    const tx: ProjectTransaction = {
+      id: `ptx-${Date.now()}`,
+      tenantId: project.tenantId,
+      projectId: project.id,
+      type: params.type,
+      category: params.category,
+      amount: params.amount,
+      paymentMethod: params.paymentMethod,
+      transactionDate: new Date().toISOString().split('T')[0],
+      voucherNo,
+      descriptionBn: params.descriptionBn,
+      receivedFromOrPaidTo: params.receivedFromOrPaidTo,
+      recordedBy: this.currentUserId,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    this.projectTransactions.unshift(tx);
+
+    // Update project financials
+    if (params.type === 'INCOME') {
+      project.totalIncome += params.amount;
+    } else {
+      project.totalExpense += params.amount;
+    }
+    project.netProfitOrLoss = project.totalIncome - project.totalExpense;
+    project.actualRoiPercent = project.totalCapitalInvested > 0
+      ? Number(((project.netProfitOrLoss / project.totalCapitalInvested) * 100).toFixed(2))
+      : 0;
+    project.updatedAt = new Date().toISOString().split('T')[0];
+
+    // Double-entry voucher
+    if (params.type === 'INCOME') {
+      this.createVoucher({
+        tenantId: project.tenantId,
+        type: 'CREDIT',
+        category: 'প্রকল্প আয়',
+        accountHeadCode: '4010',
+        accountHeadNameBn: 'প্রকল্প পরিচালন আয়',
+        debitAccount: params.paymentMethod === 'CASH' ? '১০১০: ক্যাশ ইন হ্যান্ড' : '১০২০: ব্যাংক ও মোবাইল ওয়ালেট',
+        creditAccount: '৪০১০: প্রকল্প পরিচালন আয়',
+        amount: params.amount,
+        descriptionBn: `প্রকল্প [${project.code}] ${project.nameBn}-এর আয়: ${params.descriptionBn}`,
+        paidToOrReceivedFrom: params.receivedFromOrPaidTo,
+        paymentMethod: params.paymentMethod
+      });
+    } else {
+      this.createVoucher({
+        tenantId: project.tenantId,
+        type: 'DEBIT',
+        category: 'প্রকল্প ব্যয়',
+        accountHeadCode: '5010',
+        accountHeadNameBn: 'প্রকল্প পরিচালন ব্যয়',
+        debitAccount: '৫০১০: প্রকল্প পরিচালন ব্যয়',
+        creditAccount: params.paymentMethod === 'CASH' ? '১০১০: ক্যাশ ইন হ্যান্ড' : '১০২০: ব্যাংক ও মোবাইল ওয়ালেট',
+        amount: params.amount,
+        descriptionBn: `প্রকল্প [${project.code}] ${project.nameBn}-এর ব্যয়: ${params.descriptionBn}`,
+        paidToOrReceivedFrom: params.receivedFromOrPaidTo,
+        paymentMethod: params.paymentMethod
+      });
+    }
+
+    this.addAuditLog({
+      tenantId: project.tenantId,
+      action: 'CREATE',
+      entity: 'PROJECT_TRANSACTION',
+      entityId: tx.id,
+      descriptionBn: `প্রকল্পের ${params.type === 'INCOME' ? 'আয়' : 'ব্যয়'} এন্ট্রি: [${project.code}] ${project.nameBn} | পরিমাণ: ৳${params.amount.toLocaleString()} | বিবরণ: ${params.descriptionBn}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return tx;
+  }
+
+  closeProjectAndDistributeProfit(projectId: string, declaredProfit: number, remarks?: string): SamityProject {
+    const project = this.projects.find(p => p.id === projectId);
+    if (!project) throw new Error('প্রকল্প খুঁজে পাওয়া যায়নি');
+
+    project.status = 'COMPLETED';
+    project.distributedProfit = declaredProfit;
+    project.actualEndDate = new Date().toISOString().split('T')[0];
+    project.updatedAt = new Date().toISOString().split('T')[0];
+
+    // Find investors and distribute profit proportionally
+    const activeInvestors = this.projectInvestments.filter(i => i.projectId === project.id && i.status === 'ACTIVE');
+    const totalInvested = activeInvestors.reduce((sum, inv) => sum + inv.totalAmount, 0);
+
+    if (totalInvested > 0 && declaredProfit > 0) {
+      activeInvestors.forEach(inv => {
+        const shareRatio = inv.totalAmount / totalInvested;
+        const profitShare = Math.round(declaredProfit * shareRatio);
+        inv.profitEarned += profitShare;
+
+        // Credit to member's general savings account if exists
+        const memberAccount = this.savingsAccounts.find(a => a.memberId === inv.memberId && a.type === 'GENERAL_SAVINGS');
+        if (memberAccount) {
+          this.recordSavingsDeposit({
+            tenantId: project.tenantId,
+            memberId: inv.memberId,
+            accountId: memberAccount.id,
+            amount: profitShare,
+            paymentMethod: 'BANK',
+            notes: `প্রকল্প [${project.code}] ${project.nameBn}-এর লভ্যাংশ ক্রেডিট (${inv.unitsCount} ইউনিট বাবদ)`
+          });
+        }
+      });
+    }
+
+    this.addAuditLog({
+      tenantId: project.tenantId,
+      action: 'UPDATE',
+      entity: 'PROJECT',
+      entityId: project.id,
+      descriptionBn: `প্রকল্প সমাপনী ও মুনাফা বণ্টন সম্পন্ন: [${project.code}] ${project.nameBn} | ঘোষিত মোট মুনাফা: ৳${declaredProfit.toLocaleString()} | বিনিয়োগকারী: ${activeInvestors.length} জন`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return project;
+  }
+
+  // ----------------------------------------------------
+  // MODULE 4: SHARE CAPITAL & DIVIDEND ENGINE METHODS
+  // ----------------------------------------------------
+  updateShareConfig(config: Partial<ShareCapitalConfig>): ShareCapitalConfig {
+    this.shareConfig = {
+      ...this.shareConfig,
+      ...config
+    };
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'UPDATE',
+      entity: 'SHARE_CAPITAL',
+      entityId: `cfg-share-${this.currentTenantId}`,
+      descriptionBn: `সমিতির শেয়ার মূলধন ও ফেস ভ্যালু পলিসি হালনাগাদ (প্রতি শেয়ার মূল্য: ৳${this.shareConfig.faceValue}, সঞ্চিতি রিজার্ভ: ${this.shareConfig.compulsoryReservePercent}%)`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return this.shareConfig;
+  }
+
+  issueSharesToMember(params: {
+    memberId: string;
+    numberOfShares: number;
+    paymentMethod: PaymentMethod;
+    issueDate?: string;
+  }): MemberShareRecord {
+    const member = this.members.find(m => m.id === params.memberId);
+    if (!member) throw new Error('সদস্য খুঁজে পাওয়া যায়নি');
+
+    const totalValue = params.numberOfShares * this.shareConfig.faceValue;
+    const now = new Date();
+    const certSerial = String(this.memberShares.filter(s => s.tenantId === this.currentTenantId).length + 1).padStart(3, '0');
+    const certificateNo = `SHR-CERT-${now.getFullYear()}-${certSerial}`;
+
+    // Calculate share numbers range
+    const totalExistingShares = this.memberShares.filter(s => s.tenantId === this.currentTenantId && s.status === 'ACTIVE').reduce((sum, s) => sum + s.numberOfShares, 0);
+    const startRange = totalExistingShares + 1;
+    const endRange = totalExistingShares + params.numberOfShares;
+    const shareNumbersRange = `${String(startRange).padStart(4, '0')} - ${String(endRange).padStart(4, '0')}`;
+
+    const shareRecord: MemberShareRecord = {
+      id: `share-${Date.now()}`,
+      tenantId: this.currentTenantId,
+      memberId: member.id,
+      memberCode: member.memberCode,
+      memberNameBn: member.nameBn,
+      memberPhone: member.phone,
+      numberOfShares: params.numberOfShares,
+      faceValue: this.shareConfig.faceValue,
+      totalShareCapital: totalValue,
+      certificateNo,
+      shareNumbersRange,
+      issueDate: params.issueDate || now.toISOString().split('T')[0],
+      paymentMethod: params.paymentMethod,
+      status: 'ACTIVE',
+      createdAt: now.toISOString().split('T')[0],
+      updatedAt: now.toISOString().split('T')[0]
+    };
+
+    this.memberShares.unshift(shareRecord);
+
+    // Double-entry voucher for share capital receipt
+    const voucher = this.createVoucher({
+      tenantId: this.currentTenantId,
+      type: 'CREDIT',
+      category: 'পরিশোধিত শেয়ার মূলধন গ্রহণ',
+      accountHeadCode: '3000',
+      accountHeadNameBn: 'পরিশোধিত শেয়ার মূলধন',
+      debitAccount: params.paymentMethod === 'CASH' ? '১০১০: ক্যাশ ইন হ্যান্ড' : '১০২০: ব্যাংক ও মোবাইল ওয়ালেট',
+      creditAccount: '৩০০০: সদস্যদের পরিশোধিত শেয়ার মূলধন',
+      amount: totalValue,
+      descriptionBn: `সদস্য ${member.nameBn} (${member.memberCode})-এর নামে ${params.numberOfShares} টি শেয়ার ইস্যু বাবদ পরিশোধিত শেয়ার মূলধন জমা। সনদ নং: ${certificateNo} (শেয়ার নং: ${shareNumbersRange})`,
+      paidToOrReceivedFrom: member.nameBn,
+      paymentMethod: params.paymentMethod
+    });
+    shareRecord.voucherId = voucher.id;
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'CREATE',
+      entity: 'SHARE_CAPITAL',
+      entityId: shareRecord.id,
+      descriptionBn: `নতুন শেয়ার ইস্যু: ${member.nameBn} (${member.memberCode}) | শেয়ার সংখ্যা: ${params.numberOfShares} | মোট মূলধন: ৳${totalValue.toLocaleString()} | সনদ: ${certificateNo}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return shareRecord;
+  }
+
+  calculateDividendPreview(params: {
+    financialYear: string;
+    totalNetProfit: number;
+    reserveFundPercent: number;
+    developmentFundPercent: number;
+    distributionBasis: DividendDistributionBasis;
+  }): {
+    totalNetProfit: number;
+    reserveFundAmount: number;
+    developmentFundAmount: number;
+    distributableProfit: number;
+    totalSharesEligible: number;
+    totalSavingsEligible: number;
+    items: Array<{
+      memberId: string;
+      memberCode: string;
+      memberNameBn: string;
+      memberPhone: string;
+      shareCount: number;
+      shareCapital: number;
+      savingsBalance: number;
+      dividendFromShare: number;
+      dividendFromSavings: number;
+      netDividendPayable: number;
+    }>;
+  } {
+    const tenantId = this.currentTenantId;
+    const reserveFundAmount = Math.round((params.totalNetProfit * params.reserveFundPercent) / 100);
+    const developmentFundAmount = Math.round((params.totalNetProfit * params.developmentFundPercent) / 100);
+    const distributableProfit = Math.max(0, params.totalNetProfit - reserveFundAmount - developmentFundAmount);
+
+    const activeMembers = this.members.filter(m => m.tenantId === tenantId && m.status === 'ACTIVE');
+    
+    // Calculate total shares & savings across active members
+    const memberShareMap = new Map<string, number>();
+    this.memberShares
+      .filter(s => s.tenantId === tenantId && s.status === 'ACTIVE')
+      .forEach(s => {
+        const current = memberShareMap.get(s.memberId) || 0;
+        memberShareMap.set(s.memberId, current + s.numberOfShares);
+      });
+
+    const memberSavingsMap = new Map<string, number>();
+    this.savingsAccounts
+      .filter(a => a.tenantId === tenantId && a.status === 'ACTIVE')
+      .forEach(a => {
+        const current = memberSavingsMap.get(a.memberId) || 0;
+        memberSavingsMap.set(a.memberId, current + a.balance);
+      });
+
+    const totalSharesEligible = Array.from(memberShareMap.values()).reduce((a, b) => a + b, 0);
+    const totalSavingsEligible = Array.from(memberSavingsMap.values()).reduce((a, b) => a + b, 0);
+
+    const items = activeMembers.map(member => {
+      const shareCount = memberShareMap.get(member.id) || 0;
+      const shareCapital = shareCount * this.shareConfig.faceValue;
+      const savingsBalance = memberSavingsMap.get(member.id) || member.savingsBalance || 0;
+
+      let dividendFromShare = 0;
+      let dividendFromSavings = 0;
+
+      if (params.distributionBasis === 'SHARE_RATIO') {
+        dividendFromShare = totalSharesEligible > 0 ? Math.round((distributableProfit * shareCount) / totalSharesEligible) : 0;
+      } else if (params.distributionBasis === 'SAVINGS_RATIO') {
+        dividendFromSavings = totalSavingsEligible > 0 ? Math.round((distributableProfit * savingsBalance) / totalSavingsEligible) : 0;
+      } else if (params.distributionBasis === 'HYBRID_50_50') {
+        const halfProfit = distributableProfit / 2;
+        dividendFromShare = totalSharesEligible > 0 ? Math.round((halfProfit * shareCount) / totalSharesEligible) : 0;
+        dividendFromSavings = totalSavingsEligible > 0 ? Math.round((halfProfit * savingsBalance) / totalSavingsEligible) : 0;
+      }
+
+      const netDividendPayable = dividendFromShare + dividendFromSavings;
+
+      return {
+        memberId: member.id,
+        memberCode: member.memberCode,
+        memberNameBn: member.nameBn,
+        memberPhone: member.phone,
+        shareCount,
+        shareCapital,
+        savingsBalance,
+        dividendFromShare,
+        dividendFromSavings,
+        netDividendPayable
+      };
+    }).filter(item => item.netDividendPayable > 0 || item.shareCount > 0);
+
+    return {
+      totalNetProfit: params.totalNetProfit,
+      reserveFundAmount,
+      developmentFundAmount,
+      distributableProfit,
+      totalSharesEligible,
+      totalSavingsEligible,
+      items
+    };
+  }
+
+  createAndDisburseDividendSession(params: {
+    financialYear: string;
+    totalNetProfit: number;
+    reserveFundPercent: number;
+    developmentFundPercent: number;
+    distributionBasis: DividendDistributionBasis;
+    disbursementMethod: 'CREDIT_TO_SAVINGS' | 'CASH_VOUCHER';
+    notes?: string;
+  }): { session: DividendSession; items: MemberDividendItem[] } {
+    const preview = this.calculateDividendPreview({
+      financialYear: params.financialYear,
+      totalNetProfit: params.totalNetProfit,
+      reserveFundPercent: params.reserveFundPercent,
+      developmentFundPercent: params.developmentFundPercent,
+      distributionBasis: params.distributionBasis
+    });
+
+    const sessionId = `div-ses-${Date.now()}`;
+    const today = new Date().toISOString().split('T')[0];
+    const session: DividendSession = {
+      id: sessionId,
+      tenantId: this.currentTenantId,
+      financialYear: params.financialYear,
+      totalNetProfit: params.totalNetProfit,
+      reserveFundPercent: params.reserveFundPercent,
+      reserveFundAmount: preview.reserveFundAmount,
+      developmentFundPercent: params.developmentFundPercent,
+      developmentFundAmount: preview.developmentFundAmount,
+      distributableProfit: preview.distributableProfit,
+      distributionBasis: params.distributionBasis,
+      totalSharesEligible: preview.totalSharesEligible,
+      totalSavingsEligible: preview.totalSavingsEligible,
+      dividendRatePerShare: preview.totalSharesEligible > 0 ? Math.round(preview.distributableProfit / preview.totalSharesEligible) : 0,
+      totalMembersBenefited: preview.items.length,
+      status: 'DISBURSED',
+      calculationDate: today,
+      disbursedDate: today,
+      disbursedBy: this.currentUserId,
+      disbursementMethod: params.disbursementMethod,
+      notes: params.notes,
+      createdAt: today
+    };
+
+    this.dividendSessions.unshift(session);
+
+    const generatedItems: MemberDividendItem[] = [];
+
+    preview.items.forEach((item, index) => {
+      const voucherNo = `DIV-VOUCHER-${params.financialYear.replace(/\s+/g, '')}-${String(index + 1).padStart(3, '0')}`;
+      let savingsTxId: string | undefined = undefined;
+
+      // If credit to savings, execute real deposit into member's savings account
+      if (params.disbursementMethod === 'CREDIT_TO_SAVINGS' && item.netDividendPayable > 0) {
+        const generalSavingsAcc = this.savingsAccounts.find(a => a.memberId === item.memberId && a.type === 'GENERAL_SAVINGS')
+          || this.savingsAccounts.find(a => a.memberId === item.memberId);
+
+        if (generalSavingsAcc) {
+          const tx = this.recordSavingsDeposit({
+            tenantId: this.currentTenantId,
+            memberId: item.memberId,
+            accountId: generalSavingsAcc.id,
+            amount: item.netDividendPayable,
+            paymentMethod: 'BANK',
+            notes: `বার্ষিক লভ্যাংশ ক্রেডিট (${params.financialYear}) - ভাউচার: ${voucherNo}`
+          });
+          savingsTxId = tx.id;
+        }
+      }
+
+      const divItem: MemberDividendItem = {
+        id: `div-item-${Date.now()}-${index}`,
+        tenantId: this.currentTenantId,
+        sessionId,
+        memberId: item.memberId,
+        memberCode: item.memberCode,
+        memberNameBn: item.memberNameBn,
+        memberPhone: item.memberPhone,
+        shareCount: item.shareCount,
+        shareCapital: item.shareCapital,
+        savingsBalance: item.savingsBalance,
+        dividendFromShare: item.dividendFromShare,
+        dividendFromSavings: item.dividendFromSavings,
+        grossDividend: item.netDividendPayable,
+        taxOrDeduction: 0,
+        netDividendPayable: item.netDividendPayable,
+        disbursementStatus: params.disbursementMethod === 'CREDIT_TO_SAVINGS' ? 'CREDITED_TO_SAVINGS' : 'PAID_CASH',
+        savingsTransactionId: savingsTxId,
+        voucherNo,
+        creditedAt: today
+      };
+
+      generatedItems.push(divItem);
+      this.dividendItems.unshift(divItem);
+    });
+
+    // Create consolidated General Ledger Journal Voucher for the dividend distribution
+    this.createVoucher({
+      tenantId: this.currentTenantId,
+      type: 'JOURNAL',
+      category: 'বার্ষিক লভ্যাংশ বণ্টন ও সংবিধিবদ্ধ সঞ্চিতি তহবিল',
+      accountHeadCode: '3020',
+      accountHeadNameBn: 'চলতি বছরের বণ্টনযোগ্য নিট মুনাফা',
+      debitAccount: '৩০২০: অর্জিত নিট মুনাফা ও রিটেইন্ড আর্নিংস',
+      creditAccount: params.disbursementMethod === 'CREDIT_TO_SAVINGS' 
+        ? '২০১০: সদস্যদের সাধারণ সঞ্চয় হিসাব ও ৩০৩০: সাধারণ সঞ্চিতি তহবিল' 
+        : '১০১০: নগদ ক্যাশ ও ৩০৩০: সাধারণ সঞ্চিতি তহবিল',
+      amount: params.totalNetProfit,
+      descriptionBn: `অর্থবছর ${params.financialYear}-এর বার্ষিক লভ্যাংশ বণ্টন সম্পন্ন। বণ্টনযোগ্য: ৳${preview.distributableProfit.toLocaleString()} (${preview.items.length} জন সদস্য) | সংবিধিবদ্ধ সঞ্চিতি: ৳${preview.reserveFundAmount.toLocaleString()}`,
+      paidToOrReceivedFrom: `সমিতির ${preview.items.length} জন সদস্যবৃন্দ`,
+      paymentMethod: params.disbursementMethod === 'CREDIT_TO_SAVINGS' ? 'BANK' : 'CASH'
+    });
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'DISBURSE',
+      entity: 'DIVIDEND',
+      entityId: sessionId,
+      descriptionBn: `বার্ষিক লভ্যাংশ বণ্টন কার্যকর করা হয়েছে: অর্থবছর ${params.financialYear} | মোট নিট মুনাফা: ৳${params.totalNetProfit.toLocaleString()} | সদস্য সংখ্যা: ${preview.items.length} জন`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+
+    this.save();
+    return { session, items: generatedItems };
+  }
 }
 
 export const store = new DataStore();
@@ -4045,5 +4687,25 @@ export function useSamityStore() {
     recordFieldCollection: (params: Parameters<typeof store.recordFieldCollection>[0]) => store.recordFieldCollection(params),
     submitFieldDayEndSummary: (params: Parameters<typeof store.submitFieldDayEndSummary>[0]) => store.submitFieldDayEndSummary(params),
     approveFieldDayEndSummary: (id: string, cashierName: string, remarks?: string) => store.approveFieldDayEndSummary(id, cashierName, remarks),
+
+    // Module 3: Project & Joint Investment Portfolio
+    projects: store.projects.filter(p => p.tenantId === activeTenant?.id),
+    projectInvestments: store.projectInvestments.filter(i => i.tenantId === activeTenant?.id),
+    projectTransactions: store.projectTransactions.filter(t => t.tenantId === activeTenant?.id),
+    createProject: (data: Parameters<typeof store.createProject>[0]) => store.createProject(data),
+    updateProject: (id: string, updates: Parameters<typeof store.updateProject>[1]) => store.updateProject(id, updates),
+    recordProjectInvestment: (params: Parameters<typeof store.recordProjectInvestment>[0]) => store.recordProjectInvestment(params),
+    recordProjectTransaction: (params: Parameters<typeof store.recordProjectTransaction>[0]) => store.recordProjectTransaction(params),
+    closeProjectAndDistributeProfit: (projectId: string, declaredProfit: number, remarks?: string) => store.closeProjectAndDistributeProfit(projectId, declaredProfit, remarks),
+
+    // Module 4: Share Capital & Dividend Distribution Engine
+    shareConfig: store.shareConfig,
+    memberShares: store.memberShares.filter(s => s.tenantId === activeTenant?.id),
+    dividendSessions: store.dividendSessions.filter(s => s.tenantId === activeTenant?.id),
+    dividendItems: store.dividendItems.filter(d => d.tenantId === activeTenant?.id),
+    updateShareConfig: (config: Partial<ShareCapitalConfig>) => store.updateShareConfig(config),
+    issueSharesToMember: (params: Parameters<typeof store.issueSharesToMember>[0]) => store.issueSharesToMember(params),
+    calculateDividendPreview: (params: Parameters<typeof store.calculateDividendPreview>[0]) => store.calculateDividendPreview(params),
+    createAndDisburseDividendSession: (params: Parameters<typeof store.createAndDisburseDividendSession>[0]) => store.createAndDisburseDividendSession(params),
   };
 }

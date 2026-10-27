@@ -32,6 +32,8 @@ import { CommunicationHubView } from '@/components/messaging/CommunicationHubVie
 import { FieldCollectionDeskView } from '@/components/field/FieldCollectionDeskView';
 import { OnlinePaymentCheckoutModal } from '@/components/payment/OnlinePaymentCheckoutModal';
 import { PaymentGatewaySettingsModal } from '@/components/payment/PaymentGatewaySettingsModal';
+import { ProjectsPortfolioView } from '@/components/projects/ProjectsPortfolioView';
+import { ShareCapitalDividendView } from '@/components/shares/ShareCapitalDividendView';
 import { MobileMenuDrawer } from '@/components/layout/MobileMenuDrawer';
 
 import { useSamityStore } from '@/lib/store';
@@ -93,6 +95,10 @@ export default function Home() {
       case 'elections':
       case 'member-elections':
         return <ElectionsView />;
+      case 'projects':
+        return <ProjectsPortfolioView />;
+      case 'shares-dividend':
+        return <ShareCapitalDividendView />;
       case 'loans':
       case 'member-loans':
         return <LoansView onOpenCollectInstallment={handleOpenCollectLoan} />;
@@ -137,6 +143,8 @@ export default function Home() {
           />
         )}
         {activeTab === 'field-collection' && <FieldCollectionDeskView />}
+        {activeTab === 'projects' && <ProjectsPortfolioView />}
+        {activeTab === 'shares-dividend' && <ShareCapitalDividendView />}
         {activeTab === 'payment-gateways' && (
           <PaymentGatewaySettingsModal 
             isOpen={true} 

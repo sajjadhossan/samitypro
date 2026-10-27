@@ -6,7 +6,8 @@ import {
   CalendarCheck, Vote, FileBarChart, ShieldAlert,
   CreditCard, MessageSquare, BookOpen, Bell,
   BadgePercent, Building2, FolderLock, Sliders,
-  ScrollText, ShieldCheck, History, Database, Zap, Smartphone
+  ScrollText, ShieldCheck, History, Database, Zap, Smartphone,
+  Briefcase, Award
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations } from '@/lib/i18n';
@@ -36,6 +37,8 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const samityAdminNav = [
     { id: 'dashboard', labelBn: t.dashboard, labelEn: 'Dashboard', icon: LayoutDashboard },
     { id: 'field-collection', labelBn: 'মাঠ কালেকশন ও POS রসিদ', labelEn: 'Field Collection & POS', icon: Smartphone },
+    { id: 'projects', labelBn: 'প্রকল্প ও যৌথ বিনিয়োগ', labelEn: 'Project & Portfolio', icon: Briefcase },
+    { id: 'shares-dividend', labelBn: 'শেয়ার মূলধন ও লভ্যাংশ', labelEn: 'Shares & Dividend', icon: Award },
     { id: 'samity-setup', labelBn: 'সমিতি সেটআপ (মডিউল ১)', labelEn: 'Samity Setup (Mod 1)', icon: Building2 },
     { id: 'members', labelBn: 'সদস্য ব্যবস্থাপনা (মডিউল ২)', labelEn: 'Members & KYC (Mod 2)', icon: Users },
     { id: 'subscriptions-due', labelBn: 'চাঁদা ও বকেয়া পলিসি (মডিউল ৩)', labelEn: 'Fees & Policy (Mod 3)', icon: BadgePercent },
@@ -62,6 +65,8 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const memberNav = [
     { id: 'member-passbook', labelBn: 'আমার ডিজিটাল পাসবই (মডিউল ১০)', labelEn: 'My Passbook (Mod 10)', icon: BookOpen },
     { id: 'online-payment', labelBn: 'অনলাইন পেমেন্ট (bKash/নগদ)', labelEn: 'Pay Online (bKash/Nagad)', icon: CreditCard },
+    { id: 'projects', labelBn: 'আমার প্রকল্প বিনিয়োগ', labelEn: 'My Project Shares', icon: Briefcase },
+    { id: 'shares-dividend', labelBn: 'আমার শেয়ার ও লভ্যাংশ', labelEn: 'My Shares & Dividend', icon: Award },
     { id: 'subscriptions-due', labelBn: 'আমার চাঁদা ও রসিদ', labelEn: 'My Fees & Receipts', icon: BadgePercent },
     { id: 'member-loans', labelBn: 'আমার ঋণ ও কিস্তি', labelEn: 'My Loans & EMIs', icon: HandCoins },
     { id: 'member-elections', labelBn: 'ভোট প্রদান ও নির্বাচন', labelEn: 'Cast Vote & Election', icon: Vote },
