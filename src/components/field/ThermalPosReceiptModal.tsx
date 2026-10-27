@@ -8,6 +8,7 @@ import {
 import { useSamityStore } from '@/lib/store';
 import { FieldCollectorDailyCollection, ThermalPrinterConfig } from '@/types';
 import { formatCurrency, toBengaliNumber } from '@/lib/i18n';
+import { EscPosDriver } from '@/lib/printer/escpos';
 
 interface ThermalPosReceiptModalProps {
   isOpen: boolean;
@@ -22,11 +23,50 @@ export function ThermalPosReceiptModal({
 }: ThermalPosReceiptModalProps) {
   const { letterhead, thermalPrinterConfig, updateThermalPrinterConfig } = useSamityStore();
   const [paperWidth, setPaperWidth] = useState<'58mm' | '80mm'>(thermalPrinterConfig.paperWidth || '58mm');
+  const [isBtPrinting, setIsBtPrinting] = useState(false);
 
   if (!isOpen || !collection) return null;
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleBluetoothPrint = async () => {
+    try {
+      setIsBtPrinting(true);
+      const items = [];
+      if (collection.savingsAmount > 0) {
+        items.push({ label: 'Savings Deposit', amount: collection.savingsAmount });
+      }
+      if (collection.dpsAmount > 0) {
+        items.push({ label: 'DPS Installment', amount: collection.dpsAmount });
+      }
+      if (collection.loanInstallmentAmount > 0) {
+        items.push({ label: 'Loan Repayment', amount: collection.loanInstallmentAmount });
+      }
+
+      const receiptBytes = EscPosDriver.buildReceipt({
+        samityName: letterhead.samityNameEn || 'EKOTA SAMITY',
+        samityAddress: letterhead.addressEn,
+        samityPhone: letterhead.phone,
+        receiptNo: collection.receiptNo,
+        date: collection.collectedAt,
+        collectorName: collection.collectorName,
+        memberName: collection.memberName,
+        memberNo: collection.memberCode,
+        items,
+        totalAmount: collection.totalCollected,
+        paymentMethod: 'CASH',
+        trxId: collection.receiptNo
+      }, paperWidth === '80mm');
+
+      const res = await EscPosDriver.printViaBluetooth(receiptBytes);
+      alert(res.message);
+    } catch (err: unknown) {
+      alert(`প্রিন্ট ত্রুটি: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsBtPrinting(false);
+    }
   };
 
   const handleWidthChange = (w: '58mm' | '80mm') => {
@@ -207,7 +247,7 @@ export function ThermalPosReceiptModal({
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>প্রিন্টার রেডি ({paperWidth})</span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={onClose}
@@ -218,10 +258,20 @@ export function ThermalPosReceiptModal({
             <button
               type="button"
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-700 text-slate-200 hover:bg-slate-800 text-xs font-semibold transition"
+              title="ব্রাউজার প্রিন্টার ডায়ালগ"
             >
-              <Printer className="w-4 h-4" />
-              রসিদ প্রিন্ট করুন
+              <Printer className="w-4 h-4 text-slate-400" />
+              ব্রাউজার প্রিন্ট
+            </button>
+            <button
+              type="button"
+              onClick={handleBluetoothPrint}
+              disabled={isBtPrinting}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition disabled:opacity-50"
+            >
+              <Smartphone className={`w-4 h-4 ${isBtPrinting ? 'animate-bounce' : ''}`} />
+              {isBtPrinting ? 'কানেক্ট হচ্ছে...' : 'ব্লুটুথ সরাসরি প্রিন্ট (POS)'}
             </button>
           </div>
         </div>

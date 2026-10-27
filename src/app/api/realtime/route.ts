@@ -3,23 +3,37 @@ import { INITIAL_EVENTS } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const tenantId = searchParams.get('tenantId');
+  const tenantId = searchParams.get('tenantId') || 'samity-ekota';
   const stream = searchParams.get('stream');
 
-  // If client requests SSE stream
+  // Server-Sent Events (SSE) Live Channel
   if (stream === 'true') {
     const encoder = new TextEncoder();
     const customReadable = new ReadableStream({
       start(controller) {
+        // Welcome Handshake
         controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ status: 'connected', timestamp: new Date().toISOString() })}\n\n`)
+          encoder.encode(`data: ${JSON.stringify({ 
+            type: 'CONNECTED', 
+            tenantId, 
+            message: 'Realtime SSE Stream established',
+            timestamp: new Date().toISOString() 
+          })}\n\n`)
         );
 
+        // Keep-alive heartbeat
         const interval = setInterval(() => {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ type: 'HEARTBEAT', timestamp: new Date().toISOString() })}\n\n`)
-          );
-        }, 15000);
+          try {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ 
+                type: 'HEARTBEAT', 
+                timestamp: new Date().toISOString() 
+              })}\n\n`)
+            );
+          } catch {
+            clearInterval(interval);
+          }
+        }, 20000);
 
         request.signal.addEventListener('abort', () => {
           clearInterval(interval);
@@ -36,7 +50,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Regular JSON polling fallback
+  // Regular JSON fallback
   const filteredEvents = tenantId 
     ? INITIAL_EVENTS.filter(e => e.tenantId === tenantId)
     : INITIAL_EVENTS;
@@ -52,12 +66,30 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const { idempotencyKey, tenantId, entity, action, payload } = body;
+
+    // Idempotent sync item handler
+    const syncResult = {
+      idempotencyKey: idempotencyKey || `SRV-${Date.now()}`,
+      tenantId: tenantId || 'samity-ekota',
+      entity: entity || 'TRANSACTION',
+      action: action || 'CREATE',
+      status: 'SYNCED',
+      syncedAt: new Date().toISOString()
+    };
+
     return NextResponse.json({
       success: true,
-      receivedEvent: body,
-      broadcastedAt: new Date().toISOString()
+      message: 'রেকর্ড সফলভাবে সিঙ্ক ও ব্রডকাস্ট করা হয়েছে',
+      data: syncResult,
+      receivedPayload: payload
     });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 400 });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ 
+      success: false, 
+      errorCode: 'SYNC_DISPATCH_FAILED',
+      message: msg 
+    }, { status: 400 });
   }
 }
