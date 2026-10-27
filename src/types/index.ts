@@ -1,4 +1,4 @@
-export const APP_VERSION = 'v1.8.0';
+export const APP_VERSION = 'v1.9.0';
 
 export type Language = 'bn' | 'en';
 
