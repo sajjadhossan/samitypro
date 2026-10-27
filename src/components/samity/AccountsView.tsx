@@ -12,6 +12,7 @@ import {
 import { useSamityStore } from '@/lib/store';
 import { translations, formatCurrency, formatDate } from '@/lib/i18n';
 import { Voucher, AccountHead, VoucherType, PaymentMethod, AccountHeadGroup } from '@/types';
+import { ActionMenu } from '@/components/common/ActionMenu';
 
 type AccountTab = 'CASH_BOOK' | 'VOUCHERS' | 'NEW_VOUCHER' | 'GENERAL_LEDGER' | 'CHART_OF_ACCOUNTS' | 'FINANCIAL_REPORTS';
 
@@ -537,16 +538,19 @@ export function AccountsView() {
                           {formatCurrency(entry.balance, language)}
                         </td>
                         <td className="py-2.5 px-3 text-center font-sans">
-                          <button
-                            onClick={() => {
-                              const found = vouchers.find(v => v.id === entry.id || v.voucherNo === entry.voucherNo);
-                              if (found) setSelectedVoucherForSlip(found);
+                          <ActionMenu
+                            options={{
+                              onView: () => {
+                                const found = vouchers.find(v => v.id === entry.id || v.voucherNo === entry.voucherNo);
+                                if (found) setSelectedVoucherForSlip(found);
+                              },
+                              onPrint: () => {
+                                const found = vouchers.find(v => v.id === entry.id || v.voucherNo === entry.voucherNo);
+                                if (found) setSelectedVoucherForSlip(found);
+                              }
                             }}
-                            className="p-1 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-300 border border-slate-700 transition cursor-pointer"
-                            title="ভাউচার প্রিন্ট স্লিপ দেখুন"
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                          </button>
+                            itemName={entry.voucherNo}
+                          />
                         </td>
                       </tr>
                     ))
@@ -712,34 +716,30 @@ export function AccountsView() {
                         </span>
                       </td>
                       <td className="py-2.5 px-3 text-center font-sans">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => setSelectedVoucherForSlip(v)}
-                            className="p-1 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-300 border border-slate-700 transition cursor-pointer"
-                            title="অফিসিয়াল ভাউচার স্লিপ প্রিন্ট"
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                          </button>
-
-                          {v.status === 'PENDING' && (
-                            <>
-                              <button
-                                onClick={() => approveVoucher(v.id, 'আলহাজ্ব রফিকুল ইসলাম (সভাপতি)')}
-                                className="p-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition cursor-pointer"
-                                title="অনুমোদন করুন"
-                              >
-                                <Check className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => rejectVoucher(v.id, 'সভাপতি', 'অনুপযুক্ত ব্যয়')}
-                                className="p-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition cursor-pointer"
-                                title="বাতিল করুন"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        <ActionMenu
+                          options={{
+                            onView: () => setSelectedVoucherForSlip(v),
+                            onPrint: () => setSelectedVoucherForSlip(v),
+                            isApproved: v.status === 'APPROVED',
+                            customItems: v.status === 'PENDING' ? [
+                              {
+                                labelBn: 'অনুমোদন করুন',
+                                labelEn: 'Approve Voucher',
+                                icon: Check,
+                                variant: 'success',
+                                onClick: () => approveVoucher(v.id, 'আলহাজ্ব রফিকুল ইসলাম (সভাপতি)')
+                              },
+                              {
+                                labelBn: 'বাতিল করুন',
+                                labelEn: 'Reject Voucher',
+                                icon: X,
+                                variant: 'danger',
+                                onClick: () => rejectVoucher(v.id, 'সভাপতি', 'অনুপযুক্ত ব্যয়')
+                              }
+                            ] : undefined
+                          }}
+                          itemName={v.voucherNo}
+                        />
                       </td>
                     </tr>
                   ))}
@@ -1241,13 +1241,24 @@ export function AccountsView() {
                   <p className="text-xs text-slate-400 mt-0.5">অর্থবছর: ২০২৫-২০২৬ • সকল লেজারের ডেবিট ও ক্রেডিট স্থিতি</p>
                 </div>
 
-                <div className={`px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 ${
-                  trialBalanceData.isBalanced 
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
-                    : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                }`}>
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>{trialBalanceData.isBalanced ? 'হিসাব সম্পূর্ণ নির্ভুল ও রিকনসিল্ড ✓' : 'সমন্বয় প্রয়োজন'}</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 transition cursor-pointer"
+                    title="প্রিন্ট করুন"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>প্রিন্ট স্টেটমেন্ট</span>
+                  </button>
+                  <div className={`px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 ${
+                    trialBalanceData.isBalanced 
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
+                      : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                  }`}>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>{trialBalanceData.isBalanced ? 'হিসাব সম্পূর্ণ নির্ভুল ও রিকনসিল্ড ✓' : 'সমন্বয় প্রয়োজন'}</span>
+                  </div>
                 </div>
               </div>
 

@@ -1035,15 +1035,27 @@ class DataStore {
       voucherNo,
       type: 'DEBIT',
       category: 'ঋণ বিতরণ (Disbursement)',
+      accountHeadCode: '1030',
+      accountHeadNameBn: 'সদস্য ঋণ আদায়যোগ্য হিসাব (Loans Receivable)',
       amount: loan.principalAmount,
       descriptionBn: `সদস্য ${member?.nameBn} (${member?.memberCode}) কে ${loan.loanScheme} বাবদ ঋণ প্রদান। ঋণ নং: ${loan.loanNumber}`,
       descriptionEn: `Loan disbursed to ${member?.nameEn} for ${loan.loanScheme}. Loan No: ${loan.loanNumber}`,
       paidToOrReceivedFrom: member?.nameBn || 'ঋণগ্রহীতা সদস্য',
       paymentMethod: params.paymentMethod,
       date: today,
-      createdBy: this.currentUserId
+      createdBy: this.currentUserId,
+      approvedBy: officerName,
+      status: 'APPROVED'
     };
     this.vouchers.unshift(debitVoucher);
+
+    this.updateVoucherAccountBalances(
+      params.tenantId,
+      'DEBIT',
+      '1030',
+      params.paymentMethod,
+      loan.principalAmount
+    );
 
     // If processing fee exists, record income Credit voucher
     if (loan.processingFee && loan.processingFee > 0) {
@@ -1053,15 +1065,27 @@ class DataStore {
         voucherNo: `VR-CR-${Date.now().toString().slice(-4)}`,
         type: 'CREDIT',
         category: 'ঋণ প্রসেসিং ফি আয়',
+        accountHeadCode: '3030',
+        accountHeadNameBn: 'ঋণ আবেদন ফরম ও প্রসেসিং ফি আয়',
         amount: loan.processingFee,
         descriptionBn: `ঋণ নং: ${loan.loanNumber} এর প্রসেসিং ও ডকুমেন্টেশন ফি বাবদ আয়`,
         descriptionEn: `Loan processing fee for ${loan.loanNumber}`,
         paidToOrReceivedFrom: member?.nameBn || 'ঋণগ্রহীতা সদস্য',
         paymentMethod: params.paymentMethod,
         date: today,
-        createdBy: this.currentUserId
+        createdBy: this.currentUserId,
+        approvedBy: officerName,
+        status: 'APPROVED'
       };
       this.vouchers.unshift(feeVoucher);
+
+      this.updateVoucherAccountBalances(
+        params.tenantId,
+        'CREDIT',
+        '3030',
+        params.paymentMethod,
+        loan.processingFee
+      );
     }
 
     this.addEvent({
@@ -1143,23 +1167,49 @@ class DataStore {
       loan.closedReason = 'সকল কিস্তি সম্পূর্ণভাবে পরিশোধিত হয়েছে।';
     }
 
-    // Add Credit voucher into Accounts
+    // Add Credit voucher into Accounts & General Ledger
     const voucherNo = `VR-CR-${Date.now().toString().slice(-4)}`;
+    const principalRatio = loan.totalPayable > 0 ? loan.principalAmount / loan.totalPayable : 0.8;
+    const principalPortion = Math.round(params.amount * principalRatio);
+    const interestPortion = params.amount - principalPortion;
+
     const voucher: Voucher = {
       id: `vch-${Date.now()}`,
       tenantId: params.tenantId,
       voucherNo,
       type: 'CREDIT',
       category: 'ঋণ কিস্তি আদায় (Loan Repayment)',
+      accountHeadCode: '1030',
+      accountHeadNameBn: 'সদস্য ঋণ আদায়যোগ্য হিসাব (Loans Receivable)',
       amount: params.amount,
-      descriptionBn: `${member?.nameBn || 'সদস্য'} এর ঋণ নম্বর ${loan.loanNumber} এর কিস্তি আদায়। রসিদ নং: ${receiptNo}`,
-      descriptionEn: `Loan repayment collected for ${loan.loanNumber}. Receipt: ${receiptNo}`,
+      descriptionBn: `${member?.nameBn || 'সদস্য'} এর ঋণ নম্বর ${loan.loanNumber} এর কিস্তি আদায় (আসল: ৳${principalPortion.toLocaleString()}, মুনাফা: ৳${interestPortion.toLocaleString()})। রসিদ নং: ${receiptNo}`,
+      descriptionEn: `Loan repayment collected for ${loan.loanNumber} (Principal: ৳${principalPortion.toLocaleString()}, Interest: ৳${interestPortion.toLocaleString()}). Receipt: ${receiptNo}`,
       paidToOrReceivedFrom: member?.nameBn || 'ঋণগ্রহীতা সদস্য',
       paymentMethod: params.paymentMethod,
       date: today,
-      createdBy: this.currentUserId
+      createdBy: this.currentUserId,
+      approvedBy: collectorName,
+      status: 'APPROVED'
     };
     this.vouchers.unshift(voucher);
+
+    // Update account head balances: reduce Loans Receivable by principal, increase Interest Income
+    this.updateVoucherAccountBalances(
+      params.tenantId,
+      'CREDIT',
+      '1030',
+      params.paymentMethod,
+      principalPortion
+    );
+    if (interestPortion > 0) {
+      this.updateVoucherAccountBalances(
+        params.tenantId,
+        'CREDIT',
+        '3020',
+        params.paymentMethod,
+        interestPortion
+      );
+    }
 
     // Create official PaidReceipt
     const receipt: PaidReceipt = {

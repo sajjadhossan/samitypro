@@ -15,6 +15,7 @@ import {
   LoanFrequency, PaidReceipt, LoanGuarantor 
 } from '@/types';
 import confetti from 'canvas-confetti';
+import { ActionMenu } from '@/components/common/ActionMenu';
 
 interface LoansViewProps {
   onOpenCollectInstallment?: (loanId?: string) => void;
@@ -58,6 +59,16 @@ export function LoansView({ onOpenCollectInstallment }: LoansViewProps) {
   const [applyGuarantor1Relation, setApplyGuarantor1Relation] = useState('সমিতির সদস্য');
   const [applyGuarantor1Nid, setApplyGuarantor1Nid] = useState('');
   const [applyGuarantor1MemberId, setApplyGuarantor1MemberId] = useState('');
+  // Guarantor 2 State
+  const [applyGuarantor2Name, setApplyGuarantor2Name] = useState('');
+  const [applyGuarantor2Phone, setApplyGuarantor2Phone] = useState('');
+  const [applyGuarantor2Relation, setApplyGuarantor2Relation] = useState('');
+  const [applyGuarantor2Nid, setApplyGuarantor2Nid] = useState('');
+  // Security Cheque State
+  const [applyChequeBank, setApplyChequeBank] = useState('সোনালী ব্যাংক লিমিটেড');
+  const [applyChequeNo, setApplyChequeNo] = useState('');
+  const [applyChequeAmount, setApplyChequeAmount] = useState<number>(0);
+  const [selectedLoanForSanctionLetter, setSelectedLoanForSanctionLetter] = useState<Loan | null>(null);
   const [applySuccessMessage, setApplySuccessMessage] = useState('');
 
   // Collect EMI Form State
@@ -143,6 +154,18 @@ export function LoansView({ onOpenCollectInstallment }: LoansViewProps) {
       memberId: applyGuarantor1MemberId || undefined
     } : undefined;
 
+    const g2: LoanGuarantor | undefined = applyGuarantor2Name ? {
+      name: applyGuarantor2Name,
+      phone: applyGuarantor2Phone,
+      relation: applyGuarantor2Relation || 'জামিনদার ২',
+      nid: applyGuarantor2Nid
+    } : undefined;
+
+    const collateralSummary = [
+      applyCollateral,
+      applyChequeNo ? `সিকিউরিটি চেক নং: ${applyChequeNo} (${applyChequeBank}, ৳${applyChequeAmount || applyPrincipal})` : ''
+    ].filter(Boolean).join(' | ');
+
     const newLoan = applyLoan({
       tenantId: activeTenant.id,
       memberId: applyMemberId,
@@ -155,7 +178,8 @@ export function LoansView({ onOpenCollectInstallment }: LoansViewProps) {
       purpose: applyPurpose,
       processingFee: simProcessingFee,
       guarantor1: g1,
-      collateralDetails: applyCollateral,
+      guarantor2: g2,
+      collateralDetails: collateralSummary,
       autoApprove: applyAutoApprove,
       approvalNotes: applyAutoApprove ? 'অ্যাডমিন কর্তৃক সরাসরি অনুমোদন' : undefined
     });
@@ -648,15 +672,6 @@ export function LoansView({ onOpenCollectInstallment }: LoansViewProps) {
 
                           <td className="py-3 px-4 text-right font-sans">
                             <div className="flex items-center justify-end gap-1.5">
-                              {/* Amortization Schedule Ledger Button */}
-                              <button
-                                onClick={() => setSelectedLoanForSchedule(loan)}
-                                title="কিস্তি সূচি ও লেজার বিবরণী"
-                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
-                              >
-                                <FileText className="w-4 h-4 text-cyan-400" />
-                              </button>
-
                               {/* Pending Review Action */}
                               {loan.status === 'PENDING' && (
                                 <button
@@ -693,6 +708,30 @@ export function LoansView({ onOpenCollectInstallment }: LoansViewProps) {
                                   কিস্তি আদায়
                                 </button>
                               )}
+
+                              {/* Action Menu */}
+                              <ActionMenu
+                                options={{
+                                  onView: () => setSelectedLoanForSchedule(loan),
+                                  onPrint: () => setSelectedLoanForSanctionLetter(loan),
+                                  onDownloadPdf: () => setSelectedLoanForSanctionLetter(loan),
+                                  customItems: [
+                                    {
+                                      labelBn: 'মঞ্জুরিপত্র প্রিন্ট',
+                                      labelEn: 'Sanction Letter',
+                                      icon: Printer,
+                                      onClick: () => setSelectedLoanForSanctionLetter(loan)
+                                    },
+                                    {
+                                      labelBn: 'কিস্তি সূচি ও লেজার',
+                                      labelEn: 'Repayment Schedule',
+                                      icon: Calendar,
+                                      onClick: () => setSelectedLoanForSchedule(loan)
+                                    }
+                                  ]
+                                }}
+                                itemName={loan.loanNumber}
+                              />
                             </div>
                           </td>
                         </tr>
@@ -965,58 +1004,153 @@ export function LoansView({ onOpenCollectInstallment }: LoansViewProps) {
               <div className="text-xs font-bold text-slate-200">
                 ২. জামিনদার (Guarantor) ও জামানতের তথ্য
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <div>
-                  <label className="block text-slate-400 text-[11px] mb-1">জামিনদারের নাম</label>
-                  <input
-                    type="text"
-                    placeholder="নাম লিখুন"
-                    value={applyGuarantor1Name}
-                    onChange={e => setApplyGuarantor1Name(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs"
-                  />
-                </div>
+              
+              {/* Guarantor 1 */}
+              <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                <div className="text-[11px] font-semibold text-cyan-400">১ম জামিনদার (Guarantor 1) *</div>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">নাম</label>
+                    <input
+                      type="text"
+                      placeholder="নাম লিখুন"
+                      value={applyGuarantor1Name}
+                      onChange={e => setApplyGuarantor1Name(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-slate-400 text-[11px] mb-1">মোবাইল নম্বর</label>
-                  <input
-                    type="text"
-                    placeholder="+8801..."
-                    value={applyGuarantor1Phone}
-                    onChange={e => setApplyGuarantor1Phone(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">মোবাইল নম্বর</label>
+                    <input
+                      type="text"
+                      placeholder="+8801..."
+                      value={applyGuarantor1Phone}
+                      onChange={e => setApplyGuarantor1Phone(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-slate-400 text-[11px] mb-1">সম্পর্ক</label>
-                  <input
-                    type="text"
-                    placeholder="যেমন: সদস্য / ভাই"
-                    value={applyGuarantor1Relation}
-                    onChange={e => setApplyGuarantor1Relation(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">সম্পর্ক</label>
+                    <input
+                      type="text"
+                      placeholder="যেমন: সদস্য / ভাই"
+                      value={applyGuarantor1Relation}
+                      onChange={e => setApplyGuarantor1Relation(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-slate-400 text-[11px] mb-1">এনআইডি নম্বর</label>
-                  <input
-                    type="text"
-                    placeholder="NID নম্বর"
-                    value={applyGuarantor1Nid}
-                    onChange={e => setApplyGuarantor1Nid(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs"
-                  />
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">এনআইডি নম্বর</label>
+                    <input
+                      type="text"
+                      placeholder="NID নম্বর"
+                      value={applyGuarantor1Nid}
+                      onChange={e => setApplyGuarantor1Nid(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Guarantor 2 (Optional) */}
+              <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                <div className="text-[11px] font-semibold text-slate-400">২য় জামিনদার (Guarantor 2 - ঐচ্ছিক)</div>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">নাম</label>
+                    <input
+                      type="text"
+                      placeholder="২য় জামিনদারের নাম"
+                      value={applyGuarantor2Name}
+                      onChange={e => setApplyGuarantor2Name(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">মোবাইল নম্বর</label>
+                    <input
+                      type="text"
+                      placeholder="+8801..."
+                      value={applyGuarantor2Phone}
+                      onChange={e => setApplyGuarantor2Phone(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">সম্পর্ক</label>
+                    <input
+                      type="text"
+                      placeholder="যেমন: চাচা / ব্যবসায়ী পার্টনার"
+                      value={applyGuarantor2Relation}
+                      onChange={e => setApplyGuarantor2Relation(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">এনআইডি নম্বর</label>
+                    <input
+                      type="text"
+                      placeholder="NID নম্বর"
+                      value={applyGuarantor2Nid}
+                      onChange={e => setApplyGuarantor2Nid(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Security Cheque & Collateral Details */}
+              <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                <div className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>ব্যাংক সিকিউরিটি চেক ও জামানত (Security Cheque & Collateral)</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">ব্যাংকের নাম</label>
+                    <input
+                      type="text"
+                      placeholder="যেমন: সোনালী ব্যাংক"
+                      value={applyChequeBank}
+                      onChange={e => setApplyChequeBank(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">চেক নম্বর</label>
+                    <input
+                      type="text"
+                      placeholder="যেমন: SB-9842105"
+                      value={applyChequeNo}
+                      onChange={e => setApplyChequeNo(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">চেকের টাকার পরিমাণ (টাকা)</label>
+                    <input
+                      type="number"
+                      placeholder="টাকার অঙ্ক"
+                      value={applyChequeAmount || ''}
+                      onChange={e => setApplyChequeAmount(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs font-mono"
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 <div>
-                  <label className="block text-slate-400 text-[11px] mb-1">জামানত / বন্ধক বিবরণ (Collateral)</label>
+                  <label className="block text-slate-400 text-[11px] mb-1">অতিরিক্ত জামানত বিবরণ</label>
                   <input
                     type="text"
-                    placeholder="যেমন: ১টি সিকিউরিটি চেক নং: SB-123456 / জমি দলিল"
+                    placeholder="যেমন: দোকান পজিশন চুক্তি / দলিল"
                     value={applyCollateral}
                     onChange={e => setApplyCollateral(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs"
@@ -1821,6 +1955,123 @@ export function LoansView({ onOpenCollectInstallment }: LoansViewProps) {
           </div>
         </div>
       )}
+
+      {/* ============================================================== */}
+      {/* MODAL 4: অফিসিয়াল ঋণ মঞ্জুরিপত্র (LOAN SANCTION & AGREEMENT LETTER) */}
+      {/* ============================================================== */}
+      {selectedLoanForSanctionLetter && (() => {
+        const member = members.find(m => m.id === selectedLoanForSanctionLetter.memberId);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in">
+            <div className="relative w-full max-w-2xl max-h-[90vh] rounded-2xl glass-panel bg-slate-900 border border-slate-700 p-6 space-y-4 overflow-y-auto">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2 text-white font-bold text-sm">
+                  <FileText className="w-5 h-5 text-cyan-400" />
+                  <span>অফিসিয়াল ঋণ মঞ্জুরিপত্র ও অঙ্গীকারনামা (Loan Sanction Letter)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => window.print()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>প্রিন্ট করুন</span>
+                  </button>
+                  <button
+                    onClick={() => setSelectedLoanForSanctionLetter(null)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Printable Sanction Paper */}
+              <div className="p-6 rounded-2xl bg-white text-slate-900 font-sans shadow-xl border border-slate-200 space-y-4 text-xs">
+                {/* Official Header */}
+                <div className="text-center border-b-2 border-slate-900 pb-3">
+                  <h3 className="font-bold text-lg text-slate-900">{activeTenant.nameBn}</h3>
+                  <p className="text-[11px] text-slate-600">{activeTenant.address}</p>
+                  <div className="mt-1 inline-block px-3 py-0.5 rounded-full bg-cyan-100 text-cyan-900 font-bold text-[11px]">
+                    ঋণ মঞ্জুরিপত্র ও শর্তাবলি (Loan Sanction Agreement)
+                  </div>
+                </div>
+
+                {/* Memo & Date */}
+                <div className="flex justify-between text-[11px] font-mono border-b pb-2 border-slate-100">
+                  <span>স্মারক নং: <strong>REF/{selectedLoanForSanctionLetter.loanNumber}</strong></span>
+                  <span>তারিখ: <strong>{selectedLoanForSanctionLetter.approvalDate || selectedLoanForSanctionLetter.createdAt}</strong></span>
+                </div>
+
+                {/* Borrower Info */}
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                  <div className="font-bold text-slate-900">বরাবর, {member?.nameBn} ({member?.memberCode})</div>
+                  <div className="text-slate-600">পিতা/স্বামীর নাম: {member?.fatherHusbandName || '—'}</div>
+                  <div className="text-slate-600">ঠিকানা: {member?.presentAddress || '—'} • মোবাইল: {member?.phone}</div>
+                </div>
+
+                {/* Terms Table */}
+                <div>
+                  <div className="font-bold text-slate-900 mb-1">মঞ্জুরিকৃত ঋণের বিবরণ:</div>
+                  <table className="w-full border border-slate-200 text-left text-[11px]">
+                    <tbody>
+                      <tr className="border-b">
+                        <td className="p-2 font-semibold bg-slate-100 w-1/3">ঋণ স্কিম</td>
+                        <td className="p-2 font-bold">{selectedLoanForSanctionLetter.loanScheme}</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="p-2 font-semibold bg-slate-100">মঞ্জুরিকৃত মূলধন</td>
+                        <td className="p-2 font-mono font-bold text-cyan-800">৳ {selectedLoanForSanctionLetter.principalAmount.toLocaleString()}</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="p-2 font-semibold bg-slate-100">সুদের হার ও মেয়াদ</td>
+                        <td className="p-2">{selectedLoanForSanctionLetter.interestRatePercent}% বার্ষিক • {selectedLoanForSanctionLetter.durationMonths} মাস ({selectedLoanForSanctionLetter.totalInstallments} কিস্তি)</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="p-2 font-semibold bg-slate-100">প্রতি কিস্তির পরিমাণ</td>
+                        <td className="p-2 font-mono font-bold text-emerald-800">৳ {selectedLoanForSanctionLetter.installmentAmount.toLocaleString()} ({selectedLoanForSanctionLetter.installmentFrequency === 'MONTHLY' ? 'মাসিক' : 'সাপ্তাহিক'})</td>
+                      </tr>
+                      <tr>
+                        <td className="p-2 font-semibold bg-slate-100">সর্বমোট প্রদেয় অর্থ</td>
+                        <td className="p-2 font-mono font-bold">৳ {selectedLoanForSanctionLetter.totalPayable.toLocaleString()}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Guarantors & Collateral */}
+                <div className="space-y-1 text-[11px]">
+                  <div><strong className="text-slate-800">১ম জামিনদার:</strong> {selectedLoanForSanctionLetter.guarantor1?.name || '—'} (মোবাইল: {selectedLoanForSanctionLetter.guarantor1?.phone || '—'}, সম্পর্ক: {selectedLoanForSanctionLetter.guarantor1?.relation || '—'})</div>
+                  {selectedLoanForSanctionLetter.guarantor2 && (
+                    <div><strong className="text-slate-800">২য় জামিনদার:</strong> {selectedLoanForSanctionLetter.guarantor2?.name} (মোবাইল: {selectedLoanForSanctionLetter.guarantor2?.phone || '—'})</div>
+                  )}
+                  {selectedLoanForSanctionLetter.collateralDetails && (
+                    <div><strong className="text-slate-800">জামানত / সিকিউরিটি চেক:</strong> {selectedLoanForSanctionLetter.collateralDetails}</div>
+                  )}
+                </div>
+
+                {/* Terms disclaimer */}
+                <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[10px] text-amber-900 leading-relaxed">
+                  <strong>শর্তাবলি:</strong> নির্ধারিত তারিখে কিস্তি পরিশোধে ব্যর্থ হলে দৈনিক/মাসিক হারে বিলম্ব ফি প্রযোজ্য হইবে। ঋণগ্রহীতা ও জামিনদার যৌথ ও পৃথকভাবে ঋণ পরিশোধে দায়বদ্ধ থাকিবেন।
+                </div>
+
+                {/* Three Signatures */}
+                <div className="pt-10 grid grid-cols-3 gap-3 text-center text-[10px] text-slate-600">
+                  <div className="border-t border-slate-400 pt-1">
+                    ঋণগ্রহীতার স্বাক্ষর
+                  </div>
+                  <div className="border-t border-slate-400 pt-1">
+                    জামিনদারের স্বাক্ষর
+                  </div>
+                  <div className="border-t border-slate-400 pt-1 font-bold text-slate-900">
+                    সভাপতি / অনুমোদকের সিল
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );

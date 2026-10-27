@@ -7,6 +7,14 @@ import {
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 
+export interface ActionMenuCustomItem {
+  labelBn: string;
+  labelEn: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  onClick: () => void;
+  variant?: 'default' | 'danger' | 'success' | 'warning';
+}
+
 export interface ActionMenuItemOptions {
   onView?: () => void;
   onEdit?: () => void;
@@ -18,6 +26,7 @@ export interface ActionMenuItemOptions {
   onArchive?: () => void;
   onDelete?: () => void;
   isApproved?: boolean;
+  customItems?: ActionMenuCustomItem[];
 }
 
 interface ActionMenuProps {
@@ -119,6 +128,33 @@ export function ActionMenu({ options, itemName }: ActionMenuProps) {
               <Copy className="w-3.5 h-3.5 text-slate-400" />
               <span>{isBn ? 'অনুরূপ তৈরি (Duplicate)' : 'Duplicate'}</span>
             </button>
+          )}
+
+          {options.customItems && options.customItems.length > 0 && (
+            <>
+              <div className="my-1 border-t border-slate-800" />
+              {options.customItems.map((item, idx) => {
+                const IconComponent = item.icon;
+                const textColor = item.variant === 'danger'
+                  ? 'text-red-400 hover:bg-red-500/10'
+                  : item.variant === 'success'
+                  ? 'text-emerald-400 hover:bg-emerald-500/10'
+                  : item.variant === 'warning'
+                  ? 'text-amber-400 hover:bg-amber-500/10'
+                  : 'text-slate-200 hover:bg-slate-800 hover:text-cyan-400';
+                return (
+                  <button
+                    key={`custom-item-${idx}`}
+                    type="button"
+                    onClick={() => handleAction(item.onClick)}
+                    className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition cursor-pointer ${textColor}`}
+                  >
+                    {IconComponent && <IconComponent className="w-3.5 h-3.5 shrink-0" />}
+                    <span>{isBn ? item.labelBn : item.labelEn}</span>
+                  </button>
+                );
+              })}
+            </>
           )}
 
           {(options.onPrint || options.onDownloadPdf) && <div className="my-1 border-t border-slate-800" />}
