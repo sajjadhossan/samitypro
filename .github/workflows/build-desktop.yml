@@ -1,0 +1,100 @@
+name: Build Desktop Apps (Windows & macOS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_platform:
+        description: 'Select Platform to Build'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - windows
+          - macos
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    name: Build Windows Desktop App (x64)
+    if: github.event.inputs.target_platform == 'all' || github.event.inputs.target_platform == 'windows' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Web Application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://samitypro.vercel.app
+
+      - name: Prepare Windows Executable Bundle
+        shell: pwsh
+        run: |
+          mkdir dist-windows
+          # Package manifest and entry
+          Copy-Item -Recurse electron dist-windows/electron
+          Copy-Item -Recurse public dist-windows/public
+          Copy-Item package.json dist-windows/package.json
+          Compress-Archive -Path dist-windows/* -DestinationPath SamityPro-v2.0.0-windows-x64.zip
+
+      - name: Upload Windows Desktop Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SamityPro-Windows-x64
+          path: SamityPro-v2.0.0-windows-x64.zip
+          if-no-files-found: warn
+
+  build-macos:
+    name: Build macOS Desktop App (Universal / Apple Silicon & Intel)
+    if: github.event.inputs.target_platform == 'all' || github.event.inputs.target_platform == 'macos' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Web Application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://samitypro.vercel.app
+
+      - name: Prepare macOS Application Bundle
+        run: |
+          mkdir -p dist-macos
+          cp -r electron dist-macos/electron
+          cp -r public dist-macos/public
+          cp package.json dist-macos/package.json
+          zip -r SamityPro-v2.0.0-macos-universal.zip dist-macos
+
+      - name: Upload macOS Desktop Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SamityPro-macOS-Universal
+          path: SamityPro-v2.0.0-macos-universal.zip
+          if-no-files-found: warn

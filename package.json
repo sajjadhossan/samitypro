@@ -2,11 +2,13 @@
   "name": "samitypro",
   "version": "2.0.0",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "build:mobile": "next build && npx cap sync android",
     "open:android": "npx cap open android",
+    "desktop:start": "electron .",
     "start": "next start",
     "lint": "eslint"
   },
