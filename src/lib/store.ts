@@ -14,6 +14,8 @@ import {
   SavingsPolicyConfig, SavingsType, PaymentMethod, VoucherType,
   LoanPolicyConfig, LoanInterestMethod, LoanFrequency, LoanGuarantor, LoanInstallment,
   AccountHead, GeneralLedgerEntry, TrialBalanceItem,
+  PaymentGatewayProvider, PaymentPurpose, OnlinePaymentTransaction, PaymentGatewayConfig,
+  FieldCollectorDailyCollection, FieldDayEndSummary, ThermalPrinterConfig,
   APP_VERSION
 } from '@/types';
 import { 
@@ -27,7 +29,9 @@ import {
   INITIAL_AUDIT_LOGS, INITIAL_APPROVAL_ITEMS, INITIAL_GENERATED_DOCUMENTS,
   INITIAL_GATEWAY_CONFIG, INITIAL_SCHEDULER_CONFIG, INITIAL_OFFLINE_QUEUE,
   INITIAL_SUBSCRIPTION_POLICY, INITIAL_LATE_FEE_WAIVERS, INITIAL_SAVINGS_POLICY,
-  INITIAL_LOAN_POLICY, INITIAL_CHART_OF_ACCOUNTS
+  INITIAL_LOAN_POLICY, INITIAL_CHART_OF_ACCOUNTS,
+  INITIAL_PAYMENT_GATEWAY_CONFIG, INITIAL_ONLINE_PAYMENTS,
+  INITIAL_FIELD_COLLECTIONS, INITIAL_FIELD_DAY_ENDS, INITIAL_THERMAL_PRINTER_CONFIG
 } from './db';
 
 const STORAGE_KEYS = {
@@ -61,6 +65,11 @@ const STORAGE_KEYS = {
   LATE_FEE_WAIVERS: 'samitypro_late_waivers',
   LOAN_POLICIES: 'samitypro_loan_policies',
   CHART_OF_ACCOUNTS: 'samitypro_chart_of_accounts',
+  PAYMENT_GATEWAY_CONFIG: 'samitypro_pg_config',
+  ONLINE_PAYMENTS: 'samitypro_online_payments',
+  FIELD_COLLECTIONS: 'samitypro_field_collections',
+  FIELD_DAY_ENDS: 'samitypro_field_day_ends',
+  THERMAL_CONFIG: 'samitypro_thermal_cfg',
   CURRENT_TENANT_ID: 'samitypro_active_tenant',
   CURRENT_USER_ID: 'samitypro_active_user',
   LANGUAGE: 'samitypro_language'
@@ -90,7 +99,9 @@ type StoreCollectionKey =
   | 'documents' | 'letterhead' | 'reminders' | 'signatureSeal'
   | 'voucherPrefix' | 'auditLogs' | 'approvalItems' | 'generatedDocs'
   | 'gatewayConfig' | 'schedulerConfig' | 'offlineQueue'
-  | 'subscriptionPolicies' | 'lateFeeWaivers';
+  | 'subscriptionPolicies' | 'lateFeeWaivers'
+  | 'paymentGatewayConfig' | 'onlinePayments'
+  | 'fieldCollections' | 'fieldDayEnds' | 'thermalPrinterConfig';
 
 const STORE_STORAGE_MAPPINGS: [string, StoreCollectionKey][] = [
   [STORAGE_KEYS.TENANTS, 'tenants'],
@@ -122,6 +133,11 @@ const STORE_STORAGE_MAPPINGS: [string, StoreCollectionKey][] = [
   [STORAGE_KEYS.OFFLINE_QUEUE, 'offlineQueue'],
   [STORAGE_KEYS.SUBSCRIPTION_POLICIES, 'subscriptionPolicies'],
   [STORAGE_KEYS.LATE_FEE_WAIVERS, 'lateFeeWaivers'],
+  [STORAGE_KEYS.PAYMENT_GATEWAY_CONFIG, 'paymentGatewayConfig'],
+  [STORAGE_KEYS.ONLINE_PAYMENTS, 'onlinePayments'],
+  [STORAGE_KEYS.FIELD_COLLECTIONS, 'fieldCollections'],
+  [STORAGE_KEYS.FIELD_DAY_ENDS, 'fieldDayEnds'],
+  [STORAGE_KEYS.THERMAL_CONFIG, 'thermalPrinterConfig'],
 ];
 
 // In-memory fallback / cache
@@ -156,6 +172,11 @@ class DataStore {
   lateFeeWaivers: LateFeeWaiverRecord[] = INITIAL_LATE_FEE_WAIVERS;
   savingsPolicies: Record<string, SavingsPolicyConfig> = { 'samity-ekota': INITIAL_SAVINGS_POLICY };
   loanPolicies: Record<string, LoanPolicyConfig> = { 'samity-ekota': INITIAL_LOAN_POLICY };
+  paymentGatewayConfig: PaymentGatewayConfig = INITIAL_PAYMENT_GATEWAY_CONFIG;
+  onlinePayments: OnlinePaymentTransaction[] = INITIAL_ONLINE_PAYMENTS;
+  fieldCollections: FieldCollectorDailyCollection[] = INITIAL_FIELD_COLLECTIONS;
+  fieldDayEnds: FieldDayEndSummary[] = INITIAL_FIELD_DAY_ENDS;
+  thermalPrinterConfig: ThermalPrinterConfig = INITIAL_THERMAL_PRINTER_CONFIG;
 
   currentTenantId: string = 'samity-ekota';
   currentUserId: string = 'user-rafiq';
@@ -591,7 +612,7 @@ class DataStore {
     memberId: string;
     accountId?: string;
     amount: number;
-    paymentMethod: 'CASH' | 'BKASH' | 'NAGAD' | 'BANK';
+    paymentMethod: PaymentMethod;
     notes?: string;
   }) {
     const member = this.members.find(m => m.id === params.memberId);
@@ -3500,6 +3521,381 @@ class DataStore {
     this.save();
     return true;
   }
+
+  // ----------------------------------------------------
+  // MODULE: ONLINE PAYMENT GATEWAYS (bKash / Nagad / Rocket / SSLCommerz)
+  // ----------------------------------------------------
+  updatePaymentGatewayConfig(config: Partial<PaymentGatewayConfig>) {
+    this.paymentGatewayConfig = { ...this.paymentGatewayConfig, ...config };
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'UPDATE',
+      entity: 'SETTINGS',
+      entityId: 'PAYMENT_GATEWAYS',
+      descriptionBn: 'অনলাইন পেমেন্ট গেটওয়ে (বিকাশ, নগদ, রকেট, এসএসএলকমার্জ) কনফিগারেশন আপডেট করা হয়েছে',
+      performedBy: this.currentUserId,
+      performedByRole: 'ADMIN'
+    });
+    this.save();
+    return this.paymentGatewayConfig;
+  }
+
+  initiateOnlinePayment(params: {
+    memberId: string;
+    purpose: PaymentPurpose;
+    amount: number;
+    gateway: PaymentGatewayProvider;
+    referenceId?: string;
+    notes?: string;
+  }): OnlinePaymentTransaction {
+    const member = this.members.find(m => m.id === params.memberId);
+    if (!member) throw new Error('সদস্য পাওয়া যায়নি');
+
+    const chargeRate = this.paymentGatewayConfig.serviceChargePercentage || 0;
+    const charge = Math.round((params.amount * (chargeRate / 100)) * 100) / 100;
+    const total = params.amount + charge;
+
+    const receiptNo = `REC-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
+    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
+
+    const payment: OnlinePaymentTransaction = {
+      id: `pay-${Date.now()}`,
+      tenantId: this.currentTenantId,
+      memberId: member.id,
+      memberNameBn: member.nameBn,
+      memberCode: member.memberCode,
+      phone: member.phone,
+      gateway: params.gateway,
+      purpose: params.purpose,
+      referenceId: params.referenceId || '',
+      amount: params.amount,
+      chargeAmount: charge,
+      totalPaid: total,
+      trxId: '',
+      gatewayPaymentId: `${params.gateway}-${Date.now().toString().slice(-6)}`,
+      status: 'PENDING',
+      paymentDate: nowStr,
+      receiptNo,
+      notes: params.notes || '',
+      createdAt: new Date().toISOString()
+    };
+
+    this.onlinePayments.unshift(payment);
+    this.save();
+    return payment;
+  }
+
+  verifyOnlinePayment(params: {
+    paymentId: string;
+    trxId: string;
+    verifiedBy?: string;
+  }): OnlinePaymentTransaction {
+    const payment = this.onlinePayments.find(p => p.id === params.paymentId);
+    if (!payment) throw new Error('পেমেন্ট রেকর্ড পাওয়া যায়নি');
+
+    payment.trxId = params.trxId;
+    payment.status = 'VERIFIED';
+    payment.verifiedAt = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    payment.verifiedBy = params.verifiedBy || `${payment.gateway} Webhook Auto-Verified`;
+
+    // 1. Post General Ledger Voucher (Debit Bank/MFS 1020, Credit Revenue/Asset/Liability)
+    const voucherId = `VCH-CR-${Date.now().toString().slice(-6)}`;
+    payment.voucherId = voucherId;
+
+    let creditHeadCode = '3010';
+    let creditHeadTitleBn = 'মাসিক সদস্য চাঁদা আয়';
+
+    if (payment.purpose === 'MONTHLY_SUBSCRIPTION') {
+      creditHeadCode = '3010';
+      creditHeadTitleBn = 'মাসিক সদস্য চাঁদা আয়';
+      // Mark subscription as paid via existing recordMonthlySubscription
+      const sub = this.subscriptions.find(s => s.id === payment.referenceId || (s.memberId === payment.memberId && s.status !== 'PAID'));
+      if (sub) {
+        this.recordMonthlySubscription({
+          tenantId: this.currentTenantId,
+          memberId: payment.memberId,
+          monthYear: sub.monthYear,
+          amount: payment.amount,
+          paymentMethod: 'BKASH',
+          notes: `অনলাইন পেমেন্ট (${payment.gateway}) - TrxID: ${payment.trxId}`
+        });
+      }
+    } else if (payment.purpose === 'SAVINGS_DEPOSIT' || payment.purpose === 'DPS_INSTALLMENT') {
+      creditHeadCode = '2010';
+      creditHeadTitleBn = 'সদস্য সাধারণ সঞ্চয় আমানত';
+      // Update member savings account
+      const acc = this.savingsAccounts.find(a => a.id === payment.referenceId || (a.memberId === payment.memberId && a.status === 'ACTIVE'));
+      if (acc) {
+        acc.balance += payment.amount;
+        acc.totalDeposited = (acc.totalDeposited || 0) + payment.amount;
+        this.savingsTransactions.unshift({
+          id: `stx-${Date.now()}`,
+          tenantId: this.currentTenantId,
+          accountId: acc.id,
+          memberId: payment.memberId,
+          type: 'DEPOSIT',
+          amount: payment.amount,
+          balanceAfter: acc.balance,
+          date: new Date().toISOString().slice(0, 10),
+          receiptNo: payment.receiptNo,
+          paymentMethod: 'BKASH',
+          collectorId: this.currentUserId,
+          notes: `অনলাইন ${payment.gateway} স্বয়ংক্রিয় ডিপোজিট - Trx: ${payment.trxId}`
+        });
+      }
+    } else if (payment.purpose === 'LOAN_INSTALLMENT') {
+      creditHeadCode = '1030';
+      creditHeadTitleBn = 'প্রদত্ত ঋণ ও অগ্রিম (Loan Recovery)';
+      const loan = this.loans.find(l => l.id === payment.referenceId || (l.memberId === payment.memberId && l.status === 'ACTIVE'));
+      if (loan) {
+        this.collectLoanInstallment({
+          tenantId: this.currentTenantId,
+          loanId: loan.id,
+          amount: payment.amount,
+          paymentMethod: 'BKASH',
+          notes: `অনলাইন ${payment.gateway} কিস্তি - Trx: ${payment.trxId}`
+        });
+      }
+    }
+
+    // Auto double entry voucher
+    this.createVoucher({
+      tenantId: this.currentTenantId,
+      type: 'CREDIT',
+      category: 'সদস্য আদায়',
+      accountHeadCode: creditHeadCode,
+      accountHeadNameBn: creditHeadTitleBn,
+      debitAccount: '১০২০: ব্যাংক ও এমএফএস হিসাব',
+      creditAccount: `${creditHeadCode}: ${creditHeadTitleBn}`,
+      amount: payment.amount,
+      descriptionBn: `অনলাইন পেমেন্ট আদায় (${payment.gateway}) - ${payment.memberNameBn} (${payment.memberCode}) [Trx: ${payment.trxId}]`,
+      paidToOrReceivedFrom: payment.memberNameBn,
+      paymentMethod: 'BKASH',
+      chequeOrTxNo: payment.trxId
+    });
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'APPROVE',
+      entity: 'PAYMENT',
+      entityId: payment.id,
+      descriptionBn: `অনলাইন পেমেন্ট সম্পন্ন ও ভেরিফাইড: ${payment.memberNameBn} | ${payment.amount} টাকা (${payment.gateway}) | Trx: ${payment.trxId}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'SYSTEM'
+    });
+
+    this.save();
+    return payment;
+  }
+
+  // ----------------------------------------------------
+  // MODULE: FIELD COLLECTOR DESK & THERMAL POS PRINTER
+  // ----------------------------------------------------
+  updateThermalPrinterConfig(config: Partial<ThermalPrinterConfig>) {
+    this.thermalPrinterConfig = { ...this.thermalPrinterConfig, ...config };
+    this.save();
+    return this.thermalPrinterConfig;
+  }
+
+  recordFieldCollection(params: {
+    memberId: string;
+    savingsAmount?: number;
+    dpsAmount?: number;
+    loanInstallmentAmount?: number;
+    routeOrArea: string;
+    paymentMethod?: 'CASH' | 'MFS';
+    notes?: string;
+  }): FieldCollectorDailyCollection {
+    const member = this.members.find(m => m.id === params.memberId);
+    if (!member) throw new Error('সদস্য পাওয়া যায়নি');
+
+    const savings = params.savingsAmount || 0;
+    const dps = params.dpsAmount || 0;
+    const loan = params.loanInstallmentAmount || 0;
+    const grandTotal = savings + dps + loan;
+
+    if (grandTotal <= 0) throw new Error('আদায়ের পরিমাণ শূন্য হতে পারে না');
+
+    const receiptNo = `POS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
+    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    const collector = this.users.find(u => u.id === this.currentUserId) || this.users[0];
+
+    const record: FieldCollectorDailyCollection = {
+      id: `fc-col-${Date.now()}`,
+      tenantId: this.currentTenantId,
+      collectorId: this.currentUserId,
+      collectorName: collector.nameBn || 'মাঠ কর্মকর্তা',
+      collectorPhone: collector.phone || '',
+      routeOrArea: params.routeOrArea,
+      date: new Date().toISOString().slice(0, 10),
+      memberId: member.id,
+      memberCode: member.memberCode,
+      memberName: member.nameBn,
+      memberPhone: member.phone,
+      savingsAmount: savings,
+      dpsAmount: dps,
+      loanInstallmentAmount: loan,
+      totalCollected: grandTotal,
+      receiptNo,
+      paymentMethod: params.paymentMethod || 'CASH',
+      status: 'COLLECTED',
+      isSynced: true,
+      thermalReceiptPrinted: true,
+      collectedAt: nowStr,
+      notes: params.notes || ''
+    };
+
+    // 1. If savings or DPS collected, update savings accounts
+    if (savings > 0 || dps > 0) {
+      const acc = this.savingsAccounts.find(a => a.memberId === member.id && a.status === 'ACTIVE');
+      if (acc) {
+        const depositSum = savings + dps;
+        acc.balance += depositSum;
+        acc.totalDeposited = (acc.totalDeposited || 0) + depositSum;
+        this.savingsTransactions.unshift({
+          id: `stx-${Date.now()}`,
+          tenantId: this.currentTenantId,
+          accountId: acc.id,
+          memberId: member.id,
+          type: 'DEPOSIT',
+          amount: depositSum,
+          balanceAfter: acc.balance,
+          date: new Date().toISOString().slice(0, 10),
+          receiptNo,
+          paymentMethod: 'CASH',
+          collectorId: this.currentUserId,
+          notes: `মাঠ কালেকশন (${params.routeOrArea}) - ${collector.nameBn}`
+        });
+      }
+    }
+
+    // 2. If loan collected, apply installment
+    if (loan > 0) {
+      const activeLoan = this.loans.find(l => l.memberId === member.id && l.status === 'ACTIVE');
+      if (activeLoan) {
+        this.collectLoanInstallment({
+          tenantId: this.currentTenantId,
+          loanId: activeLoan.id,
+          amount: loan,
+          paymentMethod: 'CASH',
+          notes: `মাঠ কালেকশন (${params.routeOrArea}) - ${collector.nameBn}`
+        });
+      }
+    }
+
+    // 3. Post General Ledger Cash Voucher (Debit 1010 Cash in Hand)
+    this.createVoucher({
+      tenantId: this.currentTenantId,
+      type: 'CREDIT',
+      category: 'মাঠ কালেকশন',
+      accountHeadCode: loan > 0 ? '1030' : '2010',
+      accountHeadNameBn: loan > 0 ? 'প্রদত্ত ঋণ ও অগ্রিম' : 'সদস্য সাধারণ সঞ্চয় আমানত',
+      debitAccount: '১০১০: হাতে নগদ তহবিল',
+      creditAccount: loan > 0 ? '১০৩০: প্রদত্ত ঋণ ও অগ্রিম' : '২০১০: সদস্য সাধারণ সঞ্চয় আমানত',
+      amount: grandTotal,
+      descriptionBn: `মাঠকর্মী নগদ আদায় (${params.routeOrArea}): ${member.nameBn} (${member.memberCode}) [POS রসিদ: ${receiptNo}]`,
+      paidToOrReceivedFrom: member.nameBn,
+      paymentMethod: 'CASH',
+      chequeOrTxNo: receiptNo
+    });
+
+    this.fieldCollections.unshift(record);
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'CREATE',
+      entity: 'FIELD_COLLECTION',
+      entityId: record.id,
+      descriptionBn: `মাঠকর্মী কর্তৃক নগদ আদায়: ${member.nameBn} | মোট: ${grandTotal} ৳ | POS রসিদ: ${receiptNo}`,
+      performedBy: this.currentUserId,
+      performedByRole: 'COLLECTOR'
+    });
+
+    this.save();
+    return record;
+  }
+
+  submitFieldDayEndSummary(params: {
+    routeOrArea: string;
+    cashHandoverAmount: number;
+    handoverToCashierName: string;
+  }): FieldDayEndSummary {
+    const today = new Date().toISOString().slice(0, 10);
+    const todayCollections = this.fieldCollections.filter(
+      c => c.tenantId === this.currentTenantId && c.collectorId === this.currentUserId && c.date === today && c.status === 'COLLECTED'
+    );
+
+    const totalSavings = todayCollections.reduce((sum, c) => sum + c.savingsAmount, 0);
+    const totalDps = todayCollections.reduce((sum, c) => sum + c.dpsAmount, 0);
+    const totalLoan = todayCollections.reduce((sum, c) => sum + c.loanInstallmentAmount, 0);
+    const grandTotal = totalSavings + totalDps + totalLoan;
+    const diff = params.cashHandoverAmount - grandTotal;
+    const collector = this.users.find(u => u.id === this.currentUserId) || this.users[0];
+
+    const summary: FieldDayEndSummary = {
+      id: `fde-${Date.now()}`,
+      tenantId: this.currentTenantId,
+      date: today,
+      collectorId: this.currentUserId,
+      collectorName: collector.nameBn || 'মাঠ কর্মকর্তা',
+      routeOrArea: params.routeOrArea,
+      totalMembersVisited: todayCollections.length,
+      totalCollectionsCount: todayCollections.length,
+      totalSavingsCollected: totalSavings,
+      totalDpsCollected: totalDps,
+      totalLoanCollected: totalLoan,
+      grandTotalAmount: grandTotal,
+      cashHandoverAmount: params.cashHandoverAmount,
+      cashShortageOrSurplus: diff,
+      handoverToCashierName: params.handoverToCashierName,
+      status: 'PENDING_HANDOVER',
+      submittedAt: new Date().toISOString().replace('T', ' ').slice(0, 16)
+    };
+
+    this.fieldDayEnds.unshift(summary);
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'CREATE',
+      entity: 'FIELD_DAY_END',
+      entityId: summary.id,
+      descriptionBn: `দিনশেষে নগদ ক্যাশ হস্তান্তর সাবমিট: ${collector.nameBn} | মোট আদায়: ${grandTotal} ৳ | জমা: ${params.cashHandoverAmount} ৳`,
+      performedBy: this.currentUserId,
+      performedByRole: 'COLLECTOR'
+    });
+
+    this.save();
+    return summary;
+  }
+
+  approveFieldDayEndSummary(id: string, cashierName: string, remarks?: string): FieldDayEndSummary {
+    const summary = this.fieldDayEnds.find(s => s.id === id);
+    if (!summary) throw new Error('দিনশেষের সারসংক্ষেপ পাওয়া যায়নি');
+
+    summary.status = 'ACCEPTED_BY_CASHIER';
+    summary.approvedAt = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    summary.cashierRemarks = remarks || 'ক্যাশিয়ার কর্তৃক অর্থ যথাযথভাবে ক্যাশে গ্রহণ করা হয়েছে।';
+
+    // Mark today collections by this collector as handed over
+    this.fieldCollections.forEach(c => {
+      if (c.collectorId === summary.collectorId && c.date === summary.date) {
+        c.status = 'HANDED_OVER';
+      }
+    });
+
+    this.addAuditLog({
+      tenantId: this.currentTenantId,
+      action: 'APPROVE',
+      entity: 'FIELD_DAY_END',
+      entityId: summary.id,
+      descriptionBn: `ক্যাশিয়ার কর্তৃক মাঠকর্মীর দিনশেষের ক্যাশ গ্রহণ ও রিকনসাইল: ${cashierName} | মোট: ${summary.cashHandoverAmount} ৳`,
+      performedBy: this.currentUserId,
+      performedByRole: 'ACCOUNTANT'
+    });
+
+    this.save();
+    return summary;
+  }
 }
 
 export const store = new DataStore();
@@ -3526,6 +3922,7 @@ export function useSamityStore() {
     tenants: store.tenants,
     activeTenant,
     currentUser,
+    users: store.users,
     members: store.members.filter(m => m.tenantId === activeTenant?.id),
     savingsTransactions: store.savingsTransactions.filter(t => t.tenantId === activeTenant?.id),
     loans: store.loans.filter(l => l.tenantId === activeTenant?.id),
@@ -3632,5 +4029,21 @@ export function useSamityStore() {
     publishElectionResults: (electionId: string, certifiedBy: string) => store.publishElectionResults(electionId, certifiedBy),
     softDeleteElection: (electionId: string, reason?: string) => store.softDeleteElection(electionId, reason),
     logReportAction: (reportNameBn: string, format: string) => store.logReportAction(reportNameBn, format),
+
+    // Module: Online Payment Gateways (bKash / Nagad / Rocket / SSLCommerz)
+    paymentGatewayConfig: store.paymentGatewayConfig,
+    onlinePayments: store.onlinePayments.filter(p => p.tenantId === activeTenant?.id),
+    updatePaymentGatewayConfig: (config: Partial<PaymentGatewayConfig>) => store.updatePaymentGatewayConfig(config),
+    initiateOnlinePayment: (params: Parameters<typeof store.initiateOnlinePayment>[0]) => store.initiateOnlinePayment(params),
+    verifyOnlinePayment: (params: Parameters<typeof store.verifyOnlinePayment>[0]) => store.verifyOnlinePayment(params),
+
+    // Module: Field Collector Desk & Bluetooth Thermal POS Receipt (58mm/80mm)
+    fieldCollections: store.fieldCollections.filter(c => c.tenantId === activeTenant?.id),
+    fieldDayEnds: store.fieldDayEnds.filter(d => d.tenantId === activeTenant?.id),
+    thermalPrinterConfig: store.thermalPrinterConfig,
+    updateThermalPrinterConfig: (config: Partial<ThermalPrinterConfig>) => store.updateThermalPrinterConfig(config),
+    recordFieldCollection: (params: Parameters<typeof store.recordFieldCollection>[0]) => store.recordFieldCollection(params),
+    submitFieldDayEndSummary: (params: Parameters<typeof store.submitFieldDayEndSummary>[0]) => store.submitFieldDayEndSummary(params),
+    approveFieldDayEndSummary: (id: string, cashierName: string, remarks?: string) => store.approveFieldDayEndSummary(id, cashierName, remarks),
   };
 }

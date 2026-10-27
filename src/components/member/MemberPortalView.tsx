@@ -12,6 +12,7 @@ import { useSamityStore } from '@/lib/store';
 import { translations, formatCurrency, formatDate, toBengaliNumber } from '@/lib/i18n';
 import { ApprovalType, Member } from '@/types';
 import confetti from 'canvas-confetti';
+import { OnlinePaymentCheckoutModal } from '@/components/payment/OnlinePaymentCheckoutModal';
 
 export function MemberPortalView() {
   const { 
@@ -773,113 +774,12 @@ export function MemberPortalView() {
         </div>
       )}
 
-      {/* ----------------- MODAL: ONLINE PAYMENT ----------------- */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in no-print">
-          <div className="relative w-full max-w-lg rounded-3xl glass-panel bg-slate-900 border border-slate-700 shadow-2xl p-6 overflow-hidden">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-emerald-400" />
-                <span>অনলাইন সঞ্চয় বা কিস্তি পরিশোধ (bKash / Nagad)</span>
-              </h3>
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
-              >
-                ✕
-              </button>
-            </div>
-
-            {paymentSuccess ? (
-              <div className="py-6 text-center space-y-4">
-                <div className="w-14 h-14 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="w-8 h-8" />
-                </div>
-                <div>
-                  <h4 className="text-base font-bold text-slate-100">পেমেন্ট সফলভাবে সম্পন্ন হয়েছে!</h4>
-                  <p className="text-xs text-slate-400 mt-1">
-                    আপনার ডিজিটাল পাসবইয়ে তাৎক্ষণিক ৳ {payAmount.toLocaleString()} জমা ও ডিজিটাল রসিদ যুক্ত হয়েছে।
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowPaymentModal(false)}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold"
-                >
-                  পাসবই দেখুন
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleOnlinePayment} className="space-y-4 py-4 text-xs sm:text-sm">
-                <div>
-                  <label className="block text-slate-300 text-xs mb-1.5 font-medium">পেমেন্ট মাধ্যম নির্বাচন করুন</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(['BKASH', 'NAGAD', 'BANK'] as const).map(gw => (
-                      <button
-                        key={gw}
-                        type="button"
-                        onClick={() => setPayGateway(gw)}
-                        className={`py-2 text-xs rounded-xl font-bold border transition ${
-                          payGateway === gw 
-                            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' 
-                            : 'bg-slate-950 border-slate-700 text-slate-400'
-                        }`}
-                      >
-                        {gw === 'BKASH' ? 'bKash (বিকাশ)' : gw === 'NAGAD' ? 'Nagad (নগদ)' : 'Bank Transfer'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/60 text-xs text-slate-300">
-                  <span className="text-slate-400">সমিতির মার্চেন্ট নম্বর:</span>{' '}
-                  <span className="font-mono font-bold text-emerald-400">{activeTenant.phone}</span>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 text-xs mb-1 font-medium">জমার পরিমাণ (টাকা) *</label>
-                  <input
-                    type="number"
-                    required
-                    min={100}
-                    value={payAmount}
-                    onChange={e => setPayAmount(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-emerald-400 font-bold font-mono text-base focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 text-xs mb-1 font-medium">ট্রানজেকশন আইডি (TrxID) *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="যেমন: BKH984218X"
-                    value={trxId}
-                    onChange={e => setTrxId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 font-mono text-xs uppercase focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setShowPaymentModal(false)}
-                    className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
-                  >
-                    বাতিল
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs"
-                  >
-                    পেমেন্ট সাবমিট করুন
-                  </button>
-                </div>
-              </form>
-            )}
-
-          </div>
-        </div>
-      )}
+      {/* ----------------- ENTERPRISE ONLINE PAYMENT GATEWAY MODAL ----------------- */}
+      <OnlinePaymentCheckoutModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        memberId={currentMember?.id}
+      />
 
       {/* ----------------- MODAL: NEW SERVICE REQUEST ----------------- */}
       {showRequestModal && (

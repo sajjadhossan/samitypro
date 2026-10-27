@@ -29,6 +29,9 @@ import { ApprovalWorkflowView } from '@/components/approvals/ApprovalWorkflowVie
 import { AuditTrailView } from '@/components/audit/AuditTrailView';
 import { BackupRestoreView } from '@/components/backup/BackupRestoreView';
 import { CommunicationHubView } from '@/components/messaging/CommunicationHubView';
+import { FieldCollectionDeskView } from '@/components/field/FieldCollectionDeskView';
+import { OnlinePaymentCheckoutModal } from '@/components/payment/OnlinePaymentCheckoutModal';
+import { PaymentGatewaySettingsModal } from '@/components/payment/PaymentGatewaySettingsModal';
 import { MobileMenuDrawer } from '@/components/layout/MobileMenuDrawer';
 
 import { useSamityStore } from '@/lib/store';
@@ -59,6 +62,7 @@ export default function Home() {
   const [collectLoanId, setCollectLoanId] = useState<string | undefined>(undefined);
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
+  const [isOnlinePaymentOpen, setIsOnlinePaymentOpen] = useState(false);
 
   const handleOpenDeposit = (memberId?: string) => {
     setDepositMemberId(memberId);
@@ -92,6 +96,16 @@ export default function Home() {
       case 'loans':
       case 'member-loans':
         return <LoansView onOpenCollectInstallment={handleOpenCollectLoan} />;
+      case 'online-payment':
+        return (
+          <>
+            <MemberPortalView />
+            <OnlinePaymentCheckoutModal 
+              isOpen={true} 
+              onClose={() => setActiveTab('member-passbook')} 
+            />
+          </>
+        );
       case 'savings':
       case 'member-savings':
       case 'member-passbook':
@@ -120,6 +134,13 @@ export default function Home() {
             onOpenRecordDeposit={() => handleOpenDeposit()}
             onOpenCollectInstallment={() => handleOpenCollectLoan()}
             onNavigateTab={tab => setActiveTab(tab)}
+          />
+        )}
+        {activeTab === 'field-collection' && <FieldCollectionDeskView />}
+        {activeTab === 'payment-gateways' && (
+          <PaymentGatewaySettingsModal 
+            isOpen={true} 
+            onClose={() => setActiveTab('dashboard')} 
           />
         )}
         {activeTab === 'samity-setup' && <SamitySetupView />}
@@ -310,6 +331,11 @@ export default function Home() {
       <ApkDownloadModal
         isOpen={isApkModalOpen}
         onClose={() => setIsApkModalOpen(false)}
+      />
+
+      <OnlinePaymentCheckoutModal
+        isOpen={isOnlinePaymentOpen}
+        onClose={() => setIsOnlinePaymentOpen(false)}
       />
 
     </div>

@@ -5,7 +5,8 @@ import {
   SignatureSealConfig, VoucherPrefixConfig, AuditLog, ApprovalItem, GeneratedDocument,
   CommunicationGatewayConfig, AutoSchedulerConfig, OfflineQueueItem,
   SubscriptionPolicyConfig, LateFeeWaiverRecord, SavingsPolicyConfig, LoanPolicyConfig,
-  AccountHead
+  AccountHead, PaymentGatewayConfig, OnlinePaymentTransaction,
+  FieldCollectorDailyCollection, FieldDayEndSummary, ThermalPrinterConfig
 } from '@/types';
 
 // Pre-seeded multi-tenant data
@@ -2244,6 +2245,181 @@ export const INITIAL_LOAN_POLICY: LoanPolicyConfig = {
   lastUpdatedBy: 'আলহাজ্ব রফিকুল ইসলাম (সভাপতি)',
   lastUpdatedAt: '2026-10-15'
 };
+
+// ----------------------------------------------------
+// INITIAL ONLINE PAYMENT GATEWAY CONFIG & TRANSACTIONS
+// ----------------------------------------------------
+export const INITIAL_PAYMENT_GATEWAY_CONFIG: PaymentGatewayConfig = {
+  tenantId: 'samity-ekota',
+  bKashMerchantNumber: '01711223344',
+  bKashAppKey: 'bkash_app_key_live_982348239',
+  bKashAppSecret: 'bkash_secret_live_7384729104',
+  bKashUsername: 'ekota_merchant',
+  bKashPassword: '••••••••••••',
+  bKashEnabled: true,
+  bKashIsSandbox: false,
+
+  nagadMerchantNumber: '01711223344',
+  nagadMerchantId: 'NGD_EKOTA_9921',
+  nagadPublicKey: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA083...',
+  nagadPrivateKey: '•••••••••••••••••••••••••••••••••••••••••••••••',
+  nagadEnabled: true,
+  nagadIsSandbox: false,
+
+  rocketMerchantNumber: '017112233448',
+  rocketEnabled: true,
+  upayMerchantNumber: '01711223344',
+  upayEnabled: true,
+
+  sslczStoreId: 'ekotamultipurposelive',
+  sslczStorePassword: '••••••••••••',
+  sslczIsLive: true,
+  sslczEnabled: true,
+
+  serviceChargePercentage: 1.5,
+  autoApproveVerifiedPayments: true
+};
+
+export const INITIAL_ONLINE_PAYMENTS: OnlinePaymentTransaction[] = [
+  {
+    id: 'pay-001',
+    tenantId: 'samity-ekota',
+    memberId: 'mem-001',
+    memberNameBn: 'মোঃ রফিকুল ইসলাম',
+    memberCode: 'MEM-001',
+    phone: '01712345678',
+    gateway: 'BKASH',
+    purpose: 'MONTHLY_SUBSCRIPTION',
+    referenceId: 'sub-001',
+    amount: 1500,
+    chargeAmount: 22.5,
+    totalPaid: 1522.5,
+    trxId: '9B76AS891X',
+    gatewayPaymentId: 'BKP-20261026-9012',
+    status: 'VERIFIED',
+    paymentDate: '2026-10-26 14:32',
+    verifiedAt: '2026-10-26 14:33',
+    verifiedBy: 'bKash Webhook (Auto-Verified)',
+    receiptNo: 'REC-20261026-001',
+    voucherId: 'VCH-CR-20261026-001',
+    notes: 'অক্টোবর মাসের নিয়মিত মাসিক চাঁদা প্রদান',
+    createdAt: '2026-10-26T14:32:00Z'
+  },
+  {
+    id: 'pay-002',
+    tenantId: 'samity-ekota',
+    memberId: 'mem-002',
+    memberNameBn: 'মোছাঃ ফাতেমা খাতুন',
+    memberCode: 'MEM-002',
+    phone: '01812345678',
+    gateway: 'NAGAD',
+    purpose: 'DPS_INSTALLMENT',
+    referenceId: 'dps-001',
+    amount: 2000,
+    chargeAmount: 30.0,
+    totalPaid: 2030.0,
+    trxId: '7NGD98214M',
+    gatewayPaymentId: 'NGD-20261027-1102',
+    status: 'VERIFIED',
+    paymentDate: '2026-10-27 09:15',
+    verifiedAt: '2026-10-27 09:16',
+    verifiedBy: 'Nagad IPN (Auto-Verified)',
+    receiptNo: 'REC-20261027-002',
+    voucherId: 'VCH-CR-20261027-002',
+    notes: 'মাসিক ২,০০০ টাকার ডিপিএস কিস্তি জমা',
+    createdAt: '2026-10-27T09:15:00Z'
+  }
+];
+
+// ----------------------------------------------------
+// INITIAL FIELD COLLECTOR & POS THERMAL DATA
+// ----------------------------------------------------
+export const INITIAL_THERMAL_PRINTER_CONFIG: ThermalPrinterConfig = {
+  paperWidth: '58mm',
+  characterSet: 'BANGLA_UNICODE',
+  showSamityLogo: true,
+  showQrCode: true,
+  headerFontScale: 'NORMAL',
+  footerGreetingBn: 'একতা সমিতিতে সঞ্চয় করে আপনার ভবিষ্যত নিরাপদ রাখুন। ধন্যবাদ!',
+  autoCut: true,
+  bluetoothDeviceName: 'POS-5802DD (Bluetooth)'
+};
+
+export const INITIAL_FIELD_COLLECTIONS: FieldCollectorDailyCollection[] = [
+  {
+    id: 'fc-col-001',
+    tenantId: 'samity-ekota',
+    collectorId: 'user-tariq',
+    collectorName: 'তারিকুল ইসলাম (মাঠ কর্মকর্তা)',
+    collectorPhone: '01799887766',
+    routeOrArea: 'বনশ্রী ব্লক-সি ও পূর্ব বাজার লেন',
+    date: '2026-10-27',
+    memberId: 'mem-001',
+    memberCode: 'MEM-001',
+    memberName: 'মোঃ রফিকুল ইসলাম',
+    memberPhone: '01712345678',
+    savingsAmount: 500,
+    dpsAmount: 2000,
+    loanInstallmentAmount: 0,
+    totalCollected: 2500,
+    receiptNo: 'POS-20261027-001',
+    paymentMethod: 'CASH',
+    status: 'COLLECTED',
+    isSynced: true,
+    thermalReceiptPrinted: true,
+    collectedAt: '2026-10-27 10:15',
+    notes: 'সদস্যের দোকানে গিয়ে নগদ গ্রহণ'
+  },
+  {
+    id: 'fc-col-002',
+    tenantId: 'samity-ekota',
+    collectorId: 'user-tariq',
+    collectorName: 'তারিকুল ইসলাম (মাঠ কর্মকর্তা)',
+    collectorPhone: '01799887766',
+    routeOrArea: 'বনশ্রী ব্লক-সি ও পূর্ব বাজার লেন',
+    date: '2026-10-27',
+    memberId: 'mem-002',
+    memberCode: 'MEM-002',
+    memberName: 'মোছাঃ ফাতেমা খাতুন',
+    memberPhone: '01812345678',
+    savingsAmount: 300,
+    dpsAmount: 0,
+    loanInstallmentAmount: 1850,
+    totalCollected: 2150,
+    receiptNo: 'POS-20261027-002',
+    paymentMethod: 'CASH',
+    status: 'COLLECTED',
+    isSynced: true,
+    thermalReceiptPrinted: true,
+    collectedAt: '2026-10-27 10:45',
+    notes: 'ঋণের ৩য় কিস্তি ও সাধারণ সঞ্চয় নগদ আদায়'
+  }
+];
+
+export const INITIAL_FIELD_DAY_ENDS: FieldDayEndSummary[] = [
+  {
+    id: 'fde-20261026-001',
+    tenantId: 'samity-ekota',
+    date: '2026-10-26',
+    collectorId: 'user-tariq',
+    collectorName: 'তারিকুল ইসলাম (মাঠ কর্মকর্তা)',
+    routeOrArea: 'রামপুরা বাজার ও দক্ষিণ মহল্লা',
+    totalMembersVisited: 14,
+    totalCollectionsCount: 14,
+    totalSavingsCollected: 7200,
+    totalDpsCollected: 12000,
+    totalLoanCollected: 16800,
+    grandTotalAmount: 36000,
+    cashHandoverAmount: 36000,
+    cashShortageOrSurplus: 0,
+    handoverToCashierName: 'কবীর হোসেন (ক্যাশিয়ার)',
+    status: 'ACCEPTED_BY_CASHIER',
+    submittedAt: '2026-10-26 17:30',
+    approvedAt: '2026-10-26 17:45',
+    cashierRemarks: 'সম্পূর্ণ ৩৬,০০০ টাকা নগদ ক্যাশে জমা গ্রহণ করা হয়েছে এবং ক্যাশ বুকে অন্তর্ভুক্ত করা হয়েছে।'
+  }
+];
+
 
 
 

@@ -6,7 +6,7 @@ import {
   CalendarCheck, Vote, FileBarChart, ShieldAlert,
   CreditCard, MessageSquare, BookOpen, Bell,
   BadgePercent, Building2, FolderLock, Sliders,
-  ScrollText, ShieldCheck, History, Database, Zap
+  ScrollText, ShieldCheck, History, Database, Zap, Smartphone
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations } from '@/lib/i18n';
@@ -27,19 +27,22 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'samity-setup', labelBn: 'সমিতি সেটআপ ও পরিচালনা', labelEn: 'Samity Directory', icon: Building2 },
     { id: 'tenants', labelBn: 'সমিতি ও সংগঠনসমূহ', labelEn: 'Samity & Tenants', icon: Users },
     { id: 'subscriptions', labelBn: 'সাবস্ক্রিপশন ও বিলিং', labelEn: 'Billing & Plans', icon: CreditCard },
-    { id: 'gateways', labelBn: 'পেমেন্ট ও এসএমএস গেটওয়ে', labelEn: 'SMS & Gateways', icon: MessageSquare },
+    { id: 'payment-gateways', labelBn: 'অনলাইন পেমেন্ট গেটওয়ে', labelEn: 'Payment Gateways', icon: CreditCard },
+    { id: 'gateways', labelBn: 'মেসেজিং ও এসএমএস গেটওয়ে', labelEn: 'SMS & Gateways', icon: MessageSquare },
     { id: 'audit-logs', labelBn: 'সিস্টেম অডিট লগ', labelEn: 'System Audit Logs', icon: ShieldAlert },
   ];
 
   // Samity Admin & Manager Navigation Items
   const samityAdminNav = [
     { id: 'dashboard', labelBn: t.dashboard, labelEn: 'Dashboard', icon: LayoutDashboard },
+    { id: 'field-collection', labelBn: 'মাঠ কালেকশন ও POS রসিদ', labelEn: 'Field Collection & POS', icon: Smartphone },
     { id: 'samity-setup', labelBn: 'সমিতি সেটআপ (মডিউল ১)', labelEn: 'Samity Setup (Mod 1)', icon: Building2 },
     { id: 'members', labelBn: 'সদস্য ব্যবস্থাপনা (মডিউল ২)', labelEn: 'Members & KYC (Mod 2)', icon: Users },
     { id: 'subscriptions-due', labelBn: 'চাঁদা ও বকেয়া পলিসি (মডিউল ৩)', labelEn: 'Fees & Policy (Mod 3)', icon: BadgePercent },
     { id: 'bank-deposits', labelBn: 'ব্যাংক হিসাব ও জমা', labelEn: 'Bank Deposits', icon: Building2 },
     { id: 'savings', labelBn: 'সঞ্চয় ও ডিপিএস (মডিউল ৪)', labelEn: 'Savings & DPS (Mod 4)', icon: PiggyBank },
     { id: 'loans', labelBn: 'ঋণ ও কিস্তি (মডিউল ৫)', labelEn: 'Loans & EMIs (Mod 5)', icon: HandCoins },
+    { id: 'payment-gateways', labelBn: 'পেমেন্ট গেটওয়ে (bKash/নগদ)', labelEn: 'Payment Gateways', icon: CreditCard },
     { id: 'approvals', labelBn: 'অনুমোদন ও ওয়ার্কফ্লো', labelEn: 'Approvals Workflow', icon: ShieldCheck },
     { id: 'communication-hub', labelBn: 'মেসেজিং ও গেটওয়ে হাব', labelEn: 'Communication Hub', icon: Zap },
     { id: 'doc-generator', labelBn: 'প্রত্যয়ন ও চুক্তিপত্র', labelEn: 'Doc Generator', icon: ScrollText },
@@ -58,6 +61,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   // Member Portal Navigation Items
   const memberNav = [
     { id: 'member-passbook', labelBn: 'আমার ডিজিটাল পাসবই (মডিউল ১০)', labelEn: 'My Passbook (Mod 10)', icon: BookOpen },
+    { id: 'online-payment', labelBn: 'অনলাইন পেমেন্ট (bKash/নগদ)', labelEn: 'Pay Online (bKash/Nagad)', icon: CreditCard },
     { id: 'subscriptions-due', labelBn: 'আমার চাঁদা ও রসিদ', labelEn: 'My Fees & Receipts', icon: BadgePercent },
     { id: 'member-loans', labelBn: 'আমার ঋণ ও কিস্তি', labelEn: 'My Loans & EMIs', icon: HandCoins },
     { id: 'member-elections', labelBn: 'ভোট প্রদান ও নির্বাচন', labelEn: 'Cast Vote & Election', icon: Vote },

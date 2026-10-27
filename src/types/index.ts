@@ -271,7 +271,7 @@ export interface SavingsPolicyConfig {
   lastUpdatedAt: string;
 }
 
-export type PaymentMethod = 'CASH' | 'BANK' | 'BKASH' | 'NAGAD';
+export type PaymentMethod = 'CASH' | 'BANK' | 'BKASH' | 'NAGAD' | 'ROCKET' | 'UPAY' | 'MFS' | 'ONLINE';
 
 export interface SavingsTransaction {
   id: string;
@@ -907,7 +907,7 @@ export interface BulkDepositItem {
 }
 
 export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'EXPORT' | 'IMPORT' | 'RESTORE' | 'LOGIN';
-export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'SETTINGS' | 'DOCUMENT' | 'BACKUP' | 'TENANT' | 'SUBSCRIPTION' | 'SAVINGS_ACCOUNT' | 'MEETING' | 'NOTICE' | 'ELECTION' | 'REPORT' | 'OTHER';
+export type AuditEntity = 'MEMBER' | 'DEPOSIT' | 'LOAN' | 'EXPENSE' | 'RECEIPT' | 'SETTING' | 'SETTINGS' | 'DOCUMENT' | 'BACKUP' | 'TENANT' | 'SUBSCRIPTION' | 'SAVINGS_ACCOUNT' | 'MEETING' | 'NOTICE' | 'ELECTION' | 'REPORT' | 'PAYMENT' | 'FIELD_COLLECTION' | 'FIELD_DAY_END' | 'OTHER';
 
 export type ReportType = 
   | 'COLLECTION_SHEET' 
@@ -1035,4 +1035,144 @@ export interface OfflineQueueItem {
   status: 'PENDING' | 'SYNCING' | 'FAILED';
   errorMessage?: string;
 }
+
+// ----------------------------------------------------
+// MODULE: ONLINE PAYMENT GATEWAYS (bKash, Nagad, Rocket, SSLCommerz)
+// ----------------------------------------------------
+export type PaymentGatewayProvider = 'BKASH' | 'NAGAD' | 'ROCKET' | 'UPAY' | 'SSLCOMMERZ' | 'BANK_TRANSFER';
+
+export type PaymentPurpose = 
+  | 'MONTHLY_SUBSCRIPTION'
+  | 'SAVINGS_DEPOSIT'
+  | 'DPS_INSTALLMENT'
+  | 'LOAN_INSTALLMENT'
+  | 'SHARE_PURCHASE'
+  | 'ADMISSION_FEE';
+
+export interface OnlinePaymentTransaction {
+  id: string;
+  tenantId: string;
+  memberId: string;
+  memberNameBn: string;
+  memberCode: string;
+  phone: string;
+  gateway: PaymentGatewayProvider;
+  purpose: PaymentPurpose;
+  referenceId: string; // e.g. loanId or savingsAccountId or subscriptionId
+  amount: number;
+  chargeAmount: number;
+  totalPaid: number;
+  trxId: string;
+  gatewayPaymentId: string;
+  status: 'PENDING' | 'VERIFIED' | 'FAILED' | 'REFUNDED';
+  paymentDate: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  receiptNo: string;
+  voucherId?: string;
+  ipAddress?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface PaymentGatewayConfig {
+  tenantId: string;
+  // bKash Merchant Configuration
+  bKashMerchantNumber: string;
+  bKashAppKey: string;
+  bKashAppSecret: string;
+  bKashUsername: string;
+  bKashPassword: string;
+  bKashEnabled: boolean;
+  bKashIsSandbox: boolean;
+
+  // Nagad Merchant Configuration
+  nagadMerchantNumber: string;
+  nagadMerchantId: string;
+  nagadPublicKey: string;
+  nagadPrivateKey: string;
+  nagadEnabled: boolean;
+  nagadIsSandbox: boolean;
+
+  // Rocket & Upay Configuration
+  rocketMerchantNumber: string;
+  rocketEnabled: boolean;
+  upayMerchantNumber: string;
+  upayEnabled: boolean;
+
+  // SSLCommerz Configuration
+  sslczStoreId: string;
+  sslczStorePassword: string;
+  sslczIsLive: boolean;
+  sslczEnabled: boolean;
+
+  // Policies
+  serviceChargePercentage: number;
+  autoApproveVerifiedPayments: boolean;
+}
+
+// ----------------------------------------------------
+// MODULE: FIELD COLLECTOR DESK & BLUETOOTH THERMAL POS (58mm/80mm)
+// ----------------------------------------------------
+export interface FieldCollectorDailyCollection {
+  id: string;
+  tenantId: string;
+  collectorId: string;
+  collectorName: string;
+  collectorPhone: string;
+  routeOrArea: string; // e.g. 'সোনাপুর বাজার ও পূর্ব পাড়া'
+  date: string;
+  memberId: string;
+  memberCode: string;
+  memberName: string;
+  memberPhone: string;
+  savingsAmount: number;
+  dpsAmount: number;
+  loanInstallmentAmount: number;
+  totalCollected: number;
+  receiptNo: string;
+  paymentMethod: 'CASH' | 'MFS';
+  status: 'COLLECTED' | 'HANDED_OVER' | 'CANCELLED';
+  isSynced: boolean;
+  syncId?: string;
+  thermalReceiptPrinted: boolean;
+  collectedAt: string;
+  latitude?: number;
+  longitude?: number;
+  notes?: string;
+}
+
+export interface FieldDayEndSummary {
+  id: string;
+  tenantId: string;
+  date: string;
+  collectorId: string;
+  collectorName: string;
+  routeOrArea: string;
+  totalMembersVisited: number;
+  totalCollectionsCount: number;
+  totalSavingsCollected: number;
+  totalDpsCollected: number;
+  totalLoanCollected: number;
+  grandTotalAmount: number;
+  cashHandoverAmount: number;
+  cashShortageOrSurplus: number;
+  handoverToCashierName: string;
+  status: 'PENDING_HANDOVER' | 'ACCEPTED_BY_CASHIER' | 'RECONCILED';
+  submittedAt: string;
+  approvedAt?: string;
+  cashierRemarks?: string;
+}
+
+export interface ThermalPrinterConfig {
+  paperWidth: '58mm' | '80mm';
+  characterSet: 'BANGLA_UNICODE' | 'GRAPHIC_BITMAP';
+  showSamityLogo: boolean;
+  showQrCode: boolean;
+  headerFontScale: 'NORMAL' | 'LARGE';
+  footerGreetingBn: string;
+  autoCut: boolean;
+  bluetoothDeviceName?: string;
+}
+
 
