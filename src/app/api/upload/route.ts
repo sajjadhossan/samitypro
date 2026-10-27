@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadObject, isStorageConfigured, DEFAULT_BUCKET } from '@/lib/server/storage';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     if (!isStorageConfigured()) {
