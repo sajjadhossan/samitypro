@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  Building2, Lock, Phone, Mail, Eye, EyeOff, 
-  ArrowRight, ShieldCheck, CheckCircle2, AlertCircle, Loader2, Sparkles, 
+  Building2, Lock, Phone, Eye, EyeOff, 
+  ArrowRight, ShieldCheck, CheckCircle2, AlertCircle, Loader2, 
   KeyRound, X, RefreshCw, Smartphone
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
@@ -13,8 +13,8 @@ export default function LoginPage() {
   const router = useRouter();
   const { setCurrentUser, setCurrentTenant } = useSamityStore();
 
-  const [identifier, setIdentifier] = useState('01711223344');
-  const [password, setPassword] = useState('Admin@123456');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -24,7 +24,7 @@ export default function LoginPage() {
   // Forgot Password Modal State
   const [isForgotOpen, setIsForgotOpen] = useState(false);
   const [forgotStep, setForgotStep] = useState<'PHONE' | 'OTP'>('PHONE');
-  const [forgotPhone, setForgotPhone] = useState('01711223344');
+  const [forgotPhone, setForgotPhone] = useState('');
   const [forgotOtp, setForgotOtp] = useState('');
   const [forgotNewPassword, setForgotNewPassword] = useState('');
   const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
@@ -32,7 +32,6 @@ export default function LoginPage() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotError, setForgotError] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState('');
-  const [debugOtp, setDebugOtp] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
 
   // Cooldown countdown timer
@@ -43,52 +42,10 @@ export default function LoginPage() {
     }
   }, [cooldown]);
 
-  // Quick-select demo accounts for easy testing
-  const demoAccounts = [
-    {
-      roleNameBn: 'সভাপতি / অ্যাডমিন',
-      roleNameEn: 'President / Admin',
-      identifier: '01711223344',
-      pass: 'Admin@123456',
-      badge: 'SAMITY_ADMIN',
-      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-    },
-    {
-      roleNameBn: 'সুপার অ্যাডমিন',
-      roleNameEn: 'Super Admin',
-      identifier: '01700000001',
-      pass: 'Admin@123456',
-      badge: 'SUPER_ADMIN',
-      badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
-    },
-    {
-      roleNameBn: 'ম্যানেজার',
-      roleNameEn: 'Manager',
-      identifier: '01711556677',
-      pass: 'Manager@123456',
-      badge: 'MANAGER',
-      badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
-    },
-    {
-      roleNameBn: 'সাধারণ সদস্য (কবির)',
-      roleNameEn: 'General Member',
-      identifier: '01712000001',
-      pass: 'Member@123456',
-      badge: 'MEMBER',
-      badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-    }
-  ];
-
-  const handleSelectDemo = (acc: typeof demoAccounts[0]) => {
-    setIdentifier(acc.identifier);
-    setPassword(acc.pass);
-    setErrorMessage('');
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim() || !password) {
-      setErrorMessage(lang === 'bn' ? 'মোবাইল/ইমেইল এবং পাসওয়ার্ড দিন' : 'Please enter identifier and password');
+      setErrorMessage(lang === 'bn' ? 'মোবাইল নম্বর অথবা ইমেইল এবং পাসওয়ার্ড লিখুন' : 'Please enter mobile/email and password');
       return;
     }
 
@@ -136,7 +93,7 @@ export default function LoginPage() {
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotPhone.trim()) {
-      setForgotError(lang === 'bn' ? 'মোবাইল নম্বর লিখুন' : 'Enter mobile number');
+      setForgotError(lang === 'bn' ? 'আপনার অ্যাকাউন্টের মোবাইল নম্বর লিখুন' : 'Enter mobile number');
       return;
     }
 
@@ -160,14 +117,11 @@ export default function LoginPage() {
       }
 
       setForgotSuccess(data.message);
-      if (data.data?.debugOtp) {
-        setDebugOtp(data.data.debugOtp);
-      }
       setCooldown(60);
       setForgotStep('OTP');
       setForgotLoading(false);
 
-    } catch (err: unknown) {
+    } catch {
       setForgotError(lang === 'bn' ? 'সার্ভার সংযোগ সমস্যা।' : 'Connection error.');
       setForgotLoading(false);
     }
@@ -217,7 +171,7 @@ export default function LoginPage() {
       setForgotSuccess(lang === 'bn' ? 'পাসওয়ার্ড সফলভাবে পরিবর্তিত হয়েছে! নতুন পাসওয়ার্ড দিয়ে লগইন করুন।' : 'Password updated! Please login with new password.');
       setForgotLoading(false);
 
-      // Auto-fill into login form
+      // Auto-fill phone into login form
       setIdentifier(forgotPhone.trim());
       setPassword(forgotNewPassword);
 
@@ -329,7 +283,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setForgotPhone(identifier.startsWith('01') ? identifier : '01711223344');
+                    setForgotPhone(identifier.startsWith('01') ? identifier : '');
                     setForgotError('');
                     setForgotSuccess('');
                     setForgotStep('PHONE');
@@ -382,35 +336,8 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick-Test Accounts Section */}
-          <div className="mt-6 pt-5 border-t border-slate-800">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>{lang === 'bn' ? '১-ক্লিকে টেস্ট রোল নির্বাচন করুন' : '1-Click Quick Fill Test Accounts'}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {demoAccounts.map((acc, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleSelectDemo(acc)}
-                  className="text-left p-2.5 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 transition cursor-pointer group"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold text-slate-200 group-hover:text-emerald-300">
-                      {lang === 'bn' ? acc.roleNameBn : acc.roleNameEn}
-                    </span>
-                  </div>
-                  <div className="text-[10px] font-mono text-slate-400">
-                    {acc.identifier}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Register New Samity Link */}
-          <div className="mt-6 text-center text-xs text-slate-400">
+          <div className="mt-6 pt-5 border-t border-slate-800 text-center text-xs text-slate-400">
             <span>{lang === 'bn' ? 'আপনার কি নতুন সমিতি রয়েছে? ' : 'Do you have a new samity? '}</span>
             <button
               onClick={() => router.push('/register')}
@@ -470,20 +397,6 @@ export default function LoginPage() {
               <div className="mb-4 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <span>{forgotSuccess}</span>
-              </div>
-            )}
-
-            {/* Development / Sandbox OTP Helper Badge */}
-            {debugOtp && forgotStep === 'OTP' && (
-              <div className="mb-4 p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs flex items-center justify-between">
-                <span>🧪 টেস্ট ওটিপি কোড: <strong className="font-mono text-cyan-200 tracking-wider text-sm">{debugOtp}</strong></span>
-                <button
-                  type="button"
-                  onClick={() => setForgotOtp(debugOtp)}
-                  className="px-2 py-0.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-[10px] font-bold text-cyan-200 transition cursor-pointer"
-                >
-                  অটো-ফিল
-                </button>
               </div>
             )}
 

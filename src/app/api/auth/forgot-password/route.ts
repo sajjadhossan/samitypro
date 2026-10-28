@@ -126,9 +126,7 @@ export async function POST(req: Request) {
       data: {
         phone: normalizedPhone,
         expiresInSeconds: 300,
-        smsDispatched: smsSent,
-        // Provided in development/sandbox to allow seamless immediate testing
-        debugOtp: process.env.NODE_ENV !== 'production' || !smsApiKey ? otpCode : undefined
+        smsDispatched: smsSent
       }
     });
 
