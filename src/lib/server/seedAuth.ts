@@ -47,6 +47,7 @@ export async function ensureInitialNeonUsers(): Promise<{ seeded: boolean; userC
   }
 
   // 2. Prepare default users with secure bcrypt hashes
+  const superAdminPassword = await hashPassword('01721298969');
   const defaultPassword = await hashPassword('Admin@123456');
   const managerPassword = await hashPassword('Manager@123456');
   const collectorPassword = await hashPassword('Collector@123456');
@@ -54,12 +55,12 @@ export async function ensureInitialNeonUsers(): Promise<{ seeded: boolean; userC
 
   const usersToSeed = [
     {
-      id: 'user-superadmin',
+      id: 'user-sajjad-owner',
       tenantId: null,
-      name: 'ইঞ্জিঃ সাজ্জাদ হোসাইন (সুপার অ্যাডমিন)',
-      phone: '01700000001',
-      email: 'admin@samitypro.com',
-      passwordHash: defaultPassword,
+      name: 'ইঞ্জিঃ সাজ্জাদ হোসাইন (মালিক ও সুপার অ্যাডমিন)',
+      phone: '01881210444',
+      email: 'hossansajjad1994@gmail.com',
+      passwordHash: superAdminPassword,
       role: 'SUPER_ADMIN',
       status: 'ACTIVE'
     },

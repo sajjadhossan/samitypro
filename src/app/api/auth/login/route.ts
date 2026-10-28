@@ -112,18 +112,18 @@ export async function POST(req: Request) {
       if (user.tenant_id) {
         await executeNeonQuery(
           `INSERT INTO audit_logs (
-            id, tenant_id, user_id, action, entity, entity_id, details
+            id, tenant_id, user_id, action, entity, entity_id, new_values, user_agent
           ) VALUES (
-            gen_random_uuid()::text, $1, $2, 'LOGIN', 'users', $2, $3::jsonb
+            gen_random_uuid()::text, $1, $2, 'LOGIN', 'users', $2, $3::jsonb, $4
           )`,
           [
             user.tenant_id,
             user.id,
             JSON.stringify({ 
               action: 'USER_LOGIN', 
-              identifier: cleanIdentifier, 
-              userAgent: req.headers.get('user-agent') || 'Unknown' 
-            })
+              identifier: cleanIdentifier
+            }),
+            req.headers.get('user-agent') || 'Unknown'
           ]
         );
       }

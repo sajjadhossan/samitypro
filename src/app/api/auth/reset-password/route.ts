@@ -127,18 +127,18 @@ export async function POST(req: Request) {
     try {
       await executeNeonQuery(
         `INSERT INTO audit_logs (
-          id, tenant_id, user_id, action, entity, entity_id, details
+          id, tenant_id, user_id, action, entity, entity_id, new_values, user_agent
         ) VALUES (
-          gen_random_uuid()::text, $1, $2, 'UPDATE', 'users', $2, $3::jsonb
+          gen_random_uuid()::text, $1, $2, 'UPDATE', 'users', $2, $3::jsonb, $4
         )`,
         [
           updatedUser.tenant_id || 'platform',
           updatedUser.id,
           JSON.stringify({
             action: 'PASSWORD_RESET_SUCCESS',
-            phone: normalizedPhone,
-            userAgent: req.headers.get('user-agent') || 'Unknown'
-          })
+            phone: normalizedPhone
+          }),
+          req.headers.get('user-agent') || 'Unknown'
         ]
       );
     } catch {}

@@ -39,7 +39,7 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
 
   const handleRoleSelect = (role: UserRole) => {
     if (role === 'SUPER_ADMIN') {
-      setCurrentUser('user-superadmin');
+      setCurrentUser('user-sajjad-owner');
     } else if (role === 'SAMITY_ADMIN') {
       setCurrentUser('user-rafiq');
     } else if (role === 'MANAGER') {

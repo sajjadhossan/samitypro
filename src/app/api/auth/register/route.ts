@@ -113,9 +113,9 @@ export async function POST(req: Request) {
     try {
       await executeNeonQuery(
         `INSERT INTO audit_logs (
-          id, tenant_id, user_id, action, entity, entity_id, details
+          id, tenant_id, user_id, action, entity, entity_id, new_values, user_agent
         ) VALUES (
-          gen_random_uuid()::text, $1, $2, 'CREATE', 'tenants', $1, $3::jsonb
+          gen_random_uuid()::text, $1, $2, 'CREATE', 'tenants', $1, $3::jsonb, $4
         )`,
         [
           tenantId,
@@ -123,9 +123,9 @@ export async function POST(req: Request) {
           JSON.stringify({ 
             action: 'TENANT_REGISTRATION', 
             samityName, 
-            tenantCode,
-            userAgent: req.headers.get('user-agent') || 'Unknown' 
-          })
+            tenantCode
+          }),
+          req.headers.get('user-agent') || 'Unknown' 
         ]
       );
     } catch {}

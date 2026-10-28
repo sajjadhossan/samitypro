@@ -152,11 +152,11 @@ export const INITIAL_TENANTS: Tenant[] = [
 
 export const INITIAL_USERS: User[] = [
   {
-    id: 'user-superadmin',
-    nameBn: 'ইঞ্জিঃ সাজ্জাদ হোসাইন',
-    nameEn: 'Engr. Sajjad Hossain',
-    phone: '+8801700000001',
-    email: 'admin@samitypro.com',
+    id: 'user-sajjad-owner',
+    nameBn: 'ইঞ্জিঃ সাজ্জাদ হোসাইন (মালিক ও সুপার অ্যাডমিন)',
+    nameEn: 'Engr. Sajjad Hossain (Super Admin)',
+    phone: '01881210444',
+    email: 'hossansajjad1994@gmail.com',
     role: 'SUPER_ADMIN',
     isActive: true,
     createdAt: '2024-01-01'
