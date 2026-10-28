@@ -6,7 +6,7 @@ import {
   PiggyBank, HandCoins, ArrowUpRight, Filter, Download,
   LayoutGrid, Table, QrCode, FileText, Edit, Trash2, 
   MoreVertical, CheckCircle, AlertTriangle, ExternalLink,
-  Heart, Landmark, Award
+  Heart, Landmark, Award, Building2
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations, formatCurrency } from '@/lib/i18n';
@@ -151,19 +151,36 @@ export function MembersView({ onOpenAddMember, onOpenRecordDeposit }: MembersVie
           </div>
         </div>
 
-        {/* Total Loan Outstanding */}
-        <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            <HandCoins className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
-          <div>
-            <div className="text-[11px] text-slate-400 font-medium">মোট চলতি ঋণ স্থিতি</div>
-            <div className="text-lg sm:text-xl font-bold font-mono text-amber-400 mt-0.5">
-              ৳ {totalLoanOutstanding.toLocaleString()}
+        {/* Card 4: Loan Outstanding OR Fixed Monthly Dues Target */}
+        {(activeTenant?.settings?.enableLoans !== false && activeTenant?.settings?.enableMicroLoans !== false) ? (
+          <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <HandCoins className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div className="text-[10px] text-slate-400">মাঠপর্যায়ে বিনিয়োগ</div>
+            <div>
+              <div className="text-[11px] text-slate-400 font-medium">মোট চলতি ঋণ স্থিতি</div>
+              <div className="text-lg sm:text-xl font-bold font-mono text-amber-400 mt-0.5">
+                ৳ {totalLoanOutstanding.toLocaleString()}
+              </div>
+              <div className="text-[10px] text-slate-400">মাঠপর্যায়ে বিনিয়োগ</div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />
+            </div>
+            <div>
+              <div className="text-[11px] text-slate-400 font-medium">নির্ধারিত মাসিক চাঁদা (সদস্যপ্রতি)</div>
+              <div className="text-lg sm:text-xl font-bold font-mono text-cyan-400 mt-0.5">
+                ৳ {(activeTenant?.settings?.fixedMonthlyAmount || 10000).toLocaleString()}
+              </div>
+              <div className="text-[10px] text-cyan-500/80">
+                লক্ষ্য: ৳ {((activeTenant?.settings?.fixedMonthlyAmount || 10000) * activeMembersCount).toLocaleString()} / মাস
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 2. HEADER & SEARCH / FILTER TOOLBAR */}
@@ -322,7 +339,11 @@ export function MembersView({ onOpenAddMember, onOpenRecordDeposit }: MembersVie
                   <th className="py-3 px-4">পদবি ও ক্যাটাগরি</th>
                   <th className="py-3 px-4">শেয়ার মূলধন</th>
                   <th className="py-3 px-4">সঞ্চয় স্থিতি</th>
-                  <th className="py-3 px-4">চলতি ঋণ</th>
+                  {(activeTenant?.settings?.enableLoans !== false && activeTenant?.settings?.enableMicroLoans !== false) ? (
+                    <th className="py-3 px-4">চলতি ঋণ</th>
+                  ) : (
+                    <th className="py-3 px-4">মাসিক চাঁদা / বিনিয়োগ</th>
+                  )}
                   <th className="py-3 px-4 text-center">স্ট্যাটাস</th>
                   <th className="py-3 px-4 text-right">অ্যাকশন</th>
                 </tr>
@@ -388,14 +409,23 @@ export function MembersView({ onOpenAddMember, onOpenRecordDeposit }: MembersVie
                       {formatCurrency(member.savingsBalance, language)}
                     </td>
 
-                    {/* Loan */}
-                    <td className="py-3 px-4 font-mono">
-                      {member.loanOutstanding > 0 ? (
-                        <span className="text-amber-400 font-bold">{formatCurrency(member.loanOutstanding, language)}</span>
-                      ) : (
-                        <span className="text-slate-500 text-[10px] px-2 py-0.5 rounded bg-slate-800">ঋণমুক্ত</span>
-                      )}
-                    </td>
+                    {/* Loan OR Fixed Monthly Dues */}
+                    {(activeTenant?.settings?.enableLoans !== false && activeTenant?.settings?.enableMicroLoans !== false) ? (
+                      <td className="py-3 px-4 font-mono">
+                        {member.loanOutstanding > 0 ? (
+                          <span className="text-amber-400 font-bold">{formatCurrency(member.loanOutstanding, language)}</span>
+                        ) : (
+                          <span className="text-slate-500 text-[10px] px-2 py-0.5 rounded bg-slate-800">ঋণমুক্ত</span>
+                        )}
+                      </td>
+                    ) : (
+                      <td className="py-3 px-4 font-mono">
+                        <span className="text-cyan-400 font-bold">
+                          ৳ {(activeTenant?.settings?.fixedMonthlyAmount || 10000).toLocaleString()}
+                        </span>
+                        <div className="text-[9px] text-slate-400 font-sans">নির্ধারিত মাসিক চাঁদা</div>
+                      </td>
+                    )}
 
                     {/* Status */}
                     <td className="py-3 px-4 text-center">
@@ -535,12 +565,21 @@ export function MembersView({ onOpenAddMember, onOpenRecordDeposit }: MembersVie
                   <div className="text-slate-400 text-[9px]">শেয়ার</div>
                   <div className="font-bold text-indigo-300 mt-0.5">৳ {member.shareValue.toLocaleString()}</div>
                 </div>
-                <div>
-                  <div className="text-slate-400 text-[9px]">ঋণ</div>
-                  <div className="font-bold text-amber-400 mt-0.5">
-                    {member.loanOutstanding > 0 ? `৳ ${member.loanOutstanding.toLocaleString()}` : 'মুক্ত'}
+                {(activeTenant?.settings?.enableLoans !== false && activeTenant?.settings?.enableMicroLoans !== false) ? (
+                  <div>
+                    <div className="text-slate-400 text-[9px]">ঋণ স্থিতি</div>
+                    <div className="font-bold text-amber-400 mt-0.5">
+                      {member.loanOutstanding > 0 ? `৳ ${member.loanOutstanding.toLocaleString()}` : 'মুক্ত'}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <div className="text-slate-400 text-[9px]">মাসিক চাঁদা</div>
+                    <div className="font-bold text-cyan-400 mt-0.5">
+                      ৳ {(activeTenant?.settings?.fixedMonthlyAmount || 10000).toLocaleString()}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Quick Contacts */}

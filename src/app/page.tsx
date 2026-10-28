@@ -43,11 +43,12 @@ import { MobileMenuDrawer } from '@/components/layout/MobileMenuDrawer';
 import { useSamityStore } from '@/lib/store';
 import { 
   LayoutDashboard, Users, PiggyBank, HandCoins, 
-  FileBarChart, BookOpen, Building2, BadgePercent, MoreVertical 
+  FileBarChart, BookOpen, Building2, BadgePercent, MoreVertical,
+  Briefcase
 } from 'lucide-react';
 
 export default function Home() {
-  const { currentUser, setCurrentUser, setCurrentTenant } = useSamityStore();
+  const { currentUser, setCurrentUser, setCurrentTenant, activeTenant } = useSamityStore();
 
   React.useEffect(() => {
     async function syncSession() {
@@ -259,15 +260,27 @@ export default function Home() {
               <BadgePercent className="w-5 h-5 mb-0.5" />
               <span>চাঁদা ও রসিদ</span>
             </button>
-            <button
-              onClick={() => setActiveTab('member-loans')}
-              className={`flex flex-col items-center justify-center min-w-[56px] min-h-[46px] p-1 rounded-xl transition cursor-pointer active:scale-95 touch-manipulation ${
-                activeTab === 'member-loans' ? 'text-cyan-400 font-bold bg-cyan-500/10' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <HandCoins className="w-5 h-5 mb-0.5" />
-              <span>ঋণ কিস্তি</span>
-            </button>
+            {(activeTenant?.settings?.enableLoans !== false && activeTenant?.settings?.enableMicroLoans !== false) ? (
+              <button
+                onClick={() => setActiveTab('member-loans')}
+                className={`flex flex-col items-center justify-center min-w-[56px] min-h-[46px] p-1 rounded-xl transition cursor-pointer active:scale-95 touch-manipulation ${
+                  activeTab === 'member-loans' ? 'text-cyan-400 font-bold bg-cyan-500/10' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <HandCoins className="w-5 h-5 mb-0.5" />
+                <span>ঋণ কিস্তি</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setActiveTab('projects')}
+                className={`flex flex-col items-center justify-center min-w-[56px] min-h-[46px] p-1 rounded-xl transition cursor-pointer active:scale-95 touch-manipulation ${
+                  activeTab === 'projects' ? 'text-amber-400 font-bold bg-amber-500/10' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Briefcase className="w-5 h-5 mb-0.5" />
+                <span>প্রকল্প/জমি</span>
+              </button>
+            )}
             <button
               onClick={() => setActiveTab('member-elections')}
               className={`flex flex-col items-center justify-center min-w-[56px] min-h-[46px] p-1 rounded-xl transition cursor-pointer active:scale-95 touch-manipulation ${

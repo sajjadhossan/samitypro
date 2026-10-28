@@ -84,12 +84,13 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const filteredSamityAdminNav = samityAdminNav.filter(item => {
     if (!settings) return true;
     if (item.id === 'savings' && (settings.enableSavings === false && settings.enableDps === false)) return false;
-    if ((item.id === 'loans' || item.id === 'field-collection') && settings.enableLoans === false) return false;
+    if (item.id === 'loans' && (settings.enableLoans === false || settings.enableMicroLoans === false)) return false;
+    if (item.id === 'field-collection' && (settings.enableFieldOfficers === false || settings.enableLoans === false)) return false;
     if (item.id === 'fdr' && settings.enableFdr === false) return false;
     if (item.id === 'shares-dividend' && settings.enableShares === false) return false;
     if (item.id === 'staff-payroll' && settings.enableStaffPayroll === false) return false;
     if (item.id === 'fixed-assets' && settings.enableAssetInventory === false) return false;
-    if (item.id === 'projects' && settings.enableProjects === false) return false;
+    if (item.id === 'projects' && settings.enableProjects === false && settings.enablePropertyProjects === false) return false;
     if (item.id === 'elections' && settings.enableElections === false) return false;
     if (item.id === 'doc-generator' && settings.enableDocumentGenerator === false) return false;
     if (item.id === 'payment-gateways' && settings.enableOnlinePayment === false) return false;
@@ -103,9 +104,9 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     if (!settings) return true;
     if (item.id === 'online-payment' && settings.enableOnlinePayment === false) return false;
     if (item.id === 'fdr' && settings.enableFdr === false) return false;
-    if (item.id === 'projects' && settings.enableProjects === false) return false;
+    if (item.id === 'projects' && settings.enableProjects === false && settings.enablePropertyProjects === false) return false;
     if (item.id === 'shares-dividend' && settings.enableShares === false) return false;
-    if (item.id === 'member-loans' && settings.enableLoans === false) return false;
+    if (item.id === 'member-loans' && (settings.enableLoans === false || settings.enableMicroLoans === false)) return false;
     if (item.id === 'member-elections' && settings.enableElections === false) return false;
     if (item.id === 'member-passbook' && settings.enableMemberPortal === false) return false;
     return true;

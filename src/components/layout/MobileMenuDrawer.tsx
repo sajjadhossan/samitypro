@@ -47,7 +47,9 @@ export function MobileMenuDrawer({
     { role: 'SUPER_ADMIN', labelBn: 'সুপার অ্যাডমিন', userId: superAdminId },
     { role: 'SAMITY_ADMIN', labelBn: 'সভাপতি (অ্যাডমিন)', userId: 'user-rafiq' },
     { role: 'MANAGER', labelBn: 'ম্যানেজার / কোষাধ্যক্ষ', userId: 'user-tareq' },
-    { role: 'FIELD_COLLECTOR', labelBn: 'মাঠ কর্মী (কালেক্টর)', userId: 'user-sumon' },
+    ...(activeTenant?.settings?.enableFieldOfficers !== false ? [
+      { role: 'FIELD_COLLECTOR' as UserRole, labelBn: 'মাঠ কর্মী (কালেক্টর)', userId: 'user-sumon' }
+    ] : []),
     { role: 'MEMBER', labelBn: 'সাধারণ সদস্য (কবির)', userId: 'user-kabir' },
   ];
 
@@ -330,7 +332,7 @@ export function MobileMenuDrawer({
                     </div>
                   </button>
 
-                  {activeTenant?.settings?.enableLoans !== false && (
+                  {(activeTenant?.settings?.enableLoans !== false && activeTenant?.settings?.enableMicroLoans !== false) && (
                     <button
                       onClick={() => handleNavigate('member-loans')}
                       className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
@@ -595,38 +597,38 @@ export function MobileMenuDrawer({
                       </button>
                     )}
 
-                    {activeTenant?.settings?.enableLoans !== false && (
-                      <>
-                        <button
-                          onClick={() => handleNavigate('loans')}
-                          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
-                            activeTab === 'loans'
-                              ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
-                              : 'text-slate-300 hover:bg-slate-800/70'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <HandCoins className="w-4 h-4 text-rose-400" />
-                            <span>ঋণ ও কিস্তি আদায় (Loans & EMIs)</span>
-                          </div>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold">মডিউল ৫</span>
-                        </button>
+                    {(activeTenant?.settings?.enableLoans !== false && activeTenant?.settings?.enableMicroLoans !== false) && (
+                      <button
+                        onClick={() => handleNavigate('loans')}
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                          activeTab === 'loans'
+                            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                            : 'text-slate-300 hover:bg-slate-800/70'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <HandCoins className="w-4 h-4 text-rose-400" />
+                          <span>ঋণ ও কিস্তি আদায় (Loans & EMIs)</span>
+                        </div>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold">মডিউল ৫</span>
+                      </button>
+                    )}
 
-                        <button
-                          onClick={() => handleNavigate('field-collection')}
-                          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
-                            activeTab === 'field-collection'
-                              ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
-                              : 'text-slate-300 hover:bg-slate-800/70'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <Smartphone className="w-4 h-4 text-rose-400" />
-                            <span>মাঠ কালেকশন ও POS রসিদ</span>
-                          </div>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold">POS</span>
-                        </button>
-                      </>
+                    {(activeTenant?.settings?.enableFieldOfficers !== false && activeTenant?.settings?.enableLoans !== false) && (
+                      <button
+                        onClick={() => handleNavigate('field-collection')}
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+                          activeTab === 'field-collection'
+                            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                            : 'text-slate-300 hover:bg-slate-800/70'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Smartphone className="w-4 h-4 text-rose-400" />
+                          <span>মাঠ কালেকশন ও POS রসিদ</span>
+                        </div>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold">POS</span>
+                      </button>
                     )}
 
                     <button

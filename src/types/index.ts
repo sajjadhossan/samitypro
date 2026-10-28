@@ -98,6 +98,13 @@ export interface Tenant {
     enableOnlinePayment: boolean;
     enableDocumentGenerator?: boolean;
     enableMemberPortal?: boolean;
+    // Granular Sub-Module & Operating Model Controls (Super Admin Controlled)
+    enableFieldOfficers?: boolean;        // মাঠকর্মী ও মোবাইল POS কালেকশন সিস্টেম
+    enablePropertyProjects?: boolean;     // প্রোপার্টি, জমি ও যৌথ প্রকল্প বিনিয়োগ
+    enableFixedMonthlySavings?: boolean;  // ফিক্সড মাসিক চাঁদা/সঞ্চয় (যেমন ১০,০০০ টাকা)
+    fixedMonthlyAmount?: number;          // নির্ধারিত মাসিক সঞ্চয়/চাঁদা (ডিফল্ট ১০,০০০ টাকা)
+    enableMicroLoans?: boolean;           // সাধারণ ক্ষুদ্রঋণ ও কিস্তি হিসাব
+    samityOperatingModel?: 'INVESTMENT_PROPERTY' | 'MICRO_CREDIT' | 'MULTI_PURPOSE'; // সমিতির পরিচালনা মোড
     maxMembers?: number;
     maxStaff?: number;
     memberCanApplyLoanOnline?: boolean;

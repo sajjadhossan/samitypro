@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { 
   Building2, Sliders, Stamp, Printer, CheckCircle2, 
   Save, FileText, Globe, DollarSign, Calendar, Eye, RefreshCw,
-  Lock, ShieldCheck, Zap, HandCoins, PiggyBank, Award, BookOpen, AlertCircle
+  Lock, ShieldCheck, Zap, HandCoins, PiggyBank, Award, BookOpen, AlertCircle,
+  Smartphone, Landmark
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { PrintPaperSize, TenantType, APP_VERSION } from '@/types';
@@ -951,6 +952,81 @@ export function SettingsView() {
                   🔒 এসএমএস ও মেসেজিং অ্যালার্ট সুপার অ্যাডমিন লাইসেন্স প্যাকেজে বন্ধ রয়েছে।
                 </p>
               )}
+            </div>
+
+            {/* Card 6: মাঠকর্মী ও ফিল্ড কালেকশন পলিসি */}
+            <div className={`p-4 rounded-xl border ${
+              activeTenant?.settings?.enableFieldOfficers !== false
+                ? 'bg-slate-900/80 border-slate-700/80'
+                : 'bg-slate-950/40 border-slate-800/80 opacity-60'
+            }`}>
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-4 h-4 text-rose-400" />
+                  <span className="text-xs font-bold text-slate-200">৬. মাঠকর্মী ও মোবাইল POS পলিসি</span>
+                </div>
+                {activeTenant?.settings?.enableFieldOfficers === false ? (
+                  <span className="flex items-center gap-1 text-[10px] text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                    <Lock className="w-3 h-3" />
+                    <span>সুপার অ্যাডমিনে বন্ধ (কোনো মাঠকর্মী নেই)</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    মডিউল সক্রিয়
+                  </span>
+                )}
+              </div>
+
+              {activeTenant?.settings?.enableFieldOfficers !== false ? (
+                <p className="text-[11px] text-slate-300 leading-relaxed py-1">
+                  মাঠকর্মীরা মোবাইলের মাধ্যমে বাড়ি বাড়ি গিয়ে সঞ্চয় ও কিস্তি সংগ্রহ করতে পারবে এবং তাৎক্ষণিক ডিজিটাল থার্মাল/POS রসিদ প্রদান করতে পারবে।
+                </p>
+              ) : (
+                <p className="text-[11px] text-slate-400 leading-relaxed py-1">
+                  🔒 এই সমিতিতে মাঠকর্মী ও ফিল্ড কালেকশন অপশন বন্ধ রাখা হয়েছে। শুধুমাত্র সদস্যগণ বা অফিস কাউন্টার থেকে জমা গৃহীত হবে।
+                </p>
+              )}
+            </div>
+
+            {/* Card 7: জমি, প্রোপার্টি প্রকল্প ও ফিক্সড মাসিক চাঁদা */}
+            <div className={`p-4 rounded-xl border ${
+              (activeTenant?.settings?.enablePropertyProjects !== false || activeTenant?.settings?.enableFixedMonthlySavings)
+                ? 'bg-slate-900/80 border-slate-700/80'
+                : 'bg-slate-950/40 border-slate-800/80 opacity-60'
+            }`}>
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Landmark className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs font-bold text-slate-200">৭. জমি ও প্রোপার্টি বিনিয়োগ ও ফিক্সড চাঁদা</span>
+                </div>
+                {activeTenant?.settings?.enableFixedMonthlySavings ? (
+                  <span className="text-[10px] text-cyan-400 font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                    মাসিক চাঁদা: ৳ {(activeTenant?.settings?.fixedMonthlyAmount || 10000).toLocaleString()}
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+                    সাধারণ সমবায়
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-2 text-[11px]">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800">
+                  <span className="text-slate-300 font-medium">সমিতি পরিচালনা মডেল</span>
+                  <span className="text-xs font-mono font-bold text-amber-400">
+                    {activeTenant?.settings?.samityOperatingModel === 'INVESTMENT_PROPERTY' 
+                      ? 'জমি ও প্রোপার্টি বিনিয়োগ সমিতি' 
+                      : activeTenant?.settings?.samityOperatingModel === 'MICRO_CREDIT'
+                      ? 'ক্ষুদ্রঋণ ও মাঠ সঞ্চয় সমিতি'
+                      : 'বহুমুখী সমন্বিত সমবায়'}
+                  </span>
+                </div>
+                {activeTenant?.settings?.enableFixedMonthlySavings && (
+                  <p className="text-[10px] text-emerald-400 leading-relaxed">
+                    ✅ প্রতি মাসে প্রতিটি সদস্যের প্রোফাইলে নির্ধারিত ৳ {(activeTenant?.settings?.fixedMonthlyAmount || 10000).toLocaleString()} টাকা সঞ্চয়/চাঁদা বিল হিসেবে ধার্য হবে।
+                  </p>
+                )}
+              </div>
             </div>
 
           </div>
