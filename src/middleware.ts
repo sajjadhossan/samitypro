@@ -12,6 +12,8 @@ const PUBLIC_PATHS = [
   '/register',
   '/api/auth/login',
   '/api/auth/register',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
   '/api/auth/bootstrap',
   '/api/app/version',
   '/api/db/health',
