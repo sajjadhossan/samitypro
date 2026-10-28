@@ -112,28 +112,94 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     return true;
   });
 
+  // Filter Field Collector Navigation (Focused collection desk)
+  const filteredFieldCollectorNav = [
+    { id: 'field-collection', labelBn: 'মাঠ কালেকশন ও POS রসিদ', labelEn: 'Field Collection & POS', icon: Smartphone },
+    { id: 'members', labelBn: 'মাঠের সদস্য তালিকা', labelEn: 'Field Members', icon: Users },
+    { id: 'subscriptions-due', labelBn: 'চাঁদা ও ফি কালেকশন', labelEn: 'Fees Collection', icon: BadgePercent },
+    { id: 'savings', labelBn: 'সঞ্চয় ও ডিপিএস কিস্তি', labelEn: 'Savings Deposit', icon: PiggyBank },
+    { id: 'loans', labelBn: 'ঋণ কিস্তি আদায়', labelEn: 'Loan EMIs', icon: HandCoins },
+  ].filter(item => {
+    if (!settings) return true;
+    if (item.id === 'field-collection' && (settings.enableFieldOfficers === false || settings.enableLoans === false)) return false;
+    if (item.id === 'savings' && settings.enableSavings === false && settings.enableDps === false) return false;
+    if (item.id === 'loans' && (settings.enableLoans === false || settings.enableMicroLoans === false)) return false;
+    return true;
+  });
+
+  // Filter Manager Navigation (Operational without destructive settings)
+  const filteredManagerNav = filteredSamityAdminNav.filter(item => {
+    return !['audit-trail', 'backup-restore', 'settings'].includes(item.id);
+  });
+
+  const isSuperAdminConsoleTab = ['saas-overview', 'tenants', 'subscriptions', 'gateways', 'audit-logs'].includes(activeTab);
+
   let currentNavItems = filteredSamityAdminNav;
   if (currentUser.role === 'SUPER_ADMIN') {
-    currentNavItems = superAdminNav;
+    currentNavItems = isSuperAdminConsoleTab ? superAdminNav : filteredSamityAdminNav;
   } else if (currentUser.role === 'MEMBER') {
     currentNavItems = filteredMemberNav;
+  } else if (currentUser.role === 'FIELD_COLLECTOR') {
+    currentNavItems = filteredFieldCollectorNav;
+  } else if (currentUser.role === 'MANAGER') {
+    currentNavItems = filteredManagerNav;
   }
-
 
   return (
     <aside className="hidden md:flex md:w-64 glass-panel border-r border-slate-800/80 p-3 sm:p-4 flex-col justify-between shrink-0">
-      <div className="space-y-6">
-        {/* Role Identity Tag */}
-        <div className="px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800">
-          <div className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
-            {language === 'bn' ? 'বর্তমান পোর্টাল মোড' : 'Current Portal Mode'}
+      <div className="space-y-5">
+        {/* Role Identity Tag & Dual Mode Switcher */}
+        {currentUser.role === 'SUPER_ADMIN' ? (
+          !isSuperAdminConsoleTab ? (
+            <div className="px-3 py-2.5 rounded-2xl bg-indigo-950/60 border border-indigo-500/40 shadow-inner">
+              <div className="text-[10px] uppercase font-bold text-indigo-300 tracking-wider flex items-center justify-between">
+                <span>সমিতি পরিচালনা মোড</span>
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+              </div>
+              <div className="text-xs font-bold text-white truncate mt-0.5">
+                {language === 'bn' ? activeTenant?.nameBn : activeTenant?.nameEn}
+              </div>
+              <button
+                onClick={() => onTabChange('saas-overview')}
+                className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold shadow-md shadow-indigo-600/30 transition cursor-pointer active:scale-95"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>সুপার অ্যাডমিন প্যানেল</span>
+              </button>
+            </div>
+          ) : (
+            <div className="px-3 py-2.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+              <div className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
+                {language === 'bn' ? 'সুপার অ্যাডমিন কনসোল' : 'Super Admin Console'}
+              </div>
+              <div className="text-sm font-bold text-indigo-400 truncate mt-0.5">
+                SaaS প্ল্যাটফর্ম কন্ট্রোল
+              </div>
+              <button
+                onClick={() => onTabChange('dashboard')}
+                className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold transition cursor-pointer active:scale-95"
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>আমার সমিতি পরিচালনা</span>
+              </button>
+            </div>
+          )
+        ) : (
+          <div className="px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800">
+            <div className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
+              {language === 'bn' ? 'বর্তমান পোর্টাল মোড' : 'Current Portal Mode'}
+            </div>
+            <div className="text-sm font-bold text-emerald-400 truncate mt-0.5">
+              {currentUser.role === 'MEMBER' ? (language === 'bn' ? 'সদস্য পোর্টাল' : 'Member Portal') :
+               currentUser.role === 'FIELD_COLLECTOR' ? (language === 'bn' ? 'মাঠ কর্মী (কালেক্টর)' : 'Field Collector') :
+               currentUser.role === 'MANAGER' ? (language === 'bn' ? 'ম্যানেজার / কোষাধ্যক্ষ' : 'Manager / Treasurer') :
+               (language === 'bn' ? 'সমিতি সভাপতি / অ্যাডমিন' : 'Samity Admin')}
+            </div>
           </div>
-          <div className="text-sm font-bold text-emerald-400 truncate mt-0.5">
-            {currentUser.role === 'SUPER_ADMIN' ? (language === 'bn' ? 'সুপার অ্যাডমিন' : 'Super Admin') :
-             currentUser.role === 'MEMBER' ? (language === 'bn' ? 'সদস্য পোর্টাল' : 'Member Portal') :
-             (language === 'bn' ? 'সমিতি পরিচালনা' : 'Samity Admin')}
-          </div>
-        </div>
+        )}
 
         {/* Navigation list */}
         <nav className="space-y-1">
@@ -144,7 +210,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
               <button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
                   isActive
                     ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20 font-semibold'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'

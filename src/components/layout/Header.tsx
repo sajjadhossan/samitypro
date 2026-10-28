@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { 
   Building2, Users, Bell, Globe, Smartphone, ShieldCheck, 
   ChevronDown, Check, Zap, RefreshCw, LogOut, ArrowRightLeft, Radio,
-  MoreVertical
+  MoreVertical, Eye, Sliders
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations, toBengaliNumber } from '@/lib/i18n';
@@ -14,9 +14,18 @@ import { UpdateCheckModal } from '@/components/common/UpdateCheckModal';
 interface HeaderProps {
   onOpenApkModal: () => void;
   onOpenMenu?: () => void;
+  onTabChange?: (tab: string) => void;
+  activeTab?: string;
+  onOpenInspector?: () => void;
 }
 
-export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
+export function Header({ 
+  onOpenApkModal, 
+  onOpenMenu, 
+  onTabChange, 
+  activeTab = 'dashboard', 
+  onOpenInspector 
+}: HeaderProps) {
   const { 
     tenants, activeTenant, currentUser, language, setLanguage, 
     setCurrentTenant, setCurrentUser, events, offlineQueue, syncOfflineQueue 
@@ -38,16 +47,26 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
   ];
 
   const handleRoleSelect = (role: UserRole) => {
+    let targetTab = 'dashboard';
     if (role === 'SUPER_ADMIN') {
       setCurrentUser('user-sajjad-owner');
+      targetTab = 'saas-overview';
     } else if (role === 'SAMITY_ADMIN') {
       setCurrentUser('user-rafiq');
+      targetTab = 'dashboard';
     } else if (role === 'MANAGER') {
       setCurrentUser('user-tareq');
+      targetTab = 'dashboard';
     } else if (role === 'FIELD_COLLECTOR') {
       setCurrentUser('user-sumon');
+      targetTab = 'field-collection';
     } else if (role === 'MEMBER') {
       setCurrentUser('user-kabir');
+      targetTab = 'member-passbook';
+    }
+
+    if (onTabChange) {
+      onTabChange(targetTab);
     }
     setShowRoleDropdown(false);
   };
@@ -171,7 +190,40 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
             </span>
           </button>
 
-          {/* Role Switcher (For Demo & Architecture Walkthrough) */}
+          {/* Super Admin Quick Mode Toggle (Console ⇄ Workspace) */}
+          {currentUser.role === 'SUPER_ADMIN' && (
+            ['saas-overview', 'tenants', 'subscriptions', 'gateways', 'audit-logs'].includes(activeTab) ? (
+              <button
+                onClick={() => onTabChange && onTabChange('dashboard')}
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition cursor-pointer active:scale-95"
+                title="নির্বাচিত নিজস্ব সমিতির পূর্ণাঙ্গ ড্যাশবোর্ডে প্রবেশ করুন"
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>আমার সমিতি পরিচালনা</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => onTabChange && onTabChange('saas-overview')}
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition cursor-pointer active:scale-95"
+                title="সুপার অ্যাডমিন প্ল্যাটফর্ম প্যানেলে ফিরে যান"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>সুপার অ্যাডমিন প্যানেল</span>
+              </button>
+            )
+          )}
+
+          {/* Quick Role & Menu Options Inspector Button */}
+          <button
+            onClick={onOpenInspector}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition cursor-pointer"
+            title="রোল ভিত্তিক মেনু ও অপশন অডিট করুন"
+          >
+            <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">অপশন পরীক্ষক</span>
+          </button>
+
+          {/* Role Switcher (For Architecture Walkthrough & Live Preview) */}
           <div className="relative hidden lg:block">
             <button
               onClick={() => setShowRoleDropdown(!showRoleDropdown)}
@@ -188,7 +240,7 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
             </button>
 
             {showRoleDropdown && (
-              <div className="absolute right-0 mt-2 w-64 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl p-2 z-50">
+              <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-2 z-50">
                 <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-3 py-1">
                   {t.switchRole}
                 </div>
@@ -196,7 +248,7 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
                   <button
                     key={opt.role}
                     onClick={() => handleRoleSelect(opt.role)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between transition ${
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition cursor-pointer ${
                       currentUser.role === opt.role 
                         ? 'bg-indigo-500/20 text-indigo-300 font-semibold' 
                         : 'text-slate-300 hover:bg-slate-800'
@@ -206,6 +258,19 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
                     {currentUser.role === opt.role && <Check className="w-3.5 h-3.5 text-indigo-400" />}
                   </button>
                 ))}
+
+                <div className="pt-2 mt-2 border-t border-slate-800">
+                  <button
+                    onClick={() => {
+                      setShowRoleDropdown(false);
+                      if (onOpenInspector) onOpenInspector();
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-cyan-600/15 hover:bg-cyan-600/25 text-cyan-300 text-xs font-bold border border-cyan-500/30 transition cursor-pointer"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>সকল রোলের অপশন চেক করুন</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>

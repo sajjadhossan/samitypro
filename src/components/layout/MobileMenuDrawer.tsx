@@ -19,6 +19,7 @@ interface MobileMenuDrawerProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   onOpenApkModal: () => void;
+  onOpenInspector?: () => void;
 }
 
 export function MobileMenuDrawer({
@@ -26,7 +27,8 @@ export function MobileMenuDrawer({
   onClose,
   activeTab,
   onTabChange,
-  onOpenApkModal
+  onOpenApkModal,
+  onOpenInspector
 }: MobileMenuDrawerProps) {
   const { 
     currentUser, activeTenant, language, setLanguage, 
@@ -868,6 +870,17 @@ export function MobileMenuDrawer({
                     {currentUser.role === opt.role && <Check className="w-4 h-4 text-white" />}
                   </button>
                 ))}
+
+                <button
+                  onClick={() => {
+                    onClose();
+                    if (onOpenInspector) onOpenInspector();
+                  }}
+                  className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-cyan-600/15 hover:bg-cyan-600/25 text-cyan-300 text-xs font-bold border border-cyan-500/30 transition cursor-pointer active:scale-95"
+                >
+                  <Sliders className="w-4 h-4 text-cyan-400" />
+                  <span>সকল রোলের মেনু ও অপশন তালিকা দেখুন</span>
+                </button>
               </div>
             </div>
 

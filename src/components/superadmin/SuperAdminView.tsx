@@ -10,8 +10,14 @@ import { useSamityStore } from '@/lib/store';
 import { translations, formatCurrency, toBengaliNumber } from '@/lib/i18n';
 import { Tenant, TenantType, SubscriptionPlan } from '@/types';
 import { TenantModulePermissionModal } from './TenantModulePermissionModal';
+import { Eye } from 'lucide-react';
 
-export function SuperAdminView() {
+interface SuperAdminViewProps {
+  onEnterWorkspace?: (tenantId: string) => void;
+  onOpenInspector?: (tenantId?: string) => void;
+}
+
+export function SuperAdminView({ onEnterWorkspace, onOpenInspector }: SuperAdminViewProps = {}) {
   const { store, tenants, language, setCurrentTenant, updateTenant } = useSamityStore();
   const t = translations[language];
 
@@ -263,14 +269,31 @@ export function SuperAdminView() {
 
                         <button
                           onClick={() => {
-                            setCurrentTenant(t.id);
-                            showToast(language === 'bn' ? `${t.nameBn} এ সফলভাবে সুইচ করা হয়েছে!` : `Switched to ${t.nameEn}!`);
+                            if (onOpenInspector) {
+                              onOpenInspector(t.id);
+                            }
                           }}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-sans text-xs font-semibold shadow-sm transition cursor-pointer"
-                          title="সমিতিতে প্রবেশ"
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 font-sans text-xs font-semibold shadow-sm transition cursor-pointer"
+                          title="এই সমিতির রোল ও মেনু অপশন অডিট করুন"
                         >
-                          <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                          <span>প্রবেশ</span>
+                          <Eye className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>অপশন চেক</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setCurrentTenant(t.id);
+                            if (onEnterWorkspace) {
+                              onEnterWorkspace(t.id);
+                            } else {
+                              showToast(language === 'bn' ? `${t.nameBn} এ সফলভাবে সুইচ করা হয়েছে!` : `Switched to ${t.nameEn}!`);
+                            }
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-sans text-xs font-bold shadow-md shadow-emerald-600/30 transition cursor-pointer active:scale-95"
+                          title="এই সমিতির ওয়ার্কস্পেসে সরাসরি প্রবেশ করুন"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>প্রবেশ করুন</span>
                         </button>
                       </div>
                     </td>

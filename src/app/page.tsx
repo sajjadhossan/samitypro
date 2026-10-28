@@ -39,12 +39,13 @@ import FixedAssetInventoryView from '@/components/assets/FixedAssetInventoryView
 import StaffPayrollHRView from '@/components/payroll/StaffPayrollHRView';
 import NotificationGatewayView from '@/components/notifications/NotificationGatewayView';
 import { MobileMenuDrawer } from '@/components/layout/MobileMenuDrawer';
+import { RolePermissionsInspectorModal } from '@/components/common/RolePermissionsInspectorModal';
 
 import { useSamityStore } from '@/lib/store';
 import { 
   LayoutDashboard, Users, PiggyBank, HandCoins, 
   FileBarChart, BookOpen, Building2, BadgePercent, MoreVertical,
-  Briefcase
+  Briefcase, ShieldCheck, Sliders
 } from 'lucide-react';
 
 export default function Home() {
@@ -87,6 +88,7 @@ export default function Home() {
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
   const [isOnlinePaymentOpen, setIsOnlinePaymentOpen] = useState(false);
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
 
   const handleOpenDeposit = (memberId?: string) => {
     setDepositMemberId(memberId);
@@ -147,7 +149,18 @@ export default function Home() {
   const renderMainContent = () => {
     // If activeTab is one of the Super Admin specific tabs
     if (activeTab === 'saas-overview' || activeTab === 'tenants' || activeTab === 'subscriptions' || activeTab === 'gateways' || activeTab === 'audit-logs') {
-      return <SuperAdminView />;
+      return (
+        <SuperAdminView 
+          onEnterWorkspace={(tenantId) => {
+            setCurrentTenant(tenantId);
+            setActiveTab('dashboard');
+          }}
+          onOpenInspector={(tenantId) => {
+            if (tenantId) setCurrentTenant(tenantId);
+            setIsInspectorOpen(true);
+          }}
+        />
+      );
     }
 
     // If Member Portal specific view
@@ -214,11 +227,44 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 w-full max-w-full overflow-x-hidden">
       
-      {/* Universal Top Header with 3-Dot Menu trigger */}
+      {/* Universal Top Header with 3-Dot Menu trigger, Mode Switcher & Inspector */}
       <Header 
         onOpenApkModal={() => setIsApkModalOpen(true)} 
         onOpenMenu={() => setIsMenuDrawerOpen(true)}
+        onTabChange={tab => setActiveTab(tab)}
+        activeTab={activeTab}
+        onOpenInspector={() => setIsInspectorOpen(true)}
       />
+
+      {/* Persistent Super Admin Workspace Banner when managing a Samity */}
+      {currentUser.role === 'SUPER_ADMIN' && !['saas-overview', 'tenants', 'subscriptions', 'gateways', 'audit-logs'].includes(activeTab) && (
+        <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-purple-950 border-b border-indigo-500/30 px-3 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/40 text-[10px] tracking-wide">
+              SUPER ADMIN WORKSPACE
+            </span>
+            <span className="text-slate-300">
+              আপনি বর্তমানে <strong className="text-emerald-400">{activeTenant?.nameBn}</strong>-এর অ্যাডমিন মোডে কাজ করছেন।
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsInspectorOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 text-xs font-semibold cursor-pointer active:scale-95"
+            >
+              <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+              <span>রোল অপশন চেক</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('saas-overview')}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/30 transition cursor-pointer active:scale-95"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>সুপার অ্যাডমিন প্যানেলে ফিরুন</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Body with Sidebar + Content */}
       <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto pb-24 md:pb-6 overflow-x-hidden">
@@ -356,6 +402,14 @@ export default function Home() {
         activeTab={activeTab}
         onTabChange={tab => setActiveTab(tab)}
         onOpenApkModal={() => setIsApkModalOpen(true)}
+        onOpenInspector={() => setIsInspectorOpen(true)}
+      />
+
+      {/* Role & Menu Permissions Inspector Modal (View As & Audit) */}
+      <RolePermissionsInspectorModal
+        isOpen={isInspectorOpen}
+        onClose={() => setIsInspectorOpen(false)}
+        onSwitchRoleAndTab={(role, tab) => setActiveTab(tab)}
       />
 
       {/* Interactive Global Modals */}
