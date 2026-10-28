@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { 
   Building2, Sliders, Stamp, Printer, CheckCircle2, 
-  Save, FileText, Globe, DollarSign, Calendar, Eye, RefreshCw
+  Save, FileText, Globe, DollarSign, Calendar, Eye, RefreshCw,
+  Lock, ShieldCheck, Zap, HandCoins, PiggyBank, Award, BookOpen, AlertCircle
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { PrintPaperSize, TenantType, APP_VERSION } from '@/types';
@@ -18,10 +19,11 @@ export function SettingsView() {
     voucherPrefix, 
     updateSignatureSeal, 
     updateVoucherPrefix, 
-    updateTenantProfile 
+    updateTenantProfile,
+    updateTenant
   } = useSamityStore();
 
-  const [activeTab, setActiveTab] = useState<'samity-setup' | 'voucher-prefix' | 'signatures' | 'letterhead'>('samity-setup');
+  const [activeTab, setActiveTab] = useState<'samity-setup' | 'voucher-prefix' | 'signatures' | 'letterhead' | 'tier2-modules'>('samity-setup');
   const [saveAlert, setSaveAlert] = useState<string | null>(null);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
@@ -35,6 +37,18 @@ export function SettingsView() {
     phone: activeTenant?.phone || '',
     email: activeTenant?.email || '',
     address: activeTenant?.address || '',
+  });
+
+  // Tier 2 Internal Module Settings (Samity President Controls within Super Admin allowances)
+  const [tier2Form, setTier2Form] = useState({
+    memberCanApplyLoanOnline: activeTenant?.settings?.memberCanApplyLoanOnline ?? true,
+    memberCanDownloadReceipt: activeTenant?.settings?.memberCanDownloadReceipt ?? true,
+    autoSmsOnDeposit: activeTenant?.settings?.autoSmsOnDeposit ?? true,
+    autoSmsOnLoanRepay: activeTenant?.settings?.autoSmsOnLoanRepay ?? true,
+    shareFaceValue: activeTenant?.settings?.shareFaceValue ?? 1000,
+    defaultSavingsInterestRate: activeTenant?.settings?.defaultSavingsInterestRate ?? 8.5,
+    defaultLoanInterestRate: activeTenant?.settings?.defaultLoanInterestRate ?? 12.0,
+    penaltyPerMissedInstallment: activeTenant?.settings?.penaltyPerMissedInstallment ?? 100,
   });
 
   // Voucher & Prefix State
@@ -94,6 +108,29 @@ export function SettingsView() {
     e.preventDefault();
     updateSignatureSeal(sealForm);
     showNotification(language === 'bn' ? 'ডিজিটাল সিল ও স্বাক্ষর সেটিংস সংরক্ষিত হয়েছে!' : 'Signatures & seal settings saved!');
+  };
+
+  const handleSaveTier2 = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeTenant) return;
+    const mergedSettings = {
+      ...(activeTenant.settings || {}),
+      ...tier2Form
+    };
+    updateTenant(activeTenant.id, {
+      settings: mergedSettings
+    });
+    try {
+      await fetch('/api/tenants', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: activeTenant.id,
+          settings: mergedSettings
+        })
+      });
+    } catch {}
+    showNotification(language === 'bn' ? 'অভ্যন্তরীণ পলিসি ও মেম্বার সুবিধা সফলভাবে সংরক্ষিত হয়েছে!' : 'Internal module settings saved!');
   };
 
   return (
@@ -184,6 +221,18 @@ export function SettingsView() {
         >
           <Printer className="w-4 h-4" />
           <span>{language === 'bn' ? '৪. প্যাড ও প্রিন্ট টেমপ্লেট' : '4. Print & Letterhead'}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('tier2-modules')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
+            activeTab === 'tier2-modules'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
+        >
+          <Sliders className="w-4 h-4" />
+          <span>{language === 'bn' ? '৫. পলিসি ও অভ্যন্তরীণ সুবিধা' : '5. Policies & Modules'}</span>
         </button>
       </div>
 
@@ -605,6 +654,308 @@ export function SettingsView() {
       {/* TAB 4: Letterhead & Print Template Designer */}
       {activeTab === 'letterhead' && (
         <LetterheadDesigner />
+      )}
+
+      {/* TAB 5: Tier 2 Internal Module Settings & Member Policies */}
+      {activeTab === 'tier2-modules' && (
+        <form onSubmit={handleSaveTier2} className="glass-card rounded-2xl p-5 sm:p-6 border border-slate-800 space-y-6">
+          <div className="border-b border-slate-800/80 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Tier 2 Samity President Controls
+                </span>
+                <span className="text-xs text-slate-400 font-mono">
+                  {activeTenant?.nameBn}
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2 mt-1">
+                <Sliders className="w-4 h-4 text-emerald-400" />
+                <span>{language === 'bn' ? 'অভ্যন্তরীণ ফিচার, সুদের হার ও মেম্বার সুবিধা' : 'Internal Policies, Rates & Member Options'}</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {language === 'bn'
+                  ? 'সুপার অ্যাডমিন কর্তৃক অনুমোদিত মডিউলগুলোর অভ্যন্তরীণ পলিসি, অনলাইন আবেদন ও স্বয়ংক্রিয় অ্যালার্ট নিয়ন্ত্রণ করুন'
+                  : 'Configure internal rates and member options for modules enabled in your subscription plan'}
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/20 transition cursor-pointer self-start sm:self-auto"
+            >
+              <Save className="w-4 h-4" />
+              <span>{language === 'bn' ? 'পলিসি সেভ করুন' : 'Save Policies'}</span>
+            </button>
+          </div>
+
+          {/* Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            {/* Card 1: ঋণ ও কিস্তি আদায় পলিসি */}
+            <div className={`p-4 rounded-xl border ${
+              activeTenant?.settings?.enableLoans !== false
+                ? 'bg-slate-900/80 border-slate-700/80'
+                : 'bg-slate-950/40 border-slate-800/80 opacity-60'
+            }`}>
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <HandCoins className="w-4 h-4 text-rose-400" />
+                  <span className="text-xs font-bold text-slate-200">১. ঋণ ও কিস্তি পলিসি</span>
+                </div>
+                {activeTenant?.settings?.enableLoans === false ? (
+                  <span className="flex items-center gap-1 text-[10px] text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                    <Lock className="w-3 h-3" />
+                    <span>সুপার অ্যাডমিন প্যাকেজে বন্ধ</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    মডিউল সক্রিয়
+                  </span>
+                )}
+              </div>
+
+              {activeTenant?.settings?.enableLoans !== false ? (
+                <div className="space-y-3 text-xs">
+                  <label className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-950/60 border border-slate-800 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={tier2Form.memberCanApplyLoanOnline}
+                      onChange={e => setTier2Form({ ...tier2Form, memberCanApplyLoanOnline: e.target.checked })}
+                      className="w-4 h-4 accent-emerald-500 rounded"
+                    />
+                    <div>
+                      <span className="text-slate-200 font-medium block">অনলাইনে ঋণের আবেদন (Member Online Apply)</span>
+                      <span className="text-[10px] text-slate-400">সদস্যরা ডিজিটাল পাসবই থেকে ঋণের আবেদন পাঠাতে পারবেন</span>
+                    </div>
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-400 text-[11px] mb-1">বাৎসরিক সুদের হার (%)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={tier2Form.defaultLoanInterestRate}
+                        onChange={e => setTier2Form({ ...tier2Form, defaultLoanInterestRate: Number(e.target.value) })}
+                        className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 text-[11px] mb-1">বিলম্ব কিস্তি জরিমানা (টাকা)</label>
+                      <input
+                        type="number"
+                        value={tier2Form.penaltyPerMissedInstallment}
+                        onChange={e => setTier2Form({ ...tier2Form, penaltyPerMissedInstallment: Number(e.target.value) })}
+                        className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400 leading-relaxed py-2">
+                  🔒 ঋণ ও কিস্তি আদায় মডিউলটি আপনার বর্তমান সাবস্ক্রিপশন প্ল্যানে বন্ধ রয়েছে। এটি সক্রিয় করতে প্ল্যাটফর্ম ওনারের সাথে যোগাযোগ করুন।
+                </p>
+              )}
+            </div>
+
+            {/* Card 2: সঞ্চয় ও ডিপিএস মুনাফা পলিসি */}
+            <div className={`p-4 rounded-xl border ${
+              (activeTenant?.settings?.enableSavings !== false && activeTenant?.settings?.enableDps !== false)
+                ? 'bg-slate-900/80 border-slate-700/80'
+                : 'bg-slate-950/40 border-slate-800/80 opacity-60'
+            }`}>
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <PiggyBank className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-bold text-slate-200">২. সঞ্চয় ও ডিপিএস মুনাফা</span>
+                </div>
+                {(activeTenant?.settings?.enableSavings === false && activeTenant?.settings?.enableDps === false) ? (
+                  <span className="flex items-center gap-1 text-[10px] text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                    <Lock className="w-3 h-3" />
+                    <span>সুপার অ্যাডমিন প্যাকেজে বন্ধ</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    মডিউল সক্রিয়
+                  </span>
+                )}
+              </div>
+
+              {(activeTenant?.settings?.enableSavings !== false || activeTenant?.settings?.enableDps !== false) ? (
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">সাধারণ সঞ্চয়ের বাৎসরিক মুনাফার হার (%)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={tier2Form.defaultSavingsInterestRate}
+                      onChange={e => setTier2Form({ ...tier2Form, defaultSavingsInterestRate: Number(e.target.value) })}
+                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-xs font-mono"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      মুনাফা গণনা ও অর্থবছর শেষে লভ্যাংশ হিসেবে জমাকারীর হিসাবে স্বয়ংক্রিয়ভাবে যুক্ত হবে।
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400 leading-relaxed py-2">
+                  🔒 সঞ্চয় ও ডিপিএস মডিউলটি বন্ধ রয়েছে।
+                </p>
+              )}
+            </div>
+
+            {/* Card 3: শেয়ার মূলধন পলিসি */}
+            <div className={`p-4 rounded-xl border ${
+              activeTenant?.settings?.enableShares !== false
+                ? 'bg-slate-900/80 border-slate-700/80'
+                : 'bg-slate-950/40 border-slate-800/80 opacity-60'
+            }`}>
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Award className="w-4 h-4 text-teal-400" />
+                  <span className="text-xs font-bold text-slate-200">৩. শেয়ার মূলধন পলিসি</span>
+                </div>
+                {activeTenant?.settings?.enableShares === false ? (
+                  <span className="flex items-center gap-1 text-[10px] text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                    <Lock className="w-3 h-3" />
+                    <span>প্যাকেজে বন্ধ</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-teal-400 font-semibold bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20">
+                    মডিউল সক্রিয়
+                  </span>
+                )}
+              </div>
+
+              {activeTenant?.settings?.enableShares !== false ? (
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">প্রতি শেয়ারের অভিহিত মূল্য (টাকা)</label>
+                    <input
+                      type="number"
+                      value={tier2Form.shareFaceValue}
+                      onChange={e => setTier2Form({ ...tier2Form, shareFaceValue: Number(e.target.value) })}
+                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-xs font-mono font-bold"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      নতুন সদস্য নিবন্ধনের সময় এবং অতিরিক্ত শেয়ার ক্রয়ে এই মূল্য ব্যবহৃত হবে।
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400 leading-relaxed py-2">
+                  🔒 শেয়ার মূলধন মডিউলটি বর্তমান প্যাকেজে অন্তর্ভুক্ত নয়।
+                </p>
+              )}
+            </div>
+
+            {/* Card 4: ডিজিটাল মেম্বার সুবিধা ও রসিদ */}
+            <div className={`p-4 rounded-xl border ${
+              activeTenant?.settings?.enableMemberPortal !== false
+                ? 'bg-slate-900/80 border-slate-700/80'
+                : 'bg-slate-950/40 border-slate-800/80 opacity-60'
+            }`}>
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-sky-400" />
+                  <span className="text-xs font-bold text-slate-200">৪. ডিজিটাল মেম্বার পোর্টাল</span>
+                </div>
+                {activeTenant?.settings?.enableMemberPortal === false ? (
+                  <span className="flex items-center gap-1 text-[10px] text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                    <Lock className="w-3 h-3" />
+                    <span>প্যাকেজে বন্ধ</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-sky-400 font-semibold bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
+                    মডিউল সক্রিয়
+                  </span>
+                )}
+              </div>
+
+              {activeTenant?.settings?.enableMemberPortal !== false ? (
+                <div className="space-y-3 text-xs">
+                  <label className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-950/60 border border-slate-800 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={tier2Form.memberCanDownloadReceipt}
+                      onChange={e => setTier2Form({ ...tier2Form, memberCanDownloadReceipt: e.target.checked })}
+                      className="w-4 h-4 accent-emerald-500 rounded"
+                    />
+                    <div>
+                      <span className="text-slate-200 font-medium block">সদস্যরা ডিজিটাল রসিদ ডাউনলোড করতে পারবে</span>
+                      <span className="text-[10px] text-slate-400">জমা ও কিস্তি পরিশোধের পর সরাসরি কিউআর কোডসহ রসিদ প্রিন্ট করতে পারবে</span>
+                    </div>
+                  </label>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400 leading-relaxed py-2">
+                  🔒 ডিজিটাল পাসবই ও মেম্বার পোর্টাল প্যাকেজে বন্ধ।
+                </p>
+              )}
+            </div>
+
+            {/* Card 5: স্বয়ংক্রিয় এসএমএস অ্যালার্ট ট্রিগার */}
+            <div className={`p-4 rounded-xl border md:col-span-2 ${
+              activeTenant?.settings?.enableSmsAlerts !== false
+                ? 'bg-slate-900/80 border-slate-700/80'
+                : 'bg-slate-950/40 border-slate-800/80 opacity-60'
+            }`}>
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-yellow-400" />
+                  <span className="text-xs font-bold text-slate-200">৫. স্বয়ংক্রিয় মেসেজিং অ্যালার্ট পলিসি (Auto SMS Triggers)</span>
+                </div>
+                {activeTenant?.settings?.enableSmsAlerts === false ? (
+                  <span className="flex items-center gap-1 text-[10px] text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                    <Lock className="w-3 h-3" />
+                    <span>প্যাকেজে বন্ধ</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-yellow-400 font-semibold bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">
+                    ব্যালান্স: {activeTenant?.smsBalance ?? 0} টি এসএমএস
+                  </span>
+                )}
+              </div>
+
+              {activeTenant?.settings?.enableSmsAlerts !== false ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <label className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-950/60 border border-slate-800 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={tier2Form.autoSmsOnDeposit}
+                      onChange={e => setTier2Form({ ...tier2Form, autoSmsOnDeposit: e.target.checked })}
+                      className="w-4 h-4 accent-emerald-500 rounded"
+                    />
+                    <div>
+                      <span className="text-slate-200 font-medium block">টাকা জমা হলে স্বয়ংক্রিয় এসএমএস</span>
+                      <span className="text-[10px] text-slate-400">সঞ্চয়, ডিপিএস বা চাঁদা জমা হলে সদস্যের মোবাইলে তৎক্ষণাৎ এসএমএস যাবে</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-950/60 border border-slate-800 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={tier2Form.autoSmsOnLoanRepay}
+                      onChange={e => setTier2Form({ ...tier2Form, autoSmsOnLoanRepay: e.target.checked })}
+                      className="w-4 h-4 accent-emerald-500 rounded"
+                    />
+                    <div>
+                      <span className="text-slate-200 font-medium block">কিস্তি আদায় হলে স্বয়ংক্রিয় এসএমএস</span>
+                      <span className="text-[10px] text-slate-400">মাঠকর্মী বা অফিসে ঋণের কিস্তি পরিশোধের সাথে সাথে এসএমএস নিশ্চিতকরণ যাবে</span>
+                    </div>
+                  </label>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400 leading-relaxed py-2">
+                  🔒 এসএমএস ও মেসেজিং অ্যালার্ট সুপার অ্যাডমিন লাইসেন্স প্যাকেজে বন্ধ রয়েছে।
+                </p>
+              )}
+            </div>
+
+          </div>
+
+        </form>
       )}
 
       {/* In-App Version Update Checker Modal */}

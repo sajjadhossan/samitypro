@@ -86,10 +86,24 @@ export interface Tenant {
   
   settings: {
     enableDps: boolean;
+    enableSavings?: boolean;
     enableLoans: boolean;
+    enableFdr?: boolean;
+    enableShares?: boolean;
+    enableStaffPayroll?: boolean;
+    enableAssetInventory?: boolean;
+    enableProjects?: boolean;
     enableElections: boolean;
     enableSmsAlerts: boolean;
     enableOnlinePayment: boolean;
+    enableDocumentGenerator?: boolean;
+    enableMemberPortal?: boolean;
+    maxMembers?: number;
+    maxStaff?: number;
+    memberCanApplyLoanOnline?: boolean;
+    memberCanDownloadReceipt?: boolean;
+    autoSmsOnDeposit?: boolean;
+    autoSmsOnLoanRepay?: boolean;
     shareFaceValue: number;
     defaultSavingsInterestRate: number;
     defaultLoanInterestRate: number;

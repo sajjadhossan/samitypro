@@ -19,7 +19,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
-  const { currentUser, language } = useSamityStore();
+  const { currentUser, activeTenant, language } = useSamityStore();
   const t = translations[language];
 
   // Super Admin Navigation Items
@@ -42,7 +42,6 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'fdr', labelBn: 'এফডিআর ও দ্বিগুণ বৃদ্ধি (মডিউল ৫)', labelEn: 'FDR & Term Deposits (Mod 5)', icon: Percent },
     { id: 'fixed-assets', labelBn: 'স্থাবর সম্পদ ও ইনভেন্টরি (মডিউল ৬)', labelEn: 'Fixed Assets & Inventory (Mod 6)', icon: Layers },
     { id: 'staff-payroll', labelBn: 'স্টাফ পেরোল ও এইচআর (মডিউল ৭)', labelEn: 'Staff Payroll & HR (Mod 7)', icon: UserCheck },
-    { id: 'communication-hub', labelBn: 'এসএমএস ও হোয়াটসঅ্যাপ (মডিউল ৮)', labelEn: 'SMS & WhatsApp (Mod 8)', icon: Zap },
     { id: 'samity-setup', labelBn: 'সমিতি সেটআপ (মডিউল ১)', labelEn: 'Samity Setup (Mod 1)', icon: Building2 },
     { id: 'members', labelBn: 'সদস্য ব্যবস্থাপনা (মডিউল ২)', labelEn: 'Members & KYC (Mod 2)', icon: Users },
     { id: 'subscriptions-due', labelBn: 'চাঁদা ও বকেয়া পলিসি (মডিউল ৩)', labelEn: 'Fees & Policy (Mod 3)', icon: BadgePercent },
@@ -51,10 +50,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'loans', labelBn: 'ঋণ ও কিস্তি (মডিউল ৫)', labelEn: 'Loans & EMIs (Mod 5)', icon: HandCoins },
     { id: 'payment-gateways', labelBn: 'পেমেন্ট গেটওয়ে (bKash/নগদ)', labelEn: 'Payment Gateways', icon: CreditCard },
     { id: 'approvals', labelBn: 'অনুমোদন ও ওয়ার্কফ্লো', labelEn: 'Approvals Workflow', icon: ShieldCheck },
-    { id: 'communication-hub', labelBn: 'মেসেজিং ও গেটওয়ে হাব', labelEn: 'Communication Hub', icon: Zap },
+    { id: 'communication-hub', labelBn: 'এসএমএস ও হোয়াটসঅ্যাপ (মডিউল ৮)', labelEn: 'SMS & WhatsApp (Mod 8)', icon: Zap },
     { id: 'doc-generator', labelBn: 'প্রত্যয়ন ও চুক্তিপত্র', labelEn: 'Doc Generator', icon: ScrollText },
     { id: 'accounts', labelBn: 'হিসাব ও ভাউচার (মডিউল ৬)', labelEn: 'Accounts & Vouchers (Mod 6)', icon: ReceiptText },
-    { id: 'notices', labelBn: 'ডিজিタル নোটিশ বোর্ড', labelEn: 'Notice Board', icon: Bell },
+    { id: 'notices', labelBn: 'ডিজিটাল নোটিশ বোর্ড', labelEn: 'Notice Board', icon: Bell },
     { id: 'meetings', labelBn: 'সভা ও রেজোলিউশন (মডিউল ৭)', labelEn: 'Meetings & Minutes (Mod 7)', icon: CalendarCheck },
     { id: 'documents', labelBn: 'নথি ও দলিল ভল্ট', labelEn: 'Documents Vault', icon: FolderLock },
     { id: 'elections', labelBn: 'নির্বাচন ও ভোট (মডিউল ৮)', labelEn: 'Elections & Voting (Mod 8)', icon: Vote },
@@ -79,12 +78,46 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'documents', labelBn: 'সমিতির নথি ও গঠনতন্ত্র', labelEn: 'Documents & By-Laws', icon: FolderLock },
   ];
 
-  let currentNavItems = samityAdminNav;
+  const settings = activeTenant?.settings;
+
+  // Filter Samity Admin Navigation dynamically
+  const filteredSamityAdminNav = samityAdminNav.filter(item => {
+    if (!settings) return true;
+    if (item.id === 'savings' && (settings.enableSavings === false && settings.enableDps === false)) return false;
+    if ((item.id === 'loans' || item.id === 'field-collection') && settings.enableLoans === false) return false;
+    if (item.id === 'fdr' && settings.enableFdr === false) return false;
+    if (item.id === 'shares-dividend' && settings.enableShares === false) return false;
+    if (item.id === 'staff-payroll' && settings.enableStaffPayroll === false) return false;
+    if (item.id === 'fixed-assets' && settings.enableAssetInventory === false) return false;
+    if (item.id === 'projects' && settings.enableProjects === false) return false;
+    if (item.id === 'elections' && settings.enableElections === false) return false;
+    if (item.id === 'doc-generator' && settings.enableDocumentGenerator === false) return false;
+    if (item.id === 'payment-gateways' && settings.enableOnlinePayment === false) return false;
+    if (item.id === 'communication-hub' && settings.enableSmsAlerts === false) return false;
+    if (item.id === 'member-portal' && settings.enableMemberPortal === false) return false;
+    return true;
+  });
+
+  // Filter Member Portal Navigation dynamically
+  const filteredMemberNav = memberNav.filter(item => {
+    if (!settings) return true;
+    if (item.id === 'online-payment' && settings.enableOnlinePayment === false) return false;
+    if (item.id === 'fdr' && settings.enableFdr === false) return false;
+    if (item.id === 'projects' && settings.enableProjects === false) return false;
+    if (item.id === 'shares-dividend' && settings.enableShares === false) return false;
+    if (item.id === 'member-loans' && settings.enableLoans === false) return false;
+    if (item.id === 'member-elections' && settings.enableElections === false) return false;
+    if (item.id === 'member-passbook' && settings.enableMemberPortal === false) return false;
+    return true;
+  });
+
+  let currentNavItems = filteredSamityAdminNav;
   if (currentUser.role === 'SUPER_ADMIN') {
     currentNavItems = superAdminNav;
   } else if (currentUser.role === 'MEMBER') {
-    currentNavItems = memberNav;
+    currentNavItems = filteredMemberNav;
   }
+
 
   return (
     <aside className="hidden md:flex md:w-64 glass-panel border-r border-slate-800/80 p-3 sm:p-4 flex-col justify-between shrink-0">

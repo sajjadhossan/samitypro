@@ -3,17 +3,21 @@
 import React, { useState } from 'react';
 import { 
   ShieldCheck, Building2, Users, CreditCard, MessageSquare, 
-  Plus, CheckCircle2, TrendingUp, DollarSign, Globe, Lock, ExternalLink 
+  Plus, CheckCircle2, TrendingUp, DollarSign, Globe, Lock, ExternalLink,
+  Sliders, Settings2
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations, formatCurrency, toBengaliNumber } from '@/lib/i18n';
 import { Tenant, TenantType, SubscriptionPlan } from '@/types';
+import { TenantModulePermissionModal } from './TenantModulePermissionModal';
 
 export function SuperAdminView() {
-  const { store, tenants, language, setCurrentTenant } = useSamityStore();
+  const { store, tenants, language, setCurrentTenant, updateTenant } = useSamityStore();
   const t = translations[language];
 
   const [showAddTenant, setShowAddTenant] = useState(false);
+  const [selectedTenantForPermissions, setSelectedTenantForPermissions] = useState<Tenant | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // New tenant form
   const [nameBn, setNameBn] = useState('');
@@ -27,7 +31,12 @@ export function SuperAdminView() {
   const mrr = 85000; // 85k BDT monthly revenue
   const totalUsersAcrossTenants = 640;
 
-  const handleCreateTenant = (e: React.FormEvent) => {
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleCreateTenant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nameBn || !phone) return;
 
@@ -44,15 +53,25 @@ export function SuperAdminView() {
       address: 'ঢাকা, বাংলাদেশ',
       plan,
       status: 'ACTIVE',
-      validUntil: '2027-12-31',
+      validUntil: '2028-12-31',
       smsBalance: 1000,
       currency: 'BDT',
       settings: {
         enableDps: true,
+        enableSavings: true,
         enableLoans: true,
+        enableFdr: true,
+        enableShares: true,
+        enableStaffPayroll: true,
+        enableAssetInventory: true,
+        enableProjects: true,
         enableElections: true,
         enableSmsAlerts: true,
         enableOnlinePayment: true,
+        enableDocumentGenerator: true,
+        enableMemberPortal: true,
+        maxMembers: 500,
+        maxStaff: 15,
         shareFaceValue: 1000,
         defaultSavingsInterestRate: 8.5,
         defaultLoanInterestRate: 12.0,
@@ -62,11 +81,22 @@ export function SuperAdminView() {
     };
 
     store.createTenant(newTenant);
+
+    // Also persist to Neon PostgreSQL
+    try {
+      await fetch('/api/tenants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTenant)
+      });
+    } catch {}
+
     setShowAddTenant(false);
     setNameBn('');
     setNameEn('');
     setPhone('');
     setRegNo('');
+    showToast(language === 'bn' ? 'নতুন সমিতি সফলভাবে তৈরি ও ক্লাউড ডাটাবেজে সক্রিয় হয়েছে!' : 'New samity created and activated!');
   };
 
   return (
@@ -175,40 +205,72 @@ export function SuperAdminView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-mono">
-              {tenants.map(t => (
-                <tr key={t.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3 px-3 font-sans">
-                    <div className="font-semibold text-slate-100">{t.nameBn}</div>
-                    <div className="text-[10px] text-slate-400 font-mono">{t.nameEn} • {t.phone}</div>
-                  </td>
-                  <td className="py-3 px-3">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-                      {t.type}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 text-slate-400">
-                    {t.registrationNo}
-                  </td>
-                  <td className="py-3 px-3">
-                    <div className="font-bold text-emerald-400">{t.plan}</div>
-                    <div className="text-[10px] text-slate-500">মেয়াদ: {t.validUntil}</div>
-                  </td>
-                  <td className="py-3 px-3 font-bold text-cyan-400">
-                    {t.smsBalance} টি
-                  </td>
-                  <td className="py-3 px-3 text-right">
-                    <button
-                      onClick={() => {
-                        setCurrentTenant(t.id);
-                        alert(language === 'bn' ? `${t.nameBn} এ সফলভাবে সুইচ করা হয়েছে!` : `Switched to ${t.nameEn}!`);
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-sans text-xs font-semibold shadow-sm transition"
-                    >
-                      সমিতিতে প্রবেশ
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {tenants.map(t => {
+                const isSuspended = t.status === 'SUSPENDED';
+                return (
+                  <tr key={t.id} className="hover:bg-slate-800/40 transition">
+                    <td className="py-3 px-3 font-sans">
+                      <div className="font-semibold text-slate-100 flex items-center gap-2">
+                        <span>{t.nameBn}</span>
+                        {isSuspended && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40">
+                            স্থগিত (SUSPENDED)
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono">{t.nameEn} • {t.phone}</div>
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                        {t.type}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-slate-400">
+                      {t.registrationNo}
+                    </td>
+                    <td className="py-3 px-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-emerald-400">{t.plan}</span>
+                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
+                          t.status === 'ACTIVE' 
+                            ? 'bg-emerald-500/20 text-emerald-400' 
+                            : 'bg-rose-500/20 text-rose-400'
+                        }`}>
+                          {t.status || 'ACTIVE'}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-500">মেয়াদ: {t.validUntil}</div>
+                    </td>
+                    <td className="py-3 px-3 font-bold text-cyan-400">
+                      {t.smsBalance ?? 0} টি
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setSelectedTenantForPermissions(t)}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 font-sans text-xs font-semibold shadow-sm transition cursor-pointer"
+                          title="ফিচার ও মডিউল নিয়ন্ত্রণ (Tier 1 Super Admin Cascading Permissions)"
+                        >
+                          <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>মডিউল নিয়ন্ত্রণ</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setCurrentTenant(t.id);
+                            showToast(language === 'bn' ? `${t.nameBn} এ সফলভাবে সুইচ করা হয়েছে!` : `Switched to ${t.nameEn}!`);
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-sans text-xs font-semibold shadow-sm transition cursor-pointer"
+                          title="সমিতিতে প্রবেশ"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                          <span>প্রবেশ</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -327,6 +389,29 @@ export function SuperAdminView() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Tenant Module Permission Modal */}
+      {selectedTenantForPermissions && (
+        <TenantModulePermissionModal
+          tenant={selectedTenantForPermissions}
+          isOpen={true}
+          onClose={() => setSelectedTenantForPermissions(null)}
+          onSuccess={(updatedTenant) => {
+            updateTenant(updatedTenant.id, updatedTenant);
+            showToast(language === 'bn' 
+              ? `${updatedTenant.nameBn} এর মডিউল ও লাইসেন্স সফলভাবে হালনাগাদ হয়েছে!`
+              : `${updatedTenant.nameEn} module permissions updated!`);
+          }}
+        />
+      )}
+
+      {/* Floating Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-slate-900/95 border border-emerald-500/50 shadow-2xl text-emerald-300 text-xs font-semibold backdrop-blur-md animate-in slide-in-from-bottom duration-300">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
         </div>
       )}
 

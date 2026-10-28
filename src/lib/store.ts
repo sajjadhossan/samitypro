@@ -366,6 +366,21 @@ class DataStore {
     this.save();
   }
 
+  updateTenant(id: string, updates: Partial<Tenant>) {
+    const idx = this.tenants.findIndex(t => t.id === id);
+    if (idx !== -1) {
+      this.tenants[idx] = {
+        ...this.tenants[idx],
+        ...updates,
+        settings: {
+          ...this.tenants[idx].settings,
+          ...(updates.settings || {})
+        }
+      };
+      this.save();
+    }
+  }
+
   addMember(memberData: Omit<Member, 'id' | 'createdAt' | 'savingsBalance' | 'dpsBalance' | 'loanOutstanding'> & { sharesHeld?: number; shareValue?: number }) {
     const newId = `mem-${Date.now().toString().slice(-4)}`;
     const nowIso = new Date().toISOString();
@@ -2339,8 +2354,7 @@ class DataStore {
   }
 
   updateTenantProfile(tenantId: string, updates: Partial<Tenant>) {
-    this.tenants = this.tenants.map(t => t.id === tenantId ? { ...t, ...updates } : t);
-    this.save();
+    this.updateTenant(tenantId, updates);
   }
 
   createSamity(samity: Tenant) {
@@ -5870,6 +5884,8 @@ export function useSamityStore() {
     updateSignatureSeal: (config: Partial<SignatureSealConfig>) => store.updateSignatureSeal(config),
     updateVoucherPrefix: (config: Partial<VoucherPrefixConfig>) => store.updateVoucherPrefix(config),
     updateTenantProfile: (tenantId: string, updates: Partial<Tenant>) => store.updateTenantProfile(tenantId, updates),
+    updateTenant: (id: string, updates: Partial<Tenant>) => store.updateTenant(id, updates),
+    createTenant: (tenant: Tenant) => store.createTenant(tenant),
     updateGatewayConfig: (config: Partial<CommunicationGatewayConfig>) => store.updateGatewayConfig(config),
     updateSchedulerConfig: (config: Partial<AutoSchedulerConfig>) => store.updateSchedulerConfig(config),
     sendOmnichannelReminder: (params: Parameters<typeof store.sendOmnichannelReminder>[0]) => store.sendOmnichannelReminder(params),
