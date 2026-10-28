@@ -365,8 +365,27 @@ export function Header({ onOpenApkModal, onOpenMenu }: HeaderProps) {
                     ))}
                   </div>
 
+                  {/* Real Logout Button */}
+                  <div className="pt-2 mt-2 border-t border-slate-800">
+                    <button
+                      onClick={async () => {
+                        setShowRoleDropdown(false);
+                        try {
+                          await fetch('/api/auth/logout', { method: 'POST' });
+                        } catch {}
+                        window.location.href = '/login';
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30 border border-transparent transition cursor-pointer font-semibold"
+                    >
+                      <span className="flex items-center gap-2">
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>{language === 'bn' ? 'লগআউট করুন' : 'Log Out'}</span>
+                      </span>
+                    </button>
+                  </div>
+
                   {/* App Version Info */}
-                  <div className="pt-3 mt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                  <div className="pt-2.5 mt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
                     <span>{language === 'bn' ? 'অ্যাপ সংস্করণ' : 'App Version'}</span>
                     <button
                       onClick={() => {

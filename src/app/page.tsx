@@ -47,7 +47,24 @@ import {
 } from 'lucide-react';
 
 export default function Home() {
-  const { currentUser } = useSamityStore();
+  const { currentUser, setCurrentUser, setCurrentTenant } = useSamityStore();
+
+  React.useEffect(() => {
+    async function syncSession() {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.data?.user) {
+            if (data.data.user.id) setCurrentUser(data.data.user.id);
+            if (data.data.user.tenantId) setCurrentTenant(data.data.user.tenantId);
+          }
+        }
+      } catch {}
+    }
+    syncSession();
+  }, [setCurrentUser, setCurrentTenant]);
+
   const [activeTab, setActiveTab] = useState<string>(() => {
     return currentUser.role === 'SUPER_ADMIN' ? 'saas-overview' : currentUser.role === 'MEMBER' ? 'member-passbook' : 'dashboard';
   });
