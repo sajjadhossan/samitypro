@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { 
   Building2, Users, Bell, Globe, Smartphone, ShieldCheck, 
   ChevronDown, Check, Zap, RefreshCw, LogOut, ArrowRightLeft, Radio,
-  MoreVertical, Eye, Sliders
+  MoreVertical, Eye, Sliders, QrCode
 } from 'lucide-react';
 import { useSamityStore } from '@/lib/store';
 import { translations, toBengaliNumber } from '@/lib/i18n';
@@ -222,6 +222,18 @@ export function Header({
             <Sliders className="w-3.5 h-3.5 text-cyan-400" />
             <span className="hidden sm:inline">অপশন পরীক্ষক</span>
           </button>
+
+          {/* Public Universal QR Verification Portal Link */}
+          <a
+            href="/verify"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition cursor-pointer"
+            title="রসিদ ও সদস্য কার্ডের কিউআর কোড যাচাই পোর্টাল খুলুন"
+          >
+            <QrCode className="w-3.5 h-3.5 text-amber-400" />
+            <span>কিউআর যাচাই</span>
+          </a>
 
           {/* Role Switcher (For Architecture Walkthrough & Live Preview) */}
           <div className="relative hidden lg:block">

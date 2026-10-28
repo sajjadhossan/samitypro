@@ -12,9 +12,14 @@ interface PrintableReceiptModalProps {
 }
 
 export function PrintableReceiptModal({ isOpen, onClose, receipt }: PrintableReceiptModalProps) {
-  const { letterhead, language, signatureSeal, voucherPrefix } = useSamityStore();
+  const { letterhead, language, signatureSeal, voucherPrefix, activeTenant } = useSamityStore();
 
   if (!isOpen || !receipt) return null;
+
+  const originUrl = typeof window !== 'undefined' ? window.location.origin : 'https://samitypro.com';
+  const verifyUrl = `${originUrl}/verify?code=${encodeURIComponent(receipt.receiptNo)}&tenantId=${encodeURIComponent(activeTenant?.id || '')}`;
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(verifyUrl)}`;
+  const barcodeUrl = `https://barcodeapi.org/api/128/${encodeURIComponent(receipt.receiptNo)}`;
 
   const handlePrint = () => {
     window.print();
@@ -137,17 +142,32 @@ export function PrintableReceiptModal({ isOpen, onClose, receipt }: PrintableRec
           {/* Verification QR Code & Official Seal & Signature Section */}
           <div className="pt-4 flex items-end justify-between border-t border-slate-200 gap-4">
             
-            {/* QR Code Verification */}
+            {/* Real QR Code & Instant Online Verification */}
             <div className="flex items-center gap-2.5">
-              <div className="w-16 h-16 bg-slate-100 border border-slate-300 rounded-lg p-1.5 flex items-center justify-center">
-                <QrCode className="w-full h-full text-slate-800" />
-              </div>
+              <a 
+                href={verifyUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="w-16 h-16 bg-white border border-slate-300 rounded-lg p-1 flex items-center justify-center hover:opacity-90 transition shadow-xs shrink-0 cursor-pointer"
+                title="ক্যামেরা দিয়ে স্ক্যান করুন বা ক্লিক করে আসল রসিদ অনলাইনে যাচাই করুন"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qrImageUrl} alt="Verification QR" className="w-full h-full object-contain" />
+              </a>
               <div className="text-[10px] text-slate-500 leading-tight">
                 <div className="font-bold text-slate-700 flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  ডিজিটাল ভেরিফাইড
+                  <span>ডিজিটাল সত্যতা যাচাইকৃত</span>
                 </div>
-                <span>QR কোড স্ক্যান করে অনলাইন যাচাই করুন</span>
+                <span className="block mt-0.5 font-mono text-[9px] text-slate-400">ট্র্যাকিং: {receipt.receiptNo}</span>
+                <a 
+                  href={verifyUrl} 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="text-[9px] text-emerald-700 hover:underline font-semibold block mt-0.5"
+                >
+                  QR কোড স্ক্যান করে অনলাইন যাচাই করুন ↗
+                </a>
               </div>
             </div>
 

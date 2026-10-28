@@ -104,7 +104,11 @@ export interface Tenant {
     enableFixedMonthlySavings?: boolean;  // ফিক্সড মাসিক চাঁদা/সঞ্চয় (যেমন ১০,০০০ টাকা)
     fixedMonthlyAmount?: number;          // নির্ধারিত মাসিক সঞ্চয়/চাঁদা (ডিফল্ট ১০,০০০ টাকা)
     enableMicroLoans?: boolean;           // সাধারণ ক্ষুদ্রঋণ ও কিস্তি হিসাব
-    samityOperatingModel?: 'INVESTMENT_PROPERTY' | 'MICRO_CREDIT' | 'MULTI_PURPOSE'; // সমিতির পরিচালনা মোড
+    samityOperatingModel?: 'SAVINGS_ONLY' | 'INVESTMENT_PROPERTY' | 'MICRO_CREDIT' | 'MULTI_PURPOSE'; // সমিতির পরিচালনা মোড
+    isSavingsOnlySamity?: boolean;        // শুধুমাত্র সঞ্চয় ও ডিপিএস সমিতি (কোনো ঋণ দেওয়া হবে না)
+    targetMemberCount?: number;           // সমিতির মোট নির্ধারিত সদস্য কোটা (যেমন ২০ জন)
+    strictNoLoanPolicy?: boolean;         // ঋণ সম্পূর্ণ নিষিদ্ধ
+    monthlySavingsPerMember?: number;     // প্রতি সদস্যের মাসিক বাধ্যতামূলক সঞ্চয়ের পরিমাণ
     maxMembers?: number;
     maxStaff?: number;
     memberCanApplyLoanOnline?: boolean;

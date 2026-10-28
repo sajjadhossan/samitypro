@@ -65,6 +65,10 @@ function mapDbRowToTenant(row: DbTenantRow): Tenant {
       fixedMonthlyAmount: s.fixedMonthlyAmount ?? 10000,
       enableMicroLoans: s.enableMicroLoans ?? (s.enableLoans ?? true),
       samityOperatingModel: s.samityOperatingModel || (s.enableFieldOfficers === false ? 'INVESTMENT_PROPERTY' : 'MULTI_PURPOSE'),
+      isSavingsOnlySamity: s.isSavingsOnlySamity ?? (s.samityOperatingModel === 'SAVINGS_ONLY'),
+      strictNoLoanPolicy: s.strictNoLoanPolicy ?? (s.samityOperatingModel === 'SAVINGS_ONLY' || s.enableLoans === false),
+      targetMemberCount: s.targetMemberCount ?? 50,
+      monthlySavingsPerMember: s.monthlySavingsPerMember ?? 2000,
       maxMembers: s.maxMembers ?? 500,
       maxStaff: s.maxStaff ?? 15,
       memberCanApplyLoanOnline: s.memberCanApplyLoanOnline ?? true,
@@ -166,6 +170,10 @@ export async function POST(request: NextRequest) {
       fixedMonthlyAmount: settings.fixedMonthlyAmount ?? 10000,
       enableMicroLoans: settings.enableMicroLoans ?? (settings.enableLoans ?? true),
       samityOperatingModel: settings.samityOperatingModel || (settings.enableFieldOfficers === false ? 'INVESTMENT_PROPERTY' : 'MULTI_PURPOSE'),
+      isSavingsOnlySamity: settings.isSavingsOnlySamity ?? (settings.samityOperatingModel === 'SAVINGS_ONLY'),
+      strictNoLoanPolicy: settings.strictNoLoanPolicy ?? (settings.samityOperatingModel === 'SAVINGS_ONLY' || settings.enableLoans === false),
+      targetMemberCount: settings.targetMemberCount ?? 50,
+      monthlySavingsPerMember: settings.monthlySavingsPerMember ?? 2000,
       maxMembers: maxMembers,
       validUntil: data.validUntil || '2028-12-31'
     };

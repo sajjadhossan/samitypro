@@ -22,10 +22,9 @@ export function MemberIdCardModal({ member, tenant, isOpen, onClose }: MemberIdC
 
   const samityNameBn = tenant.nameBn || 'একতা সঞ্চয় ও ঋণদান সমবায় সমিতি লিঃ';
   const samityNameEn = tenant.nameEn || 'Ekota Savings & Credit Cooperative Society Ltd.';
-  const logoUrl = tenant.logoUrl || tenant.bannerUrl;
-  const qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-    `SAMITYPRO-VERIFIED:${tenant.id}:${member.memberCode}:${member.nameBn}:${member.phone}`
-  )}`;
+  const originUrl = typeof window !== 'undefined' ? window.location.origin : 'https://samitypro.com';
+  const verifyUrl = `${originUrl}/verify?code=${encodeURIComponent(member.memberCode || member.id)}&tenantId=${encodeURIComponent(tenant.id)}`;
+  const qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl)}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
@@ -76,8 +75,8 @@ export function MemberIdCardModal({ member, tenant, isOpen, onClose }: MemberIdC
               {/* Card Header */}
               <div className="text-center pt-1 border-b border-slate-800/80 pb-2.5">
                 <div className="flex items-center justify-center gap-2 mb-1">
-                  {logoUrl ? (
-                    <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-full object-cover border border-emerald-400" />
+                  {tenant.logoUrl ? (
+                    <img src={tenant.logoUrl} alt="Logo" className="w-8 h-8 rounded-full object-cover border border-emerald-400" />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-500/30">
                       SP

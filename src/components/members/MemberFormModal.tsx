@@ -60,7 +60,7 @@ export function MemberFormModal({
     status: 'ACTIVE' as MemberStatus,
     admissionDate: '2026-10-25',
     admissionFee: 1000,
-    monthlySubscriptionAmount: activeTenant.monthlySubscriptionAmount || 1500,
+    monthlySubscriptionAmount: activeTenant.settings?.monthlySavingsPerMember || activeTenant.monthlySubscriptionAmount || 1500,
     sharesHeld: 10,
     shareValue: 10000,
     presentAddress: '',
@@ -313,6 +313,28 @@ export function MemberFormModal({
             ৫. নমিনী ও জরুরি
           </button>
         </div>
+
+        {/* Savings-Only & Quota Status Notification */}
+        {activeTenant.settings?.isSavingsOnlySamity && (
+          <div className="mt-2.5 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex flex-wrap items-center justify-between gap-2 shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">সঞ্চয় মডেল</span>
+              <span>এটি শুধুমাত্র সঞ্চয় সমিতি (কোনো ঋণ নেই)। মাসিক সঞ্চয় জমা: <strong>৳{activeTenant.settings?.monthlySavingsPerMember || 2000}</strong></span>
+            </div>
+            {activeTenant.settings?.targetMemberCount && (
+              <span className="text-[11px] bg-slate-900 px-2.5 py-0.5 rounded border border-emerald-500/30 text-emerald-400 font-mono">
+                কোটা: {totalMembersCount}/{activeTenant.settings.targetMemberCount} জন
+              </span>
+            )}
+          </div>
+        )}
+
+        {!isEdit && activeTenant.settings?.targetMemberCount && totalMembersCount >= activeTenant.settings.targetMemberCount && (
+          <div className="mt-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2 shrink-0">
+            <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+            <span>সতর্কতা: সমিতির নির্ধারিত সদস্য কোটা ({activeTenant.settings.targetMemberCount} জন) পূর্ণ হয়ে গেছে।</span>
+          </div>
+        )}
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="overflow-y-auto py-4 space-y-4 text-xs pr-1">

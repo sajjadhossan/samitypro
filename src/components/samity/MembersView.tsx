@@ -105,18 +105,28 @@ export function MembersView({ onOpenAddMember, onOpenRecordDeposit }: MembersVie
       
       {/* 1. TOP KPI SUMMARY CARDS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        {/* Total Members */}
+        {/* Total Members & Quota Capacity */}
         <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
           <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <Users className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <div className="text-[11px] text-slate-400 font-medium">মোট সদস্য সংখ্যা</div>
-            <div className="text-lg sm:text-xl font-bold font-mono text-slate-100 mt-0.5">
-              {totalMembers} জন
+            <div className="text-[11px] text-slate-400 font-medium">
+              মোট সদস্য সংখ্যা {activeTenant?.settings?.targetMemberCount ? `(কোটা: ${activeTenant.settings.targetMemberCount} জন)` : ''}
+            </div>
+            <div className="text-lg sm:text-xl font-bold font-mono text-slate-100 mt-0.5 flex items-baseline gap-1.5">
+              <span>{totalMembers}</span>
+              {activeTenant?.settings?.targetMemberCount && (
+                <span className="text-xs text-slate-400 font-normal">/ {activeTenant.settings.targetMemberCount} জন</span>
+              )}
             </div>
             <div className="text-[10px] text-emerald-400 font-medium">
               {activeMembersCount} জন সক্রিয়
+              {activeTenant?.settings?.targetMemberCount && (
+                <span className="text-cyan-400 ml-1">
+                  ({Math.max(0, activeTenant.settings.targetMemberCount - totalMembers)} আসন বাকি)
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -171,17 +181,52 @@ export function MembersView({ onOpenAddMember, onOpenRecordDeposit }: MembersVie
               <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <div className="text-[11px] text-slate-400 font-medium">নির্ধারিত মাসিক চাঁদা (সদস্যপ্রতি)</div>
+              <div className="text-[11px] text-slate-400 font-medium">নির্ধারিত মাসিক সঞ্চয় (সদস্যপ্রতি)</div>
               <div className="text-lg sm:text-xl font-bold font-mono text-cyan-400 mt-0.5">
-                ৳ {(activeTenant?.settings?.fixedMonthlyAmount || 10000).toLocaleString()}
+                ৳ {(activeTenant?.settings?.monthlySavingsPerMember || activeTenant?.settings?.fixedMonthlyAmount || 1500).toLocaleString()}
               </div>
               <div className="text-[10px] text-cyan-500/80">
-                লক্ষ্য: ৳ {((activeTenant?.settings?.fixedMonthlyAmount || 10000) * activeMembersCount).toLocaleString()} / মাস
+                লক্ষ্য: ৳ {((activeTenant?.settings?.monthlySavingsPerMember || activeTenant?.settings?.fixedMonthlyAmount || 1500) * (activeTenant?.settings?.targetMemberCount || activeMembersCount)).toLocaleString()} / মাস
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Savings-Only Special Banner */}
+      {(activeTenant?.settings?.isSavingsOnlySamity || activeTenant?.settings?.strictNoLoanPolicy) && (
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-teal-950/60 via-slate-900 to-emerald-950/60 border border-teal-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-teal-500/20 text-teal-300 border border-teal-500/30 shrink-0">
+              <PiggyBank className="w-5 h-5 text-teal-300" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white text-sm">
+                  শুধুমাত্র সঞ্চয় সমিতি মডেল (Savings-Only / No Loans)
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 font-bold border border-teal-500/40">
+                  ঋণ নিষিদ্ধ পলিসি সক্রিয়
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 mt-0.5">
+                এই সমিতিতে কোনো সদস্যকে ঋণ বা কিস্তি দেওয়া হয় না। সদস্যরা শুধুমাত্র নিয়মিত মাসিক সঞ্চয় ও ডিপিএস জমা করবেন।
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 bg-slate-950/60 px-3 py-2 rounded-xl border border-slate-800 text-[11px] font-mono shrink-0">
+            <div>
+              <span className="text-slate-500 block text-[9px] uppercase">মাসিক সঞ্চয়</span>
+              <strong className="text-emerald-400">৳ {(activeTenant?.settings?.monthlySavingsPerMember || 1500).toLocaleString()}</strong>
+            </div>
+            <div className="border-l border-slate-800 pl-3">
+              <span className="text-slate-500 block text-[9px] uppercase">সদস্য কোটা</span>
+              <strong className="text-cyan-300">{totalMembers} / {activeTenant?.settings?.targetMemberCount || 20} জন</strong>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. HEADER & SEARCH / FILTER TOOLBAR */}
       <div className="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800 space-y-4">

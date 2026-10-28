@@ -38,6 +38,11 @@ export function SettingsView() {
     phone: activeTenant?.phone || '',
     email: activeTenant?.email || '',
     address: activeTenant?.address || '',
+    samityOperatingModel: (activeTenant?.settings?.samityOperatingModel || 'MULTI_PURPOSE') as 'SAVINGS_ONLY' | 'INVESTMENT_PROPERTY' | 'MICRO_CREDIT' | 'MULTI_PURPOSE',
+    isSavingsOnlySamity: activeTenant?.settings?.isSavingsOnlySamity ?? (activeTenant?.settings?.enableLoans === false),
+    strictNoLoanPolicy: activeTenant?.settings?.strictNoLoanPolicy ?? (activeTenant?.settings?.enableLoans === false),
+    targetMemberCount: activeTenant?.settings?.targetMemberCount || 20,
+    monthlySavingsPerMember: activeTenant?.settings?.monthlySavingsPerMember || (activeTenant?.settings?.fixedMonthlyAmount || 1500),
   });
 
   // Tier 2 Internal Module Settings (Samity President Controls within Super Admin allowances)
@@ -89,11 +94,38 @@ export function SettingsView() {
   const handleSaveSamity = (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeTenant) return;
+
+    const isSavingsOnly = samityForm.samityOperatingModel === 'SAVINGS_ONLY' || samityForm.strictNoLoanPolicy || samityForm.isSavingsOnlySamity;
+
+    const updatedSettings = {
+      ...activeTenant.settings,
+      samityOperatingModel: isSavingsOnly ? ('SAVINGS_ONLY' as const) : samityForm.samityOperatingModel,
+      isSavingsOnlySamity: isSavingsOnly,
+      strictNoLoanPolicy: isSavingsOnly,
+      targetMemberCount: Number(samityForm.targetMemberCount) || 20,
+      monthlySavingsPerMember: Number(samityForm.monthlySavingsPerMember) || 1500,
+      fixedMonthlyAmount: Number(samityForm.monthlySavingsPerMember) || 1500,
+      enableFixedMonthlySavings: isSavingsOnly ? true : (activeTenant.settings.enableFixedMonthlySavings ?? false),
+      ...(isSavingsOnly ? {
+        enableLoans: false,
+        enableMicroLoans: false,
+        enableFieldOfficers: false,
+      } : {})
+    };
+
     updateTenantProfile(activeTenant.id, {
-      ...samityForm,
-      type: samityForm.type as TenantType
+      nameBn: samityForm.nameBn,
+      nameEn: samityForm.nameEn,
+      registrationNo: samityForm.registrationNo,
+      establishedYear: samityForm.establishedYear,
+      type: samityForm.type as TenantType,
+      phone: samityForm.phone,
+      email: samityForm.email,
+      address: samityForm.address,
+      settings: updatedSettings
     });
-    showNotification(language === 'bn' ? 'সমিতি সেটআপ ও প্রোফাইল সফলভাবে সংরক্ষিত হয়েছে!' : 'Samity setup profile saved successfully!');
+
+    showNotification(language === 'bn' ? 'সমিতি সেটআপ, সদস্য কোটা ও সঞ্চয় পলিসি সংরক্ষিত হয়েছে!' : 'Samity profile and savings-only settings saved!');
   };
 
   const handleSavePrefix = (e: React.FormEvent) => {
@@ -366,6 +398,125 @@ export function SettingsView() {
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500"
                 required
               />
+            </div>
+          </div>
+
+          {/* Section: পরিচালনা মোড ও সঞ্চয়-অনলি কনফিগারেশন (No-Loan & Target Member Architecture) */}
+          <div className="pt-5 border-t border-slate-800 space-y-4">
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-teal-950/40 via-slate-900 to-emerald-950/40 border border-teal-500/30">
+              <div className="flex items-center gap-2 mb-1">
+                <PiggyBank className="w-5 h-5 text-teal-400" />
+                <h4 className="text-sm font-bold text-white">
+                  সমিতির পরিচালনা মোড, সদস্য সংখ্যা ও ঋণ নিষিদ্ধকরণ পলিসি
+                </h4>
+              </div>
+              <p className="text-xs text-slate-400">
+                আপনার সমিতি কি শুধুমাত্র সঞ্চয় ও ডিপিএস ভিত্তিক (যেখানে কোনো সদস্যকে ঋণ দেওয়া হবে না)? এখান থেকে সরাসরি কনফিগার করুন।
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              
+              {/* Operating Model Select */}
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  সমিতি পরিচালনা মডেল (Operating Model)
+                </label>
+                <select
+                  value={samityForm.samityOperatingModel}
+                  onChange={e => {
+                    const model = e.target.value as any;
+                    const isSavings = model === 'SAVINGS_ONLY';
+                    setSamityForm({
+                      ...samityForm,
+                      samityOperatingModel: model,
+                      isSavingsOnlySamity: isSavings,
+                      strictNoLoanPolicy: isSavings
+                    });
+                  }}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 font-sans"
+                >
+                  <option value="SAVINGS_ONLY">🟢 শুধু সঞ্চয় সমিতি (Savings-Only / ঋণ সম্পূর্ণ নিষিদ্ধ)</option>
+                  <option value="MULTI_PURPOSE">🟡 বহুমুখী সমবায় সমিতি (সঞ্চয়, ঋণ, ডিপিএস ও অন্যান্য)</option>
+                  <option value="MICRO_CREDIT">🔵 ক্ষুদ্রঋণ ও সঞ্চয় সমিতি (Micro-Credit & Savings)</option>
+                  <option value="INVESTMENT_PROPERTY">🟣 প্রকল্প ও যৌথ বিনিয়োগ সমিতি (Property & Shares)</option>
+                </select>
+                <p className="text-[10px] text-teal-400/80 mt-1">
+                  * &quot;শুধু সঞ্চয় সমিতি&quot; সিলেক্ট করলে সিস্টেমে ঋণ মডিউল স্বয়ংক্রিয়ভাবে বন্ধ থাকবে।
+                </p>
+              </div>
+
+              {/* Target Member Capacity */}
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  নির্ধারিত মোট সদস্য কোটা (Target Member Capacity)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    max="10000"
+                    value={samityForm.targetMemberCount}
+                    onChange={e => setSamityForm({ ...samityForm, targetMemberCount: Number(e.target.value) })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-cyan-300 font-mono text-sm font-bold focus:outline-none focus:border-cyan-500"
+                    required
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-sans">জন সদস্য</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  সমিতিতে মোট সদস্যের নির্দিষ্ট লক্ষ্যমাত্রা (যেমন: ২০ জন সদস্যের কোটা)।
+                </p>
+              </div>
+
+              {/* Strict No-Loan Policy Toggle */}
+              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-between gap-3">
+                <div>
+                  <span className="font-semibold text-slate-200 block text-xs">
+                    ঋণ কার্যক্রম সম্পূর্ণ বন্ধ (Strictly No Loans)
+                  </span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">
+                    সদস্যদের কোনো ঋণ প্রদান করা হবে না, শুধু মাসিক সঞ্চয় ও আমানত চলবে।
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={samityForm.strictNoLoanPolicy || samityForm.samityOperatingModel === 'SAVINGS_ONLY'}
+                  onChange={e => {
+                    const checked = e.target.checked;
+                    setSamityForm({
+                      ...samityForm,
+                      strictNoLoanPolicy: checked,
+                      isSavingsOnlySamity: checked,
+                      samityOperatingModel: checked ? 'SAVINGS_ONLY' : samityForm.samityOperatingModel
+                    });
+                  }}
+                  className="w-4 h-4 rounded text-teal-500 focus:ring-teal-400 bg-slate-800 border-slate-700 cursor-pointer"
+                />
+              </div>
+
+              {/* Monthly Mandatory Savings per Member */}
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  সদস্যপ্রতি মাসিক বাধ্যতামূলক সঞ্চয় (Fixed Monthly Savings)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-sans">৳</span>
+                  <input
+                    type="number"
+                    min="100"
+                    step="100"
+                    value={samityForm.monthlySavingsPerMember}
+                    onChange={e => setSamityForm({ ...samityForm, monthlySavingsPerMember: Number(e.target.value) })}
+                    className="w-full pl-8 pr-12 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-emerald-400 font-mono text-sm font-bold focus:outline-none focus:border-emerald-500"
+                    required
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-sans">BDT</span>
+                </div>
+                <p className="text-[10px] text-emerald-400/90 mt-1 font-mono">
+                  📊 প্রাক্কলন: {samityForm.targetMemberCount} জন × ৳ {samityForm.monthlySavingsPerMember.toLocaleString()} = ৳ {(samityForm.targetMemberCount * samityForm.monthlySavingsPerMember).toLocaleString()} / মাস
+                </p>
+              </div>
+
             </div>
           </div>
         </form>

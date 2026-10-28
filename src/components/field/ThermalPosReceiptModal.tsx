@@ -221,10 +221,18 @@ export function ThermalPosReceiptModal({
 
               {thermalPrinterConfig.showQrCode && (
                 <div className="pt-1 flex flex-col items-center">
-                  <div className="w-16 h-16 border border-gray-400 p-1 flex items-center justify-center bg-gray-50 rounded">
-                    <QrCode className="w-12 h-12 text-gray-800" />
+                  <div className="w-16 h-16 border border-gray-400 p-0.5 flex items-center justify-center bg-white rounded shadow-2xs">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(
+                        (typeof window !== 'undefined' ? window.location.origin : 'https://samitypro.com') +
+                        '/verify?code=' + encodeURIComponent(collection.receiptNo || collection.id)
+                      )}`}
+                      alt="Verification QR"
+                      className="w-14 h-14 object-contain"
+                    />
                   </div>
-                  <div className="text-[8px] text-gray-600 mt-0.5">
+                  <div className="text-[8px] text-gray-600 mt-0.5 font-sans">
                     স্ক্যান করে অনলাইনে সত্যতা যাচাই করুন
                   </div>
                 </div>

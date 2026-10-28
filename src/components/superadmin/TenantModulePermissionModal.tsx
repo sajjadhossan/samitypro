@@ -36,9 +36,17 @@ export function TenantModulePermissionModal({
   const [maxStaff, setMaxStaff] = useState<number>(tenant.settings?.maxStaff ?? 15);
 
   // Operating Model State
-  const [operatingModel, setOperatingModel] = useState<'INVESTMENT_PROPERTY' | 'MICRO_CREDIT' | 'MULTI_PURPOSE'>(
+  const [operatingModel, setOperatingModel] = useState<'SAVINGS_ONLY' | 'INVESTMENT_PROPERTY' | 'MICRO_CREDIT' | 'MULTI_PURPOSE'>(
     tenant.settings?.samityOperatingModel || 
-    (tenant.settings?.enableFieldOfficers === false ? 'INVESTMENT_PROPERTY' : 'MULTI_PURPOSE')
+    (tenant.settings?.isSavingsOnlySamity ? 'SAVINGS_ONLY' : tenant.settings?.enableFieldOfficers === false ? 'INVESTMENT_PROPERTY' : 'MULTI_PURPOSE')
+  );
+
+  // Target Member Quota & Monthly Savings
+  const [targetMemberCount, setTargetMemberCount] = useState<number>(
+    tenant.settings?.targetMemberCount ?? 20
+  );
+  const [monthlySavingsPerMember, setMonthlySavingsPerMember] = useState<number>(
+    tenant.settings?.monthlySavingsPerMember ?? 2000
   );
 
   // Fixed Monthly Dues Amount State (e.g. 10000 BDT)
@@ -79,9 +87,29 @@ export function TenantModulePermissionModal({
   };
 
   // 1-Click Operational Model Preset Switcher
-  const applyOperatingModel = (model: 'INVESTMENT_PROPERTY' | 'MICRO_CREDIT' | 'MULTI_PURPOSE') => {
+  const applyOperatingModel = (model: 'SAVINGS_ONLY' | 'INVESTMENT_PROPERTY' | 'MICRO_CREDIT' | 'MULTI_PURPOSE') => {
     setOperatingModel(model);
-    if (model === 'INVESTMENT_PROPERTY') {
+    if (model === 'SAVINGS_ONLY') {
+      // শুধুমাত্র সঞ্চয় সমিতি: কোনো ঋণ নেই, মাঠকর্মী নেই, নির্দিষ্ট সদস্য কোটা ও মাসিক সঞ্চয় জমা
+      setModules(prev => ({
+        ...prev,
+        enableSavings: true,
+        enableLoans: false,
+        enableMicroLoans: false,
+        enableFieldOfficers: false,
+        enablePropertyProjects: false,
+        enableProjects: false,
+        enableFixedMonthlySavings: true,
+        enableShares: false,
+        enableAssetInventory: false,
+        enableStaffPayroll: false,
+        enableFdr: false,
+        enableDocumentGenerator: true,
+        enableMemberPortal: true,
+        enableSmsAlerts: true,
+      }));
+      setFixedMonthlyAmount(monthlySavingsPerMember);
+    } else if (model === 'INVESTMENT_PROPERTY') {
       // জমি/প্রোপার্টি বিনিয়োগ মডেল: কোনো মাঠকর্মী নেই, কোনো লোন নেই, ফিক্সড মাসিক ১০,০০০ টাকা চাঁদা ও জমি শেয়ার সক্রিয়
       setModules(prev => ({
         ...prev,
@@ -219,6 +247,10 @@ export function TenantModulePermissionModal({
       fixedMonthlyAmount: Number(fixedMonthlyAmount) || 10000,
       enableMicroLoans: modules.enableMicroLoans,
       samityOperatingModel: operatingModel,
+      isSavingsOnlySamity: operatingModel === 'SAVINGS_ONLY',
+      strictNoLoanPolicy: operatingModel === 'SAVINGS_ONLY' || !modules.enableLoans,
+      targetMemberCount: Number(targetMemberCount) || 20,
+      monthlySavingsPerMember: Number(monthlySavingsPerMember) || 2000,
       enableElections: modules.enableElections,
       enableSmsAlerts: modules.enableSmsAlerts,
       enableOnlinePayment: modules.enableOnlinePayment,
@@ -514,8 +546,31 @@ export function TenantModulePermissionModal({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              {/* Option 1: Property & Land Investment Samity */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              {/* Option 1: Savings-Only Samity (Zero Loan) */}
+              <button
+                type="button"
+                onClick={() => applyOperatingModel('SAVINGS_ONLY')}
+                className={`p-3 rounded-xl border text-left transition relative cursor-pointer ${
+                  operatingModel === 'SAVINGS_ONLY'
+                    ? 'bg-emerald-500/15 border-emerald-500/60 shadow-lg shadow-emerald-500/10'
+                    : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                {operatingModel === 'SAVINGS_ONLY' && (
+                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                )}
+                <div className="flex items-center gap-2 mb-1.5">
+                  <PiggyBank className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-xs font-bold text-slate-100">শুধুমাত্র সঞ্চয় সমিতি</span>
+                </div>
+                <p className="text-[10px] text-slate-400 leading-normal">
+                  🚫 <strong>কোনো ঋণ নেই</strong>, 🚫 <strong>মাঠকর্মী নেই</strong><br />
+                  ✅ নির্দিষ্ট সদস্য কোটা ও প্রতি মাসে সঞ্চয় জমা
+                </p>
+              </button>
+
+              {/* Option 2: Property & Land Investment Samity */}
               <button
                 type="button"
                 onClick={() => applyOperatingModel('INVESTMENT_PROPERTY')}
@@ -534,11 +589,11 @@ export function TenantModulePermissionModal({
                 </div>
                 <p className="text-[10px] text-slate-400 leading-normal">
                   🚫 <strong>মাঠকর্মী নেই</strong>, 🚫 <strong>লোন নেই</strong><br />
-                  ✅ ফিক্সড মাসিক চাঁদা (৳১০,০০০), প্রোপার্টি শেয়ার ও জমি ক্রয় প্রকল্প
+                  ✅ ফিক্সড মাসিক চাঁদা, প্রোপার্টি শেয়ার ও জমি ক্রয়
                 </p>
               </button>
 
-              {/* Option 2: Microcredit & Field Collection Samity */}
+              {/* Option 3: Microcredit & Field Collection Samity */}
               <button
                 type="button"
                 onClick={() => applyOperatingModel('MICRO_CREDIT')}
@@ -554,29 +609,67 @@ export function TenantModulePermissionModal({
                 </div>
                 <p className="text-[10px] text-slate-400 leading-normal">
                   ✅ <strong>মাঠকর্মী ও কালেকশন POS</strong><br />
-                  ✅ ঋণ বিতরণ, সুদের হার ও নিয়মিত কিস্তি আদায় ব্যবস্থাপনা
+                  ✅ ঋণ বিতরণ, সুদের হার ও নিয়মিত কিস্তি আদায়
                 </p>
               </button>
 
-              {/* Option 3: Multi-purpose Cooperative */}
+              {/* Option 4: Multi-purpose Cooperative */}
               <button
                 type="button"
                 onClick={() => applyOperatingModel('MULTI_PURPOSE')}
                 className={`p-3 rounded-xl border text-left transition relative cursor-pointer ${
                   operatingModel === 'MULTI_PURPOSE'
-                    ? 'bg-emerald-500/15 border-emerald-500/60 shadow-lg shadow-emerald-500/10'
+                    ? 'bg-indigo-500/15 border-indigo-500/60 shadow-lg shadow-indigo-500/10'
                     : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1.5">
-                  <Landmark className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <Landmark className="w-4 h-4 text-indigo-400 shrink-0" />
                   <span className="text-xs font-bold text-slate-100">বহুমুখী সমন্বিত সমবায়</span>
                 </div>
                 <p className="text-[10px] text-slate-400 leading-normal">
-                  ✅ সব ফিচার সক্রিয়: লোন, মাঠকর্মী, জমি প্রকল্প, স্থায়ী আমানত ও লভ্যাংশ
+                  ✅ সব ফিচার সক্রিয়: লোন, মাঠকর্মী, জমি প্রকল্প, স্থায়ী আমানত
                 </p>
               </button>
             </div>
+
+            {/* Savings-Only Specific Extra Parameters (Quota & Monthly Savings) */}
+            {operatingModel === 'SAVINGS_ONLY' && (
+              <div className="mt-3 p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex flex-col sm:flex-row items-center gap-3">
+                <div className="flex-1">
+                  <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                    <PiggyBank className="w-4 h-4" />
+                    <span>শুধুমাত্র সঞ্চয় সমবায় কনফিগারেশন</span>
+                  </span>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    কোনো ঋণ বিতরণ করা হবে না। শুধুমাত্র নিয়মিত সঞ্চয় ও সদস্য কোটা সংরক্ষিত থাকবে।
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div>
+                    <label className="text-[10px] text-slate-400 block mb-0.5">সদস্য কোটা (জন)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={1000}
+                      value={targetMemberCount}
+                      onChange={e => setTargetMemberCount(parseInt(e.target.value) || 20)}
+                      className="w-24 px-2.5 py-1.5 bg-slate-900 border border-emerald-500/40 rounded-lg text-xs font-bold text-white text-center focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-400 block mb-0.5">মাসিক সঞ্চয় (৳)</label>
+                    <input
+                      type="number"
+                      step={100}
+                      value={monthlySavingsPerMember}
+                      onChange={e => setMonthlySavingsPerMember(parseInt(e.target.value) || 2000)}
+                      className="w-28 px-2.5 py-1.5 bg-slate-900 border border-emerald-500/40 rounded-lg text-xs font-bold text-white text-center focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Quick Plan Presets Bar */}
